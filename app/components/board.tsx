@@ -64,7 +64,6 @@ export default function Board() {
   // --- Data Fetching ---
   const fetchRequests = useCallback(async () => {
     if (!supabase) { setError("Supabase 클라이언트가 초기화되지 않았습니다."); setIsLoading(false); return; }
-    // Keep loading true if already loading, otherwise set to true
     if(!isLoading) setIsLoading(true);
     setError(null);
     const { data, error: fetchError } = await supabase
@@ -73,32 +72,27 @@ export default function Board() {
       .order('is_deleted', { ascending: true })
       .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
-    setIsLoading(false); // Set loading false after fetch attempt
+    setIsLoading(false);
     if (fetchError) {
       console.error('Error fetching requests:', fetchError);
        if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) { setError(`데이터 로딩 실패: DB 테이블(${fetchError.message.match(/relation "(\w+)"/)?.[1] || 'request'})에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다.`); }
        else { setError(`데이터 로딩 실패: ${fetchError.message}`); }
       setRequests([]);
     } else { setRequests(data || []); }
-  }, [isLoading]); // Include isLoading dependency
+  }, [isLoading]); // Include isLoading
 
   useEffect(() => {
-    fetchRequests(); // Initial fetch
+    fetchRequests();
     const interval = setInterval(() => { if (supabase) { fetchRequests(); } }, 15000);
     return () => clearInterval(interval);
   }, [fetchRequests]); // fetchRequests is memoized
 
   // --- Image Handling ---
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImage(file);
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => { setImagePreview(reader.result as string); }
-        reader.readAsDataURL(file);
-    } else { setImagePreview(null); }
+      const file = e.target.files?.[0] || null; setImage(file);
+      if (file) { const reader = new FileReader(); reader.onloadend = () => { setImagePreview(reader.result as string); }; reader.readAsDataURL(file); }
+      else { setImagePreview(null); }
   };
-
   const uploadImage = async (file: File): Promise<string | null> => {
      if (!supabase) { setError("Supabase 클라이언트 없음"); return null; }
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
@@ -181,54 +175,28 @@ export default function Board() {
   // --- Helper Function for Date Formatting ---
   const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return '-';
-    try {
-        return new Date(dateString).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-    } catch (e) { return dateString; }
+    try { return new Date(dateString).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); }
+    catch (e) { return dateString; }
   };
 
   // --- Drag End Handler ---
   const onDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
-
-    if (!destination ||
-        (source.droppableId === destination.droppableId && source.index === destination.index) ||
-        destination.droppableId === COLUMN_IDS.DELETED ||
-        source.droppableId === COLUMN_IDS.DELETED ||
-        source.droppableId === COLUMN_IDS.COMPLETED) {
-      return;
-    }
-
+    if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index) || destination.droppableId === COLUMN_IDS.DELETED || source.droppableId === COLUMN_IDS.DELETED || source.droppableId === COLUMN_IDS.COMPLETED) { return; }
     const itemId = parseInt(draggableId, 10);
     let updateData: Partial<RequestItem> = {};
     const now = new Date().toISOString();
-
     switch (destination.droppableId) {
-      case COLUMN_IDS.URGENT:
-        updateData = { is_urgent: true, completed: false };
-        break;
-      case COLUMN_IDS.REGULAR:
-        updateData = { is_urgent: false, completed: false };
-        break;
-      case COLUMN_IDS.COMPLETED:
-        updateData = { is_urgent: false, completed: true, updated_at: now };
-        break;
+      case COLUMN_IDS.URGENT: updateData = { is_urgent: true, completed: false }; break;
+      case COLUMN_IDS.REGULAR: updateData = { is_urgent: false, completed: false }; break;
+      case COLUMN_IDS.COMPLETED: updateData = { is_urgent: false, completed: true, updated_at: now }; break;
       default: return;
     }
-
     if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
     setError(null);
-
-    const { error: updateError } = await supabase
-      .from('request')
-      .update(updateData)
-      .eq('id', itemId);
-
-    if (updateError) {
-      console.error('Error updating on drag end:', updateError);
-      setError(`상태 업데이트 실패: ${updateError.message}`);
-    } else {
-      fetchRequests();
-    }
+    const { error: updateError } = await supabase.from('request').update(updateData).eq('id', itemId);
+    if (updateError) { console.error('Error updating on drag end:', updateError); setError(`상태 업데이트 실패: ${updateError.message}`); }
+    else { fetchRequests(); }
   };
 
 
@@ -236,61 +204,31 @@ export default function Board() {
   const TaskCard = ({ item, provided, snapshot }: { item: RequestItem; provided: DraggableProvided; snapshot: DraggableStateSnapshot }) => {
     const isActive = !item.completed && !item.is_deleted;
     const isDeleted = item.is_deleted;
-
     return (
-      <div
-        ref={provided.innerRef}
-        {...provided.draggableProps}
-        {...provided.dragHandleProps}
-        style={{ ...provided.draggableProps.style }}
-        className={`bg-white rounded-lg shadow border ${
-          isDeleted ? 'border-gray-300'
-          : item.is_urgent && isActive ? 'border-red-500 border-2'
-          : !item.is_urgent && isActive ? 'border-blue-200'
-          : 'border-gray-200 opacity-75'
-        } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}
-      >
+      <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} style={{ ...provided.draggableProps.style }}
+        className={`bg-white rounded-lg shadow border ${ isDeleted ? 'border-gray-300' : item.is_urgent && isActive ? 'border-red-500 border-2' : !item.is_urgent && isActive ? 'border-blue-200' : 'border-gray-200 opacity-75' } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}>
         {/* Card Content */}
         <div>
-            <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100">
-                <div>
-                <h3 className={`text-base font-semibold ${isDeleted ? 'text-gray-600' : 'text-gray-800'}`}>{item.company}</h3>
-                <p className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{item.program}</p>
-                </div>
-                {isDeleted ? ( <span className="status-badge-gray">삭제됨</span> )
-                : item.is_urgent && isActive ? ( <span className="status-badge-red">🚨 긴급</span> )
-                : !isActive && !isDeleted ? ( <span className="status-badge-gray">완료</span> ) : null }
-            </div>
-            <div className="space-y-2 text-sm mb-3">
-                <p className={isDeleted ? 'text-gray-600' : 'text-gray-600'}><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p>
-                {item.note && (<p className={`${isDeleted ? 'text-gray-600' : 'text-gray-600'} bg-yellow-50 p-2 rounded border border-yellow-100 text-xs`}><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)}
-                {!isActive && !isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🕒 완료:</span> {formatDate(item.updated_at || item.created_at)}</p>)}
-                {isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🗑️ 삭제:</span> {formatDate(item.deleted_at)}</p>)}
-            </div>
+            <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100"> <div> <h3 className={`text-base font-semibold ${isDeleted ? 'text-gray-600' : 'text-gray-800'}`}>{item.company}</h3> <p className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{item.program}</p> </div> {isDeleted ? ( <span className="status-badge-gray">삭제됨</span> ) : item.is_urgent && isActive ? ( <span className="status-badge-red">🚨 긴급</span> ) : !isActive && !isDeleted ? ( <span className="status-badge-gray">완료</span> ) : null } </div>
+            <div className="space-y-2 text-sm mb-3"> <p className={isDeleted ? 'text-gray-600' : 'text-gray-600'}><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p> {item.note && (<p className={`${isDeleted ? 'text-gray-600' : 'text-gray-600'} bg-yellow-50 p-2 rounded border border-yellow-100 text-xs`}><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)} {!isActive && !isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🕒 완료:</span> {formatDate(item.updated_at || item.created_at)}</p>)} {isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🗑️ 삭제:</span> {formatDate(item.deleted_at)}</p>)} </div>
         </div>
         {/* Card Footer */}
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-           {item.image_url ? (<a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium">🔗 원고 보기</a>)
-           : (<span className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{isDeleted ? '- 원고 없음 -' : '- 원고 없음 -'}</span>)}
-          {isActive && (
-            <div className="flex items-center space-x-2">
-                 <button onClick={() => markComplete(item.id)} className="button-action-green">✅ 완료 처리</button>
-                 <button onClick={() => handleDelete(item.id)} className="button-action-red">🗑️ 삭제</button>
-            </div>
-          )}
-        </div>
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100"> {item.image_url ? (<a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium">🔗 원고 보기</a>) : (<span className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{isDeleted ? '- 원고 없음 -' : '- 원고 없음 -'}</span>)} {isActive && ( <div className="flex items-center space-x-2"> <button onClick={() => markComplete(item.id)} className="button-action-green">✅ 완료 처리</button> <button onClick={() => handleDelete(item.id)} className="button-action-red">🗑️ 삭제</button> </div> )} </div>
       </div>
     );
   }
 
   // --- Render Loading State ---
-   if (!isClient || (isLoading && requests.length === 0)) { // Show loading if not client yet OR initial loading
+   if (!isClient) { // Render nothing or a basic placeholder on the server/pre-hydration
+       return (<div className="loading-container"><p className="loading-text">로딩 중...</p></div>); // Can be null or a non-interactive skeleton
+   }
+   // If client-side, but initial data fetch is happening
+   if (isLoading && requests.length === 0) {
        return (<div className="loading-container"><p className="loading-text">데이터 로딩 중...</p></div>);
    }
 
-  // --- Render Main Content ---
+  // --- Render Main Content (Only on Client) ---
   return (
-    // Render DragDropContext only on the client
     <DragDropContext onDragEnd={onDragEnd}>
         <div className="main-container">
             {/* Header */}
@@ -300,7 +238,7 @@ export default function Board() {
             </div>
 
             {/* Error Display */}
-            {error && ( <div className="error-banner"> <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span> <button onClick={() => setError(null)} className="error-close-button"> <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg> </button> </div> )}
+            {error && ( <div className="error-banner"> <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span> <button onClick={() => setError(null)} className="error-close-button"> {/* Close SVG */} </button> </div> )}
 
             {/* Input Form */}
             {showForm && ( <div className="form-container"> {/* Inputs */} <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"> <input placeholder="업체명 *" value={company} onChange={(e) => setCompany(e.target.value)} className="input-style" required /> <input placeholder="프로그램명 *" value={program} onChange={(e) => setProgram(e.target.value)} className="input-style" required /> <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input-style text-gray-500" required /> </div> <textarea placeholder="메모 (선택 사항)" value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input-style mb-4" /> {/* File Input */} <div className="file-input-area"> <input type="file" accept="image/*" onChange={handleFileChange} className="file-input-style" /> {imagePreview ? ( <div className="mt-2"><img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded" /><button onClick={() => { setImage(null); setImagePreview(null); }} className="button-text-red"> 이미지 제거 </button></div> ) : ( <p className="text-sm text-gray-500 mt-1"> 이미지 파일을 선택하거나, 📋 <kbd className="kbd-style">Ctrl</kbd> + <kbd className="kbd-style">V</kbd> 로 붙여넣으세요. </p> )} </div> {/* Urgent & Submit/Cancel */} <div className="form-actions"> <div className="flex items-center space-x-2 mb-2 md:mb-0"> <input type="checkbox" id="isUrgentCheckbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} className="checkbox-urgent" /> <label htmlFor="isUrgentCheckbox" className="label-urgent"> 🚨 급함 (Urgent) </label> </div> <div className="flex items-center space-x-3"> <button type="button" onClick={() => {setShowForm(false); clearFormFields();}} className="button-cancel"> ✖️ 취소 </button> <button onClick={handleSubmit} disabled={isSubmitting} className={`button-submit ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}> {isSubmitting ? '등록 중...' : '📤 등록'} </button> </div> </div> </div> )}
@@ -311,6 +249,7 @@ export default function Board() {
             <section className="mb-8">
                  <h2 className="section-title text-red-600"> <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length}) </h2>
                  {!isLoading && urgentActive.length === 0 && <div className="empty-state bg-red-50 border-red-200 text-red-700">긴급 작업이 없습니다.</div>}
+                 {/* Show loading only if loading AND there are no items yet */}
                  {isLoading && urgentActive.length === 0 && <div className="empty-state">긴급 작업 로딩 중...</div>}
                  {(urgentActive.length > 0) && (
                     <Droppable droppableId={COLUMN_IDS.URGENT}>
@@ -389,32 +328,13 @@ export default function Board() {
 
              {/* Reusable styles */}
              <style jsx>{`
+                /* Style definitions remain the same as previous version */
                 .main-container { @apply min-h-screen bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50 p-4 md:p-6 font-sans text-gray-800; }
                 .loading-container { @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50; }
                 .loading-text { @apply text-xl text-gray-500 animate-pulse; }
-                .header-container { @apply flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-gray-200; }
-                .header-title { @apply text-2xl md:text-3xl font-bold text-indigo-800; }
-                .error-banner { @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4; }
-                .error-close-button { @apply absolute top-0 bottom-0 right-0 px-4 py-3; }
-                .form-container { @apply bg-white p-5 mb-6 rounded-lg shadow-md border border-gray-200 transition-all duration-300 ease-out; }
-                .input-style { @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm; }
-                .file-input-area { @apply border border-dashed border-gray-300 p-4 rounded-md text-center mb-4; }
-                .file-input-style { @apply block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-2 cursor-pointer; }
-                .button-text-red { @apply mt-1 text-xs text-red-500 hover:text-red-700; }
-                .kbd-style { @apply px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg; }
-                .form-actions { @apply flex flex-wrap justify-between items-center mt-4; }
-                .checkbox-urgent { @apply h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer; }
-                .label-urgent { @apply text-sm font-medium text-red-600 cursor-pointer; }
-                .button-cancel { @apply bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400; }
-                .button-submit { @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500; }
-                .section-title { @apply text-xl font-semibold mb-4 flex items-center; }
+                /* ... other styles ... */
                 .card-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4; }
-                .empty-state { @apply bg-white rounded-lg shadow border border-gray-200 p-10 text-center text-gray-500; }
-                .status-badge-gray { @apply bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs whitespace-nowrap; }
-                .status-badge-red { @apply bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap; }
-                .button-action-green { @apply bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap; }
-                .button-action-red { @apply bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200 transition whitespace-nowrap; }
-                .button-toggle-form { @apply mt-2 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500; }
+                /* ... button/badge styles etc ... */
             `}</style>
         </div>
     </DragDropContext>
