@@ -13,7 +13,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-// Interface (is_deleted, deleted_at 포함)
+// Interface
 interface RequestItem {
   id: number;
   created_at: string;
@@ -25,16 +25,16 @@ interface RequestItem {
   image_url: string | null;
   completed: boolean;
   is_urgent: boolean;
-  is_deleted: boolean; // 삭제 플래그
-  deleted_at?: string | null; // 삭제 시간
+  is_deleted: boolean;
+  deleted_at?: string | null;
 }
 
-// 드롭 가능한 영역(컬럼)의 ID 정의
+// 컬럼 ID 정의
 const COLUMN_IDS = {
     URGENT: 'urgent',
     REGULAR: 'regular',
     COMPLETED: 'completed',
-    DELETED: 'deleted' // 드롭 대상으로 사용 안 함
+    DELETED: 'deleted'
 };
 
 
@@ -53,43 +53,52 @@ export default function Board() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // State to track client-side mount
+  const [isClient, setIsClient] = useState(false);
+
+  // Set isClient to true only after component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // --- Data Fetching ---
   const fetchRequests = useCallback(async () => {
     if (!supabase) { setError("Supabase 클라이언트가 초기화되지 않았습니다."); setIsLoading(false); return; }
+    // Keep loading true if already loading, otherwise set to true
     if(!isLoading) setIsLoading(true);
     setError(null);
     const { data, error: fetchError } = await supabase
       .from('request')
       .select('*')
-      .order('is_deleted', { ascending: true }) // 삭제되지 않은 것 먼저
-      .order('is_urgent', { ascending: false }) // 긴급한 것 먼저
-      .order('created_at', { ascending: false }); // 최신순
-    setIsLoading(false);
+      .order('is_deleted', { ascending: true })
+      .order('is_urgent', { ascending: false })
+      .order('created_at', { ascending: false });
+    setIsLoading(false); // Set loading false after fetch attempt
     if (fetchError) {
       console.error('Error fetching requests:', fetchError);
-       if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) { setError(`데이터 로딩 실패: DB 테이블(${fetchError.message.match(/relation "(\w+)"/)?.[1] || 'request'})에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다. Supabase 설정을 확인하세요.`); }
+       if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) { setError(`데이터 로딩 실패: DB 테이블(${fetchError.message.match(/relation "(\w+)"/)?.[1] || 'request'})에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다.`); }
        else { setError(`데이터 로딩 실패: ${fetchError.message}`); }
       setRequests([]);
     } else { setRequests(data || []); }
-  }, [isLoading]); // isLoading 포함
+  }, [isLoading]); // Include isLoading dependency
 
   useEffect(() => {
-    fetchRequests();
+    fetchRequests(); // Initial fetch
     const interval = setInterval(() => { if (supabase) { fetchRequests(); } }, 15000);
     return () => clearInterval(interval);
-  }, [fetchRequests]); // fetchRequests는 useCallback으로 메모이즈됨
+  }, [fetchRequests]); // fetchRequests is memoized
 
   // --- Image Handling ---
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0] || null;
-      setImage(file);
-      if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => { setImagePreview(reader.result as string); }
-          reader.readAsDataURL(file);
-      } else { setImagePreview(null); }
+    const file = e.target.files?.[0] || null;
+    setImage(file);
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => { setImagePreview(reader.result as string); }
+        reader.readAsDataURL(file);
+    } else { setImagePreview(null); }
   };
+
   const uploadImage = async (file: File): Promise<string | null> => {
      if (!supabase) { setError("Supabase 클라이언트 없음"); return null; }
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
@@ -110,7 +119,6 @@ export default function Board() {
         if (!imageUrl && !error) { setError('이미지 업로드 중 오류가 발생했습니다.'); }
         if (!imageUrl || error) { setIsSubmitting(false); return; }
     }
-    // is_deleted: false 명시적으로 추가
     const { error: insertError } = await supabase.from('request').insert([{ company, program, pickup_date: pickupDate, note, image_url: imageUrl, completed: false, is_urgent: isUrgent, is_deleted: false }]);
     setIsSubmitting(false);
     if (insertError) { console.error('Error inserting request:', insertError); setError(`등록 실패: ${insertError.message}`); }
@@ -126,7 +134,6 @@ export default function Board() {
   const markComplete = async (id: number) => {
      if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
     setError(null);
-    // 완료 처리 시 is_urgent는 false로 변경 (선택적이지만 일반적)
     const { data, error: updateError } = await supabase
         .from('request')
         .update({ completed: true, updated_at: new Date().toISOString(), is_urgent: false })
@@ -165,13 +172,10 @@ export default function Board() {
   }, [showForm, handlePasteImage]);
 
   // --- Filtering Data ---
-  // is_deleted가 false인 것들만 활성/완료 대상으로 간주
   const nonDeletedRequests = requests.filter(r => !r.is_deleted);
   const urgentActive = nonDeletedRequests.filter(r => !r.completed && r.is_urgent);
   const regularActive = nonDeletedRequests.filter(r => !r.completed && !r.is_urgent);
-  // completed는 is_deleted가 false이고 completed가 true인 것
   const completed = requests.filter(r => r.completed && !r.is_deleted).slice(0, 100);
-  // recentlyDeleted는 is_deleted가 true인 것
   const recentlyDeleted = requests.filter(r => r.is_deleted).sort((a, b) => new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime()).slice(0, 10);
 
   // --- Helper Function for Date Formatting ---
@@ -186,13 +190,11 @@ export default function Board() {
   const onDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
-    // 유효하지 않은 드롭 처리
     if (!destination ||
         (source.droppableId === destination.droppableId && source.index === destination.index) ||
-        destination.droppableId === COLUMN_IDS.DELETED || // 삭제 영역 드롭 불가
-        source.droppableId === COLUMN_IDS.DELETED || // 삭제된 항목 드래그 불가 (아래 isDragDisabled로도 막음)
-        source.droppableId === COLUMN_IDS.COMPLETED // 완료 항목 드래그 불가 (아래 isDragDisabled로도 막음)
-       ) {
+        destination.droppableId === COLUMN_IDS.DELETED ||
+        source.droppableId === COLUMN_IDS.DELETED ||
+        source.droppableId === COLUMN_IDS.COMPLETED) {
       return;
     }
 
@@ -200,25 +202,21 @@ export default function Board() {
     let updateData: Partial<RequestItem> = {};
     const now = new Date().toISOString();
 
-    // 목적지에 따른 상태 업데이트 정의
     switch (destination.droppableId) {
       case COLUMN_IDS.URGENT:
-        updateData = { is_urgent: true, completed: false }; // is_deleted는 false여야 함 (nonDeletedRequests에서 옴)
+        updateData = { is_urgent: true, completed: false };
         break;
       case COLUMN_IDS.REGULAR:
-        updateData = { is_urgent: false, completed: false }; // is_deleted는 false여야 함
+        updateData = { is_urgent: false, completed: false };
         break;
       case COLUMN_IDS.COMPLETED:
-        updateData = { is_urgent: false, completed: true, updated_at: now }; // is_deleted는 false여야 함
+        updateData = { is_urgent: false, completed: true, updated_at: now };
         break;
       default: return;
     }
 
-    // Supabase 업데이트
     if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
     setError(null);
-
-    // console.log(`Updating item ${itemId} to:`, updateData); // DEBUG
 
     const { error: updateError } = await supabase
       .from('request')
@@ -229,7 +227,6 @@ export default function Board() {
       console.error('Error updating on drag end:', updateError);
       setError(`상태 업데이트 실패: ${updateError.message}`);
     } else {
-      // 성공 시 데이터 다시 로드하여 UI 갱신
       fetchRequests();
     }
   };
@@ -247,10 +244,10 @@ export default function Board() {
         {...provided.dragHandleProps}
         style={{ ...provided.draggableProps.style }}
         className={`bg-white rounded-lg shadow border ${
-          isDeleted ? 'border-gray-300' // Deleted
-          : item.is_urgent && isActive ? 'border-red-500 border-2' // Urgent Active
-          : !item.is_urgent && isActive ? 'border-blue-200' // Regular Active
-          : 'border-gray-200 opacity-75' // Completed
+          isDeleted ? 'border-gray-300'
+          : item.is_urgent && isActive ? 'border-red-500 border-2'
+          : !item.is_urgent && isActive ? 'border-blue-200'
+          : 'border-gray-200 opacity-75'
         } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}
       >
         {/* Card Content */}
@@ -275,7 +272,6 @@ export default function Board() {
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
            {item.image_url ? (<a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium">🔗 원고 보기</a>)
            : (<span className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{isDeleted ? '- 원고 없음 -' : '- 원고 없음 -'}</span>)}
-          {/* isActive 상태일 때만 버튼 표시 */}
           {isActive && (
             <div className="flex items-center space-x-2">
                  <button onClick={() => markComplete(item.id)} className="button-action-green">✅ 완료 처리</button>
@@ -288,10 +284,13 @@ export default function Board() {
   }
 
   // --- Render Loading State ---
-   if (isLoading && requests.length === 0) { return (<div className="loading-container"><p className="loading-text">데이터 로딩 중...</p></div>); }
+   if (!isClient || (isLoading && requests.length === 0)) { // Show loading if not client yet OR initial loading
+       return (<div className="loading-container"><p className="loading-text">데이터 로딩 중...</p></div>);
+   }
 
   // --- Render Main Content ---
   return (
+    // Render DragDropContext only on the client
     <DragDropContext onDragEnd={onDragEnd}>
         <div className="main-container">
             {/* Header */}
@@ -301,7 +300,7 @@ export default function Board() {
             </div>
 
             {/* Error Display */}
-            {error && ( <div className="error-banner"> <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span> <button onClick={() => setError(null)} className="error-close-button"> {/* Close SVG */} </button> </div> )}
+            {error && ( <div className="error-banner"> <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span> <button onClick={() => setError(null)} className="error-close-button"> <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg> </button> </div> )}
 
             {/* Input Form */}
             {showForm && ( <div className="form-container"> {/* Inputs */} <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"> <input placeholder="업체명 *" value={company} onChange={(e) => setCompany(e.target.value)} className="input-style" required /> <input placeholder="프로그램명 *" value={program} onChange={(e) => setProgram(e.target.value)} className="input-style" required /> <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input-style text-gray-500" required /> </div> <textarea placeholder="메모 (선택 사항)" value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input-style mb-4" /> {/* File Input */} <div className="file-input-area"> <input type="file" accept="image/*" onChange={handleFileChange} className="file-input-style" /> {imagePreview ? ( <div className="mt-2"><img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded" /><button onClick={() => { setImage(null); setImagePreview(null); }} className="button-text-red"> 이미지 제거 </button></div> ) : ( <p className="text-sm text-gray-500 mt-1"> 이미지 파일을 선택하거나, 📋 <kbd className="kbd-style">Ctrl</kbd> + <kbd className="kbd-style">V</kbd> 로 붙여넣으세요. </p> )} </div> {/* Urgent & Submit/Cancel */} <div className="form-actions"> <div className="flex items-center space-x-2 mb-2 md:mb-0"> <input type="checkbox" id="isUrgentCheckbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} className="checkbox-urgent" /> <label htmlFor="isUrgentCheckbox" className="label-urgent"> 🚨 급함 (Urgent) </label> </div> <div className="flex items-center space-x-3"> <button type="button" onClick={() => {setShowForm(false); clearFormFields();}} className="button-cancel"> ✖️ 취소 </button> <button onClick={handleSubmit} disabled={isSubmitting} className={`button-submit ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}> {isSubmitting ? '등록 중...' : '📤 등록'} </button> </div> </div> </div> )}
@@ -311,7 +310,7 @@ export default function Board() {
             {/* Urgent Active Tasks Section */}
             <section className="mb-8">
                  <h2 className="section-title text-red-600"> <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length}) </h2>
-                 {(!isLoading && urgentActive.length === 0) && <div className="empty-state bg-red-50 border-red-200 text-red-700">긴급 작업이 없습니다.</div>}
+                 {!isLoading && urgentActive.length === 0 && <div className="empty-state bg-red-50 border-red-200 text-red-700">긴급 작업이 없습니다.</div>}
                  {isLoading && urgentActive.length === 0 && <div className="empty-state">긴급 작업 로딩 중...</div>}
                  {(urgentActive.length > 0) && (
                     <Droppable droppableId={COLUMN_IDS.URGENT}>
@@ -328,7 +327,6 @@ export default function Board() {
                     </Droppable>
                  )}
             </section>
-
 
             {/* Regular Active Tasks Section */}
             <section className="mb-8">
@@ -379,9 +377,8 @@ export default function Board() {
                 {!isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state"> 최근 삭제된 작업이 없습니다. </div> )
                 : isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state">삭제된 작업 로딩 중...</div> )
                 : (
-                    // Not Droppable, but items are Draggable (disabled)
                     <div className="card-grid">
-                        {recentlyDeleted.map((item, index) => ( // Added index here
+                        {recentlyDeleted.map((item, index) => (
                             <Draggable key={item.id} draggableId={item.id.toString()} index={index} isDragDisabled={true}>
                                 {(p: DraggableProvided, s: DraggableStateSnapshot) => (<TaskCard item={item} provided={p} snapshot={s} />)}
                             </Draggable>
