@@ -98,12 +98,13 @@ export default function Board() {
     setError(null);
 
     let imageUrl: string | null = null;
-    if (image) {
-      imageUrl = await uploadImage(image);
-      if (error) { // Check if uploadImage set an error
-        setIsSubmitting(false); return;
+      if (image) {
+        imageUrl = await uploadImage(image);
+        if (!imageUrl) { // <- 이걸로 바꿔야 정확함!
+          setIsSubmitting(false);
+          return;
+        }
       }
-    }
 
     const { error: insertError } = await supabase
       .from('request')
