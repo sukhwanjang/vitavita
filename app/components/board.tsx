@@ -11,7 +11,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
-
+// 안녕
 // Updated Interface
 interface RequestItem {
   id: number;
