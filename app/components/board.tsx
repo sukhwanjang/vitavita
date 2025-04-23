@@ -6,13 +6,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Basic check for environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL or Anon Key is missing. Check your .env.local file.');
+  console.error('Supabase URL or Anon Key is missing. Check your .env.local file or Vercel Environment Variables.');
+  // Consider rendering an error message or preventing component mount
 }
 
-const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
-// 안녕
-// Updated Interface
+// Create Supabase client only if credentials exist
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+// Updated Interface with delete flags
 interface RequestItem {
   id: number;
   created_at: string;
@@ -23,7 +26,9 @@ interface RequestItem {
   note: string;
   image_url: string | null;
   completed: boolean;
-  is_urgent: boolean; // <-- Added Urgent flag
+  is_urgent: boolean;
+  is_deleted: boolean; // <-- Added Deleted flag
+  deleted_at?: string | null; // <-- Added Deletion timestamp
 }
 
 export default function Board() {
@@ -36,36 +41,56 @@ export default function Board() {
   const [note, setNote] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUrgent, setIsUrgent] = useState(false); // <-- State for Urgent checkbox
+  const [isUrgent, setIsUrgent] = useState(false);
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
-  // --- Data Fetching (no change needed, select('*') gets the new column) ---
+  // --- Data Fetching ---
   const fetchRequests = useCallback(async () => {
+    if (!supabase) {
+        setError("Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인하세요.");
+        setIsLoading(false);
+        return;
+    }
+    setIsLoading(true); // Start loading
     setError(null);
     const { data, error: fetchError } = await supabase
       .from('request')
       .select('*')
-      .order('is_urgent', { ascending: false }) // <-- Prioritize urgent items
+      .order('is_deleted', { ascending: true })
+      .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
+
+    setIsLoading(false); // End loading
 
     if (fetchError) {
       console.error('Error fetching requests:', fetchError);
-      setError(`데이터 로딩 실패: ${fetchError.message}`);
+      // Check for specific missing column error (example)
+      if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) {
+          setError(`데이터 로딩 실패: DB 테이블에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다. Supabase 테이블 설정을 확인하세요.`);
+      } else {
+          setError(`데이터 로딩 실패: ${fetchError.message}`);
+      }
       setRequests([]);
     } else {
       setRequests(data || []);
     }
-  }, []);
+  }, []); // Supabase client is stable if initialized
 
   useEffect(() => {
-    fetchRequests();
-    const interval = setInterval(fetchRequests, 15000);
+    fetchRequests(); // Initial fetch
+    const interval = setInterval(() => {
+        // Only fetch if Supabase client is available
+        if (supabase) {
+            fetchRequests();
+        }
+    }, 15000); // Fetch every 15 seconds
     return () => clearInterval(interval);
-  }, [fetchRequests]);
+  }, [fetchRequests]); // Dependency array includes fetchRequests
 
-  // --- Image Handling (no change) ---
+  // --- Image Handling ---
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setImage(file);
@@ -77,77 +102,59 @@ export default function Board() {
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
+     if (!supabase) { setError("Supabase 클라이언트 없음"); return null; }
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
     const { error: uploadError } = await supabase.storage.from('request-images').upload(fileName, file);
-    if (uploadError) {
-        console.error('Error uploading image:', uploadError);
-        setError(`이미지 업로드 실패: ${uploadError.message}`);
-        return null;
-    }
+    if (uploadError) { console.error('Error uploading image:', uploadError); setError(`이미지 업로드 실패: ${uploadError.message}`); return null; }
     const { data: urlData } = supabase.storage.from('request-images').getPublicUrl(fileName);
     return urlData?.publicUrl || null;
   };
 
-  // --- Form Submission (include is_urgent) ---
+  // --- Form Submission ---
   const handleSubmit = async () => {
-    if (!company || !program || !pickupDate) {
-      setError('업체명, 프로그램명, 픽업일은 필수 항목입니다.');
-      return;
-    }
-    setIsSubmitting(true);
-    setError(null);
-
+    if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
+    if (!company || !program || !pickupDate) { setError('업체명, 프로그램명, 픽업일은 필수 항목입니다.'); return; }
+    setIsSubmitting(true); setError(null);
     let imageUrl: string | null = null;
     if (image) {
-      imageUrl = await uploadImage(image);
-      if (!imageUrl) { // <- 이걸로 바꿔야 정확함!
-        setIsSubmitting(false);
-        return;
-      }
+        imageUrl = await uploadImage(image);
+        // If uploadImage sets an error, it will be caught, and we stop
+        if (!imageUrl) { setIsSubmitting(false); return; }
     }
-
-    const { error: insertError } = await supabase
-      .from('request')
-      .insert([{
-        company,
-        program,
-        pickup_date: pickupDate,
-        note,
-        image_url: imageUrl,
-        completed: false,
-        is_urgent: isUrgent // <-- Save urgent status
-      }]);
-
+    const { error: insertError } = await supabase.from('request').insert([{ company, program, pickup_date: pickupDate, note, image_url: imageUrl, completed: false, is_urgent: isUrgent, is_deleted: false }]);
     setIsSubmitting(false);
+    if (insertError) { console.error('Error inserting request:', insertError); setError(`등록 실패: ${insertError.message}`); }
+    else { clearFormFields(); setShowForm(false); fetchRequests(); }
+  };
 
-    if (insertError) {
-      console.error('Error inserting request:', insertError);
-      setError(`등록 실패: ${insertError.message}`);
-    } else {
-      // Clear form including isUrgent
+  // Helper to clear form fields
+  const clearFormFields = () => {
       setCompany(''); setProgram(''); setPickupDate(''); setNote('');
-      setImage(null); setImagePreview(null); setIsUrgent(false); // <-- Reset urgent state
-      setShowForm(false);
-      fetchRequests();
+      setImage(null); setImagePreview(null); setIsUrgent(false);
+  }
+
+  // --- Mark as Complete ---
+  const markComplete = async (id: number) => {
+     if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
+    setError(null);
+    const { error: updateError } = await supabase.from('request').update({ completed: true, updated_at: new Date().toISOString() }).eq('id', id);
+    if (updateError) { console.error('Error marking complete:', updateError); setError(`업데이트 실패: ${updateError.message}`); }
+    else { fetchRequests(); }
+  };
+
+  // --- Handle Delete (Soft Delete) ---
+  const handleDelete = async (id: number) => {
+     if (!supabase) { setError("Supabase 클라이언트 없음"); return; }
+    if (window.confirm('정말로 이 작업을 삭제하시겠습니까? 삭제된 작업은 최근 삭제 목록에서 확인할 수 있습니다.')) {
+      setError(null);
+      const { error: deleteError } = await supabase.from('request').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', id);
+      if (deleteError) { console.error('Error deleting request:', deleteError); setError(`삭제 실패: ${deleteError.message}`); }
+      else { fetchRequests(); }
     }
   };
 
-  // --- Mark as Complete (no change needed) ---
-  const markComplete = async (id: number) => {
-    setError(null);
-    const { error: updateError } = await supabase
-      .from('request')
-      .update({ completed: true, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (updateError) {
-      console.error('Error marking complete:', updateError);
-      setError(`업데이트 실패: ${updateError.message}`);
-    } else { fetchRequests(); }
-  };
-
-  // --- Paste Image Handling (no change) ---
-   const handlePasteImage = useCallback((e: globalThis.ClipboardEvent) => {
+  // --- Paste Image Handling ---
+  const handlePasteImage = useCallback((e: globalThis.ClipboardEvent) => {
     const file = e.clipboardData?.files?.[0];
     if (file && file.type.startsWith('image/')) {
         setImage(file);
@@ -156,7 +163,6 @@ export default function Board() {
         reader.readAsDataURL(file);
     }
   }, []);
-
   useEffect(() => {
     if (showForm) {
         window.addEventListener('paste', handlePasteImage);
@@ -164,179 +170,160 @@ export default function Board() {
     }
   }, [showForm, handlePasteImage]);
 
-  // --- Filtering Data (Split active into urgent and regular) ---
-  const urgentActive = requests.filter(r => !r.completed && r.is_urgent);
-  const regularActive = requests.filter(r => !r.completed && !r.is_urgent);
-  const completed = requests.filter(r => r.completed).slice(0, 100);
+  // --- Filtering Data ---
+  const activeRequests = requests.filter(r => !r.is_deleted); // Filter out deleted first
 
-  // --- Helper Function for Date Formatting (no change) ---
-  const formatDate = (dateString: string | undefined) => {
+  const urgentActive = activeRequests.filter(r => !r.completed && r.is_urgent);
+  const regularActive = activeRequests.filter(r => !r.completed && !r.is_urgent);
+  const completed = activeRequests.filter(r => r.completed).slice(0, 100);
+
+  const recentlyDeleted = requests
+    .filter(r => r.is_deleted)
+    .sort((a, b) => new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime()) // Sort by deletion time DESC
+    .slice(0, 10); // Limit to 10
+
+  // --- Helper Function for Date Formatting ---
+  const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return '-';
     try {
         return new Date(dateString).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     } catch (e) { return dateString; }
   };
 
-  // --- Card Component (Updated styling for urgency) ---
+  // --- Card Component ---
   const TaskCard = ({ item }: { item: RequestItem }) => {
-    const isActive = !item.completed; // Determine active state based on item data
+    const isActive = !item.completed && !item.is_deleted;
+    const isDeleted = item.is_deleted;
 
     return (
-      // Add Urgent styling: thicker red border if active and urgent
       <div className={`bg-white rounded-lg shadow border ${
-          item.is_urgent && isActive ? 'border-red-500 border-2 animate-pulse' // <-- Urgent Style
-          : !item.is_urgent && isActive ? 'border-blue-200'        // <-- Regular Active Style
-          : 'border-gray-200 opacity-75'                           // <-- Completed Style
-      } p-4 flex flex-col justify-between transition-shadow hover:shadow-md`}>
+          isDeleted ? 'border-gray-300 opacity-50' // Deleted
+          : item.is_urgent && isActive ? 'border-red-500 border-2 animate-pulse' // Urgent Active
+          : !item.is_urgent && isActive ? 'border-blue-200' // Regular Active
+          : 'border-gray-200 opacity-75' // Completed (not deleted)
+      } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}> {/* Added min-height */}
         <div> {/* Content Area */}
           <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100">
             <div>
-              <h3 className="text-base font-semibold text-gray-800">{item.company}</h3>
-              <p className="text-sm text-gray-500">{item.program}</p>
+              <h3 className={`text-base font-semibold ${isDeleted ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{item.company}</h3>
+              <p className={`text-sm ${isDeleted ? 'text-gray-400 line-through' : 'text-gray-500'}`}>{item.program}</p>
             </div>
-            {/* Show Urgent marker OR Completed badge */}
-            {item.is_urgent && isActive && (
-                 <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">🚨 긴급</span>
-            )}
-            {!isActive && (
-              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs whitespace-nowrap">완료</span>
-            )}
+             {/* Status Badges */}
+             {isDeleted ? ( <span className="status-badge-gray">삭제됨</span> )
+             : item.is_urgent && isActive ? ( <span className="status-badge-red">🚨 긴급</span> )
+             : !isActive && !isDeleted ? ( <span className="status-badge-gray">완료</span> ) : null }
           </div>
 
           <div className="space-y-2 text-sm mb-3">
-            <p className="text-gray-600"><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p>
-            {item.note && (<p className="text-gray-600 bg-yellow-50 p-2 rounded border border-yellow-100"><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)}
-            {!isActive && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🕒 완료:</span> {formatDate(item.updated_at || item.created_at)}</p>)}
+            <p className={isDeleted ? 'text-gray-500' : 'text-gray-600'}><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p>
+            {item.note && (<p className={`${isDeleted ? 'text-gray-500' : 'text-gray-600'} bg-yellow-50 p-2 rounded border border-yellow-100 text-xs`}><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)}
+            {!isActive && !isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🕒 완료:</span> {formatDate(item.updated_at || item.created_at)}</p>)}
+            {isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🗑️ 삭제:</span> {formatDate(item.deleted_at)}</p>)}
           </div>
         </div>
 
+        {/* Footer: Actions or Manuscript Link */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-          {item.image_url ? (
-            <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium">🔗 원고 보기</a>
-          ) : (<span className="text-sm text-gray-400">- 원고 없음 -</span>)}
+           {item.image_url ? (
+            <a href={item.image_url} target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline font-medium ${isDeleted ? 'text-gray-500 pointer-events-none' : 'text-indigo-600 hover:text-indigo-800'}`}>🔗 원고 보기</a>
+          ) : (<span className={`text-sm ${isDeleted ? 'text-gray-400' : 'text-gray-500'}`}>{isDeleted ? '- 원고 정보 없음 -' : '- 원고 없음 -'}</span>)}
 
-          {isActive && ( // Only show complete button if active
-            <button onClick={() => markComplete(item.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap">✅ 완료 처리</button>
+          {/* Action Buttons - Only show if Active */}
+          {isActive && (
+            <div className="flex items-center space-x-2">
+                 <button onClick={() => markComplete(item.id)} className="button-action-green">✅ 완료 처리</button>
+                 <button onClick={() => handleDelete(item.id)} className="button-action-red">🗑️ 삭제</button>
+            </div>
           )}
         </div>
       </div>
     );
   }
 
+  // --- Render Loading State ---
+   if (isLoading && requests.length === 0) { // Show loading only on initial load
+       return (
+           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50">
+               <p className="text-xl text-gray-500 animate-pulse">데이터 로딩 중...</p>
+           </div>
+       );
+   }
 
-  // --- Render ---
+  // --- Render Main Content ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50 p-4 md:p-6 font-sans text-gray-800">
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-gray-200">
         <h1 className="text-2xl md:text-3xl font-bold text-indigo-800">비타민사인 작업 현황판</h1>
-        <button onClick={() => setShowForm(!showForm)} className="mt-2 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            {showForm ? '➖ 입력창 닫기' : '➕ 입력창 열기'}
-        </button>
+        {supabase && ( // Only show button if supabase client is ready
+             <button onClick={() => setShowForm(!showForm)} className="button-toggle-form">
+                 {showForm ? '➖ 입력창 닫기' : '➕ 입력창 열기'}
+             </button>
+        )}
       </div>
 
       {/* Error Display */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span>
-          <button onClick={() => setError(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3"> <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg> </button>
-        </div>
-      )}
+      {error && ( <div className="error-banner"> <strong className="font-bold">오류 발생: </strong> <span className="block sm:inline">{error}</span> <button onClick={() => setError(null)} className="error-close-button"> <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg> </button> </div> )}
 
-      {/* Input Form (Added Urgent Checkbox) */}
-      {showForm && (
-        <div className="bg-white p-5 mb-6 rounded-lg shadow-md border border-gray-200 transition-all duration-300 ease-out">
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <input placeholder="업체명 *" value={company} onChange={(e) => setCompany(e.target.value)} className="input-style" required />
-            <input placeholder="프로그램명 *" value={program} onChange={(e) => setProgram(e.target.value)} className="input-style" required />
-            <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input-style text-gray-500" required />
-           </div>
-           <textarea placeholder="메모 (선택 사항)" value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input-style mb-4" />
-           {/* File Input Area */}
-           <div className="border border-dashed border-gray-300 p-4 rounded-md text-center mb-4">
-              <input type="file" accept="image/*" onChange={handleFileChange} className="file-input-style" />
-               {imagePreview ? (
-                <div className="mt-2"><img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded" /><button onClick={() => { setImage(null); setImagePreview(null); }} className="button-text-red"> 이미지 제거 </button></div>
-              ) : ( <p className="text-sm text-gray-500 mt-1"> 이미지 파일을 선택하거나, 📋 <kbd className="kbd-style">Ctrl</kbd> + <kbd className="kbd-style">V</kbd> 로 붙여넣으세요. </p> )}
-           </div>
+      {/* Input Form */}
+      {showForm && ( <div className="form-container"> {/* Inputs */} <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"> <input placeholder="업체명 *" value={company} onChange={(e) => setCompany(e.target.value)} className="input-style" required /> <input placeholder="프로그램명 *" value={program} onChange={(e) => setProgram(e.target.value)} className="input-style" required /> <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input-style text-gray-500" required /> </div> <textarea placeholder="메모 (선택 사항)" value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input-style mb-4" /> {/* File Input */} <div className="file-input-area"> <input type="file" accept="image/*" onChange={handleFileChange} className="file-input-style" /> {imagePreview ? ( <div className="mt-2"><img src={imagePreview} alt="Preview" className="max-h-40 mx-auto rounded" /><button onClick={() => { setImage(null); setImagePreview(null); clearFormFields(); }} className="button-text-red"> 이미지 제거 </button></div> ) : ( <p className="text-sm text-gray-500 mt-1"> 이미지 파일을 선택하거나, 📋 <kbd className="kbd-style">Ctrl</kbd> + <kbd className="kbd-style">V</kbd> 로 붙여넣으세요. </p> )} </div> {/* Urgent & Submit/Cancel */} <div className="form-actions"> <div className="flex items-center space-x-2 mb-2 md:mb-0"> <input type="checkbox" id="isUrgentCheckbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} className="checkbox-urgent" /> <label htmlFor="isUrgentCheckbox" className="label-urgent"> 🚨 급함 (Urgent) </label> </div> <div className="flex items-center space-x-3"> <button type="button" onClick={() => {setShowForm(false); clearFormFields();}} className="button-cancel"> ✖️ 취소 </button> <button onClick={handleSubmit} disabled={isSubmitting} className={`button-submit ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}> {isSubmitting ? '등록 중...' : '📤 등록'} </button> </div> </div> </div> )}
 
-           {/* Urgent Checkbox & Submit Button */}
-           <div className="flex flex-wrap justify-between items-center mt-4">
-             {/* Urgent Checkbox */}
-             <div className="flex items-center space-x-2">
-                <input
-                    type="checkbox"
-                    id="isUrgentCheckbox"
-                    checked={isUrgent}
-                    onChange={(e) => setIsUrgent(e.target.checked)}
-                    className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
-                />
-                <label htmlFor="isUrgentCheckbox" className="text-sm font-medium text-red-600 cursor-pointer">
-                    🚨 급함 (Urgent)
-                </label>
-             </div>
-             {/* Submit Button */}
-             <button onClick={handleSubmit} disabled={isSubmitting} className={`button-primary-green ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}> {isSubmitting ? '등록 중...' : '📤 등록'} </button>
-           </div>
-        </div>
-      )}
+      {/* Card Sections */}
+      {/* Urgent Active Tasks Section */}
+      {urgentActive.length > 0 && !isLoading && ( <section className="mb-8"> <h2 className="section-title text-red-600 animate-pulse"> <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length}) </h2> <div className="card-grid"> {urgentActive.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> </section> )}
 
-      {/* --- NEW: Urgent Active Tasks Section --- */}
-      {urgentActive.length > 0 && ( // Only show section if there are urgent tasks
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold text-red-600 mb-4 flex items-center animate-pulse">
-            <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {urgentActive.map((item) => (
-              <TaskCard key={item.id} item={item} /> // Pass item, active state is derived inside
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* --- Regular Active Tasks Section --- */}
+      {/* Regular Active Tasks Section */}
       <section className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-          <span className="mr-2 text-blue-500 text-2xl">🟦</span> 진행 중인 작업 ({regularActive.length})
-        </h2>
-        {regularActive.length === 0 && urgentActive.length === 0 ? ( // Show empty only if NO active tasks at all
-          <div className="empty-state"> 진행 중인 작업이 없습니다. </div>
-        ) : regularActive.length === 0 ? (
-          <div className="empty-state"> 일반 진행 작업이 없습니다. (긴급 작업만 있습니다) </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {regularActive.map((item) => (
-               <TaskCard key={item.id} item={item} /> // Pass item, active state is derived inside
-            ))}
-          </div>
-        )}
+          <h2 className="section-title text-gray-700">
+              <span className="mr-2 text-blue-500 text-2xl">🟦</span> 진행 중인 작업 ({regularActive.length})
+          </h2>
+          {!isLoading && regularActive.length === 0 && urgentActive.length === 0 ? ( <div className="empty-state"> 진행 중인 작업이 없습니다. </div> )
+          : !isLoading && regularActive.length === 0 && urgentActive.length > 0 ? ( <div className="empty-state bg-blue-50 border-blue-200 text-blue-700"> 일반 진행 작업이 없습니다. (긴급 작업만 있습니다) </div> )
+          : isLoading && regularActive.length === 0 ? ( <div className="empty-state">진행 중인 작업 로딩 중...</div> ) // Loading specific state
+          : ( <div className="card-grid"> {regularActive.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
       </section>
 
-      {/* --- Completed Tasks Section --- */}
-      <section>
-        <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-          <span className="mr-2 text-green-500 text-2xl">📦</span> 완료된 작업 (최근 {completed.length}개)
-        </h2>
-         {completed.length === 0 ? (
-          <div className="empty-state"> 완료된 작업이 없습니다. </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {completed.map((item) => (
-               <TaskCard key={item.id} item={item} /> // Pass item, active state is derived inside
-            ))}
-          </div>
-        )}
-      </section>
 
-      {/* Defining reusable styles here for brevity, move to CSS/globals.css with @apply for larger projects */}
+      {/* Completed Tasks Section */}
+       <section className="mb-8">
+         <h2 className="section-title text-gray-700"> <span className="mr-2 text-green-500 text-2xl">📦</span> 완료된 작업 (최근 {completed.length}개) </h2>
+         {!isLoading && completed.length === 0 ? ( <div className="empty-state"> 완료된 작업이 없습니다. </div> )
+         : isLoading && completed.length === 0 ? ( <div className="empty-state">완료된 작업 로딩 중...</div> ) // Loading specific state
+         : ( <div className="card-grid"> {completed.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
+       </section>
+
+       {/* Recently Deleted Section */}
+       <section>
+         <h2 className="section-title text-gray-500"> <span className="mr-2 text-2xl">🗑️</span> 최근 삭제된 작업 (최대 10개) </h2>
+         {!isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state"> 최근 삭제된 작업이 없습니다. </div> )
+         : isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state">삭제된 작업 로딩 중...</div> ) // Loading specific state
+         : ( <div className="card-grid"> {recentlyDeleted.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
+       </section>
+
+      {/* Reusable Tailwind component classes defined via @apply in globals.css or here with <style jsx> */}
       <style jsx>{`
+        .error-banner { @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4; }
+        .error-close-button { @apply absolute top-0 bottom-0 right-0 px-4 py-3; }
+        .form-container { @apply bg-white p-5 mb-6 rounded-lg shadow-md border border-gray-200 transition-all duration-300 ease-out; }
         .input-style { @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm; }
+        .file-input-area { @apply border border-dashed border-gray-300 p-4 rounded-md text-center mb-4; }
         .file-input-style { @apply block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-2 cursor-pointer; }
         .button-text-red { @apply mt-1 text-xs text-red-500 hover:text-red-700; }
         .kbd-style { @apply px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg; }
-        .button-primary-green { @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500; }
+        .form-actions { @apply flex flex-wrap justify-between items-center mt-4; }
+        .checkbox-urgent { @apply h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer; }
+        .label-urgent { @apply text-sm font-medium text-red-600 cursor-pointer; }
+        .button-cancel { @apply bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400; }
+        .button-submit { @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500; }
+        .section-title { @apply text-xl font-semibold mb-4 flex items-center; }
+        .card-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4; }
         .empty-state { @apply bg-white rounded-lg shadow border border-gray-200 p-10 text-center text-gray-500; }
+        .status-badge-gray { @apply bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs whitespace-nowrap; }
+        .status-badge-red { @apply bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap; }
+        .button-action-green { @apply bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap; }
+        .button-action-red { @apply bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200 transition whitespace-nowrap; }
+        .button-toggle-form { @apply mt-2 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500; }
+
       `}</style>
     </div>
   );
