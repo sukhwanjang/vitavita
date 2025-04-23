@@ -9,10 +9,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // Basic check for environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase URL or Anon Key is missing. Check your .env.local file or Vercel Environment Variables.');
-  // Consider rendering an error message or preventing component mount
 }
 
-// Create Supabase client only if credentials exist
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // Updated Interface with delete flags
@@ -27,8 +25,8 @@ interface RequestItem {
   image_url: string | null;
   completed: boolean;
   is_urgent: boolean;
-  is_deleted: boolean; // <-- Added Deleted flag
-  deleted_at?: string | null; // <-- Added Deletion timestamp
+  is_deleted: boolean;
+  deleted_at?: string | null;
 }
 
 export default function Board() {
@@ -45,50 +43,33 @@ export default function Board() {
   // UI State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- Data Fetching ---
   const fetchRequests = useCallback(async () => {
-    if (!supabase) {
-        setError("Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인하세요.");
-        setIsLoading(false);
-        return;
-    }
-    setIsLoading(true); // Start loading
-    setError(null);
+    if (!supabase) { setError("Supabase 클라이언트가 초기화되지 않았습니다."); setIsLoading(false); return; }
+    setIsLoading(true); setError(null);
     const { data, error: fetchError } = await supabase
       .from('request')
       .select('*')
       .order('is_deleted', { ascending: true })
       .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
-
-    setIsLoading(false); // End loading
-
+    setIsLoading(false);
     if (fetchError) {
       console.error('Error fetching requests:', fetchError);
-      // Check for specific missing column error (example)
       if (fetchError.message.includes('column') && fetchError.message.includes('does not exist')) {
-          setError(`데이터 로딩 실패: DB 테이블에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다. Supabase 테이블 설정을 확인하세요.`);
-      } else {
-          setError(`데이터 로딩 실패: ${fetchError.message}`);
-      }
+          setError(`데이터 로딩 실패: DB 테이블에 필요한 컬럼(${fetchError.message.match(/column "(\w+)"/)?.[1] || '???'})이 없습니다.`);
+      } else { setError(`데이터 로딩 실패: ${fetchError.message}`); }
       setRequests([]);
-    } else {
-      setRequests(data || []);
-    }
-  }, []); // Supabase client is stable if initialized
+    } else { setRequests(data || []); }
+  }, []);
 
   useEffect(() => {
-    fetchRequests(); // Initial fetch
-    const interval = setInterval(() => {
-        // Only fetch if Supabase client is available
-        if (supabase) {
-            fetchRequests();
-        }
-    }, 15000); // Fetch every 15 seconds
+    fetchRequests();
+    const interval = setInterval(() => { if (supabase) { fetchRequests(); } }, 15000);
     return () => clearInterval(interval);
-  }, [fetchRequests]); // Dependency array includes fetchRequests
+  }, [fetchRequests]);
 
   // --- Image Handling ---
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +81,6 @@ export default function Board() {
         reader.readAsDataURL(file);
     } else { setImagePreview(null); }
   };
-
   const uploadImage = async (file: File): Promise<string | null> => {
      if (!supabase) { setError("Supabase 클라이언트 없음"); return null; }
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
@@ -118,7 +98,6 @@ export default function Board() {
     let imageUrl: string | null = null;
     if (image) {
         imageUrl = await uploadImage(image);
-        // If uploadImage sets an error, it will be caught, and we stop
         if (!imageUrl) { setIsSubmitting(false); return; }
     }
     const { error: insertError } = await supabase.from('request').insert([{ company, program, pickup_date: pickupDate, note, image_url: imageUrl, completed: false, is_urgent: isUrgent, is_deleted: false }]);
@@ -171,16 +150,14 @@ export default function Board() {
   }, [showForm, handlePasteImage]);
 
   // --- Filtering Data ---
-  const activeRequests = requests.filter(r => !r.is_deleted); // Filter out deleted first
-
+  const activeRequests = requests.filter(r => !r.is_deleted);
   const urgentActive = activeRequests.filter(r => !r.completed && r.is_urgent);
   const regularActive = activeRequests.filter(r => !r.completed && !r.is_urgent);
   const completed = activeRequests.filter(r => r.completed).slice(0, 100);
-
   const recentlyDeleted = requests
     .filter(r => r.is_deleted)
-    .sort((a, b) => new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime()) // Sort by deletion time DESC
-    .slice(0, 10); // Limit to 10
+    .sort((a, b) => new Date(b.deleted_at || 0).getTime() - new Date(a.deleted_at || 0).getTime())
+    .slice(0, 10);
 
   // --- Helper Function for Date Formatting ---
   const formatDate = (dateString: string | undefined | null) => {
@@ -190,33 +167,36 @@ export default function Board() {
     } catch (e) { return dateString; }
   };
 
-  // --- Card Component ---
+  // --- Card Component (MODIFIED for Deleted card appearance) ---
   const TaskCard = ({ item }: { item: RequestItem }) => {
     const isActive = !item.completed && !item.is_deleted;
     const isDeleted = item.is_deleted;
 
     return (
       <div className={`bg-white rounded-lg shadow border ${
-          isDeleted ? 'border-gray-300 opacity-50' // Deleted
+          // MODIFIED: Removed opacity-50 for deleted, changed border slightly
+          isDeleted ? 'border-gray-300' // Deleted Style (no opacity)
           : item.is_urgent && isActive ? 'border-red-500 border-2 animate-pulse' // Urgent Active
           : !item.is_urgent && isActive ? 'border-blue-200' // Regular Active
-          : 'border-gray-200 opacity-75' // Completed (not deleted)
-      } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}> {/* Added min-height */}
+          : 'border-gray-200 opacity-75' // Completed Style (not deleted)
+      } p-4 flex flex-col justify-between transition-shadow hover:shadow-md min-h-[200px]`}>
         <div> {/* Content Area */}
           <div className="flex justify-between items-start mb-2 pb-2 border-b border-gray-100">
             <div>
-              <h3 className={`text-base font-semibold ${isDeleted ? 'text-gray-500 line-through' : 'text-gray-800'}`}>{item.company}</h3>
-              <p className={`text-sm ${isDeleted ? 'text-gray-400 line-through' : 'text-gray-500'}`}>{item.program}</p>
+              {/* MODIFIED: Removed line-through for deleted, adjusted text color */}
+              <h3 className={`text-base font-semibold ${isDeleted ? 'text-gray-600' : 'text-gray-800'}`}>{item.company}</h3>
+              <p className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{item.program}</p>
             </div>
              {/* Status Badges */}
-             {isDeleted ? ( <span className="status-badge-gray">삭제됨</span> )
+             {isDeleted ? ( <span className="status-badge-gray">삭제됨</span> ) // Keep deleted badge
              : item.is_urgent && isActive ? ( <span className="status-badge-red">🚨 긴급</span> )
              : !isActive && !isDeleted ? ( <span className="status-badge-gray">완료</span> ) : null }
           </div>
 
           <div className="space-y-2 text-sm mb-3">
-            <p className={isDeleted ? 'text-gray-500' : 'text-gray-600'}><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p>
-            {item.note && (<p className={`${isDeleted ? 'text-gray-500' : 'text-gray-600'} bg-yellow-50 p-2 rounded border border-yellow-100 text-xs`}><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)}
+            {/* MODIFIED: Adjusted deleted text color */}
+            <p className={isDeleted ? 'text-gray-600' : 'text-gray-600'}><span className="font-medium mr-1">📅 픽업일:</span> {item.pickup_date}</p>
+            {item.note && (<p className={`${isDeleted ? 'text-gray-600' : 'text-gray-600'} bg-yellow-50 p-2 rounded border border-yellow-100 text-xs`}><span className="font-medium mr-1">📝 메모:</span> {item.note}</p>)}
             {!isActive && !isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🕒 완료:</span> {formatDate(item.updated_at || item.created_at)}</p>)}
             {isDeleted && (<p className="text-gray-500 text-xs"><span className="font-medium mr-1">🗑️ 삭제:</span> {formatDate(item.deleted_at)}</p>)}
           </div>
@@ -225,10 +205,11 @@ export default function Board() {
         {/* Footer: Actions or Manuscript Link */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
            {item.image_url ? (
-            <a href={item.image_url} target="_blank" rel="noopener noreferrer" className={`text-sm hover:underline font-medium ${isDeleted ? 'text-gray-500 pointer-events-none' : 'text-indigo-600 hover:text-indigo-800'}`}>🔗 원고 보기</a>
-          ) : (<span className={`text-sm ${isDeleted ? 'text-gray-400' : 'text-gray-500'}`}>{isDeleted ? '- 원고 정보 없음 -' : '- 원고 없음 -'}</span>)}
+             // MODIFIED: Removed pointer-events-none and gray text for deleted link
+             <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium">🔗 원고 보기</a>
+          ) : (<span className={`text-sm ${isDeleted ? 'text-gray-500' : 'text-gray-500'}`}>{isDeleted ? '- 원고 없음 -' : '- 원고 없음 -'}</span>)}
 
-          {/* Action Buttons - Only show if Active */}
+          {/* Action Buttons - Still only show if Active */}
           {isActive && (
             <div className="flex items-center space-x-2">
                  <button onClick={() => markComplete(item.id)} className="button-action-green">✅ 완료 처리</button>
@@ -241,25 +222,17 @@ export default function Board() {
   }
 
   // --- Render Loading State ---
-   if (isLoading && requests.length === 0) { // Show loading only on initial load
-       return (
-           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50">
-               <p className="text-xl text-gray-500 animate-pulse">데이터 로딩 중...</p>
-           </div>
-       );
+   if (isLoading && requests.length === 0) {
+       return (<div className="loading-container"><p className="loading-text">데이터 로딩 중...</p></div>);
    }
 
   // --- Render Main Content ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50 p-4 md:p-6 font-sans text-gray-800">
+    <div className="main-container">
       {/* Header */}
-      <div className="flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl md:text-3xl font-bold text-indigo-800">비타민사인 작업 현황판</h1>
-        {supabase && ( // Only show button if supabase client is ready
-             <button onClick={() => setShowForm(!showForm)} className="button-toggle-form">
-                 {showForm ? '➖ 입력창 닫기' : '➕ 입력창 열기'}
-             </button>
-        )}
+      <div className="header-container">
+        <h1 className="header-title">비타민사인 작업 현황판</h1>
+        {supabase && ( <button onClick={() => setShowForm(!showForm)} className="button-toggle-form"> {showForm ? '➖ 입력창 닫기' : '➕ 입력창 열기'} </button> )}
       </div>
 
       {/* Error Display */}
@@ -270,25 +243,22 @@ export default function Board() {
 
       {/* Card Sections */}
       {/* Urgent Active Tasks Section */}
-      {urgentActive.length > 0 && !isLoading && ( <section className="mb-8"> <h2 className="section-title text-red-600 animate-pulse"> <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length}) </h2> <div className="card-grid"> {urgentActive.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> </section> )}
+      {!isLoading && urgentActive.length > 0 && ( <section className="mb-8"> <h2 className="section-title text-red-600 animate-pulse"> <span className="mr-2 text-2xl">🔥</span> 긴급 작업 ({urgentActive.length}) </h2> <div className="card-grid"> {urgentActive.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> </section> )}
 
       {/* Regular Active Tasks Section */}
       <section className="mb-8">
-          <h2 className="section-title text-gray-700">
-              <span className="mr-2 text-blue-500 text-2xl">🟦</span> 진행 중인 작업 ({regularActive.length})
-          </h2>
+          <h2 className="section-title text-gray-700"> <span className="mr-2 text-blue-500 text-2xl">🟦</span> 진행 중인 작업 ({regularActive.length}) </h2>
           {!isLoading && regularActive.length === 0 && urgentActive.length === 0 ? ( <div className="empty-state"> 진행 중인 작업이 없습니다. </div> )
           : !isLoading && regularActive.length === 0 && urgentActive.length > 0 ? ( <div className="empty-state bg-blue-50 border-blue-200 text-blue-700"> 일반 진행 작업이 없습니다. (긴급 작업만 있습니다) </div> )
-          : isLoading && regularActive.length === 0 ? ( <div className="empty-state">진행 중인 작업 로딩 중...</div> ) // Loading specific state
+          : isLoading && regularActive.length === 0 ? ( <div className="empty-state">진행 중인 작업 로딩 중...</div> )
           : ( <div className="card-grid"> {regularActive.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
       </section>
-
 
       {/* Completed Tasks Section */}
        <section className="mb-8">
          <h2 className="section-title text-gray-700"> <span className="mr-2 text-green-500 text-2xl">📦</span> 완료된 작업 (최근 {completed.length}개) </h2>
          {!isLoading && completed.length === 0 ? ( <div className="empty-state"> 완료된 작업이 없습니다. </div> )
-         : isLoading && completed.length === 0 ? ( <div className="empty-state">완료된 작업 로딩 중...</div> ) // Loading specific state
+         : isLoading && completed.length === 0 ? ( <div className="empty-state">완료된 작업 로딩 중...</div> )
          : ( <div className="card-grid"> {completed.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
        </section>
 
@@ -296,12 +266,17 @@ export default function Board() {
        <section>
          <h2 className="section-title text-gray-500"> <span className="mr-2 text-2xl">🗑️</span> 최근 삭제된 작업 (최대 10개) </h2>
          {!isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state"> 최근 삭제된 작업이 없습니다. </div> )
-         : isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state">삭제된 작업 로딩 중...</div> ) // Loading specific state
+         : isLoading && recentlyDeleted.length === 0 ? ( <div className="empty-state">삭제된 작업 로딩 중...</div> )
          : ( <div className="card-grid"> {recentlyDeleted.map((item) => ( <TaskCard key={item.id} item={item} /> ))} </div> )}
        </section>
 
       {/* Reusable Tailwind component classes defined via @apply in globals.css or here with <style jsx> */}
       <style jsx>{`
+        .main-container { @apply min-h-screen bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50 p-4 md:p-6 font-sans text-gray-800; }
+        .loading-container { @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-50 to-indigo-50; }
+        .loading-text { @apply text-xl text-gray-500 animate-pulse; }
+        .header-container { @apply flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-gray-200; }
+        .header-title { @apply text-2xl md:text-3xl font-bold text-indigo-800; }
         .error-banner { @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4; }
         .error-close-button { @apply absolute top-0 bottom-0 right-0 px-4 py-3; }
         .form-container { @apply bg-white p-5 mb-6 rounded-lg shadow-md border border-gray-200 transition-all duration-300 ease-out; }
@@ -323,7 +298,6 @@ export default function Board() {
         .button-action-green { @apply bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap; }
         .button-action-red { @apply bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200 transition whitespace-nowrap; }
         .button-toggle-form { @apply mt-2 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500; }
-
       `}</style>
     </div>
   );
