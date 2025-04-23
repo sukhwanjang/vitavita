@@ -1,0 +1,28 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Local Environment Variables
+.env*.local
+.env
+
+# Build outputs
+/.next/
+/out/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional Deno cache directory
+.deno
+
+# Optional lint-staged log file
+*.log
+
+# Optional OS generated files
+.DS_Store
+Thumbs.db
