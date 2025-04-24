@@ -167,16 +167,16 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-4 bg-white rounded shadow flex flex-col space-y-2 ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
+      <div key={item.id} className={`p-3 bg-white rounded shadow flex flex-col space-y-1 text-sm ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
         <div>
-          <h3 className="font-bold">{item.company}</h3>
-          <p className="text-sm text-slate-500">{item.program}</p>
+          <h3 className="font-bold truncate">{item.company}</h3>
+          <p className="text-slate-500 truncate">{item.program}</p>
           <p className="text-sm">📅 {item.pickup_date}</p>
-          {item.note && <p className="text-xs mt-1 bg-blue-50 p-1 rounded">📝 {item.note}</p>}
+          {item.note && <p className="text-xs mt-1 bg-blue-50 p-1 rounded truncate">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
-            <img src={item.image_url} className="w-full max-h-52 object-contain border rounded" />
+            <img src={item.image_url} className="w-full max-h-32 object-contain border rounded" />
           </a>
         )}
         <div className="flex justify-between items-center text-xs">
@@ -186,7 +186,7 @@ export default function Board() {
             {isUrgent && '🚨 긴급'}
           </span>
           {isActive && (
-            <div className="space-x-2">
+            <div className="space-x-1">
               <button onClick={() => handleComplete(item.id)} className="text-emerald-600 hover:underline">완료</button>
               <button onClick={() => handleDelete(item.id)} className="text-sky-600 hover:underline">삭제</button>
             </div>
@@ -202,18 +202,18 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="p-6 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6 max-w-7xl mx-auto">
+    <div className="p-4 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
+      <div className="flex justify-between items-center mb-4 max-w-screen-2xl mx-auto">
         <h1 className="text-2xl font-bold text-blue-900">비타민사인 작업 현황판</h1>
         <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
       </div>
 
-      {error && <div className="max-w-7xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-3 rounded mb-4">{error}</div>}
+      {error && <div className="max-w-screen-2xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-3 rounded mb-4">{error}</div>}
 
       {showForm && (
-        <div className="max-w-7xl mx-auto bg-white border p-6 rounded shadow mb-6 space-y-5">
+        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded shadow mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col">
               <label className="text-sm font-medium text-blue-800 mb-1">업체명 *</label>
@@ -254,22 +254,22 @@ export default function Board() {
         </div>
       )}
 
-      <section className="max-w-7xl mx-auto space-y-8">
+      <section className="max-w-screen-2xl mx-auto space-y-8">
         <div>
           <h2 className="font-semibold text-lg text-sky-600 mb-2">🔥 긴급 작업</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{urgent.map(renderCard)}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{urgent.map(renderCard)}</div>
         </div>
         <div>
           <h2 className="font-semibold text-lg text-blue-700 mb-2">📋 진행 중</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{regular.map(renderCard)}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{regular.map(renderCard)}</div>
         </div>
         <div>
           <h2 className="font-semibold text-lg text-emerald-600 mb-2">✅ 완료</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{completed.map(renderCard)}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{completed.map(renderCard)}</div>
         </div>
         <div>
           <h2 className="font-semibold text-lg text-slate-500 mb-2">🗑️ 삭제됨</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{deleted.map(renderCard)}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{deleted.map(renderCard)}</div>
         </div>
       </section>
     </div>
