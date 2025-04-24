@@ -1,4 +1,3 @@
-// Board.tsx
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -167,7 +166,7 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-3 bg-white rounded shadow flex flex-col space-y-1 text-sm ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
+      <div key={item.id} className={`p-3 bg-white rounded-lg shadow flex flex-col space-y-1 text-sm ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
         <div>
           <h3 className="font-bold truncate">{item.company}</h3>
           <p className="text-slate-500 truncate">{item.program}</p>
@@ -255,22 +254,19 @@ export default function Board() {
       )}
 
       <section className="max-w-screen-2xl mx-auto space-y-8">
-        <div>
-          <h2 className="font-semibold text-lg text-sky-600 mb-2">🔥 긴급 작업</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{urgent.map(renderCard)}</div>
-        </div>
-        <div>
-          <h2 className="font-semibold text-lg text-blue-700 mb-2">📋 진행 중</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{regular.map(renderCard)}</div>
-        </div>
-        <div>
-          <h2 className="font-semibold text-lg text-emerald-600 mb-2">✅ 완료</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{completed.map(renderCard)}</div>
-        </div>
-        <div>
-          <h2 className="font-semibold text-lg text-slate-500 mb-2">🗑️ 삭제됨</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">{deleted.map(renderCard)}</div>
-        </div>
+        {([
+          ['🔥 긴급 작업', urgent, 'text-sky-600'],
+          ['📋 진행 중', regular, 'text-blue-700'],
+          ['✅ 완료', completed, 'text-emerald-600'],
+          ['🗑️ 삭제됨', deleted, 'text-slate-500']
+        ] as const).map(([title, items, color], i) => (
+          <div key={i}>
+            <h2 className={`font-semibold text-lg ${color} mb-2`}>{title}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              {(items as RequestItem[]).map(renderCard)}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   );
