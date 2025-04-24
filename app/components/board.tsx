@@ -153,9 +153,8 @@ export default function Board() {
 
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
-    const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-lg flex flex-col space-y-3 text-[15px] ${isUrgent ? 'border-2 border-sky-400' : 'border border-slate-200'}`}>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-lg flex flex-col space-y-3 text-[15px] ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'}`}>
         <div>
           <p><strong>업체명:</strong> {item.company}</p>
           <p><strong>프로그램명:</strong> {item.program}</p>
@@ -179,19 +178,17 @@ export default function Board() {
         )}
         {item.completed && <span className="text-emerald-500 text-sm">✅ 완료됨</span>}
         {item.is_deleted && <span className="text-gray-400 text-sm">🗑️ 삭제됨</span>}
-        {isUrgent && <span className="text-red-500 text-sm">🚨 긴급</span>}
+        {item.is_urgent && <span className="text-red-500 text-sm font-bold">🚨 긴급</span>}
       </div>
     );
   };
 
-  const urgent = requests.filter(r => !r.is_deleted && !r.completed && r.is_urgent);
-  const regular = requests.filter(r => !r.is_deleted && !r.completed && !r.is_urgent);
+  const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
     <div className="font-sans p-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen">
-      {/* 상단 로고 중앙 정렬 */}
       <div className="flex justify-center mb-8">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-20 object-contain" />
       </div>
@@ -247,19 +244,26 @@ export default function Board() {
       )}
 
       <section className="max-w-screen-2xl mx-auto space-y-12">
-        {([
-          ['🔥 긴급 작업', urgent, 'text-sky-600'],
-          ['📋 진행 중', regular, 'text-blue-700'],
-          ['✅ 완료', completed, 'text-emerald-600'],
-          ['🗑️ 삭제됨', deleted, 'text-slate-500']
-        ] as const).map(([title, items, color], i) => (
-          <div key={i}>
-            <h2 className={`font-semibold text-xl ${color} mb-4`}>{title}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {(items as RequestItem[]).map(renderCard)}
-            </div>
+        <div>
+          <h2 className="font-semibold text-xl text-blue-700 mb-4">📋 진행 중</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {inProgress.map(renderCard)}
           </div>
-        ))}
+        </div>
+
+        <div>
+          <h2 className="font-semibold text-xl text-emerald-600 mb-4">✅ 완료</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {completed.map(renderCard)}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="font-semibold text-xl text-slate-500 mb-4">🗑️ 삭제됨</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {deleted.map(renderCard)}
+          </div>
+        </div>
       </section>
     </div>
   );
