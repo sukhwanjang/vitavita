@@ -149,10 +149,10 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-[15px] h-[350px] min-w-[220px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
-        <div>
-          <p className="text-gray-800 font-semibold">업체명: {item.company}</p>
-          <p className="text-gray-700">프로그램명: {item.program}</p>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-[15px] h-[400px] min-w-[240px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
+        <div className="mb-3 space-y-1">
+          <p className="text-gray-800 font-semibold">업체명:<span className="ml-2">{item.company}</span></p>
+          <p className="text-gray-700">프로그램명:<span className="ml-2">{item.program}</span></p>
           <p className="text-gray-600">픽업일: 📅 {item.pickup_date}</p>
           {item.note && <p className="mt-1 bg-gray-100 p-2 rounded text-sm text-gray-800">📝 {item.note}</p>}
         </div>
@@ -169,7 +169,7 @@ export default function Board() {
             </div>
           )}
           {item.completed && <span className="text-green-600 text-sm">✅ 완료됨</span>}
-          {item.is_deleted && <span className="text-gray-500 text-sm">🗑️ 삭제됨</span>}
+          {item.is_deleted && <span className="text-gray-500 text-sm">🗑 삭제됨</span>}
           {item.is_urgent && <span className="text-red-500 text-sm font-bold">🚨 긴급</span>}
         </div>
       </div>
@@ -181,7 +181,7 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans px-4 py-8 w-full bg-white text-gray-900 min-h-screen overflow-x-hidden">
+    <div className="font-sans px-4 py-8 w-full min-h-screen overflow-x-hidden bg-gradient-to-b from-gray-900 via-gray-100 to-white text-gray-900">
       <div className="flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
@@ -198,7 +198,6 @@ export default function Board() {
         </button>
       </div>
 
-      {/* 작업 추가 폼 */}
       {showForm && (
         <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
