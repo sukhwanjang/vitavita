@@ -168,9 +168,9 @@ export default function Board() {
     return (
       <div key={item.id} className={`p-3 bg-white rounded-lg shadow flex flex-col space-y-1 text-sm font-sans ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
         <div>
-          <h3 className="font-bold truncate">{item.company}</h3>
-          <p className="text-slate-500 truncate">{item.program}</p>
-          <p className="text-sm">📅 {item.pickup_date}</p>
+          <p><strong>업체명:</strong> {item.company}</p>
+          <p><strong>프로그램명:</strong> {item.program}</p>
+          <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
           {item.note && <p className="text-xs mt-1 bg-blue-50 p-1 rounded truncate">📝 {item.note}</p>}
         </div>
         {item.image_url && (
@@ -211,6 +211,7 @@ export default function Board() {
 
       {error && <div className="max-w-screen-2xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-3 rounded mb-4">{error}</div>}
 
+      {/* 작업 입력 폼 */}
       {showForm && (
         <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded shadow mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
