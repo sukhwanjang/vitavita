@@ -160,31 +160,31 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-3 bg-white rounded-lg shadow flex flex-col space-y-2 text-sm font-sans ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow flex flex-col space-y-3 text-base font-sans ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
         <div>
           <p><strong>업체명:</strong> {item.company}</p>
           <p><strong>프로그램명:</strong> {item.program}</p>
           <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
-          {item.note && <p className="text-xs mt-1 bg-blue-50 p-1 rounded truncate">📝 {item.note}</p>}
+          {item.note && <p className="text-sm mt-2 bg-blue-50 p-2 rounded">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
-            <img src={item.image_url} className="w-full max-h-32 object-contain border rounded" />
+            <img src={item.image_url} className="w-full max-h-56 object-contain border rounded" />
           </a>
         )}
         {isActive && (
           <div className="flex gap-2 justify-end pt-2">
-            <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">
+            <button onClick={() => handleComplete(item.id)} className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">
               완료
             </button>
-            <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-xs">
+            <button onClick={() => handleDelete(item.id)} className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm">
               삭제
             </button>
           </div>
         )}
-        {item.completed && <span className="text-emerald-500 text-xs">✅ 완료됨</span>}
-        {item.is_deleted && <span className="text-gray-400 text-xs">🗑️ 삭제됨</span>}
-        {isUrgent && <span className="text-red-500 text-xs">🚨 긴급</span>}
+        {item.completed && <span className="text-emerald-500 text-sm">✅ 완료됨</span>}
+        {item.is_deleted && <span className="text-gray-400 text-sm">🗑️ 삭제됨</span>}
+        {isUrgent && <span className="text-red-500 text-sm">🚨 긴급</span>}
       </div>
     );
   };
@@ -195,59 +195,59 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans p-4 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
-      <div className="flex justify-between items-center mb-4 max-w-screen-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-blue-900">비타민사인 작업 현황판</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+    <div className="font-sans p-6 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
+      <div className="flex justify-between items-center mb-6 max-w-screen-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-blue-900">비타민사인 작업 현황판</h1>
+        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-base">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
       </div>
 
-      {error && <div className="max-w-screen-2xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-3 rounded mb-4">{error}</div>}
+      {error && <div className="max-w-screen-2xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-4 rounded mb-6">{error}</div>}
 
       {showForm && (
-        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded shadow mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-6 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-blue-800 mb-1">업체명 *</label>
+              <label className="text-base font-medium text-blue-800 mb-1">업체명 *</label>
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-blue-800 mb-1">프로그램명 *</label>
+              <label className="text-base font-medium text-blue-800 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-blue-800 mb-1">픽업일 *</label>
+              <label className="text-base font-medium text-blue-800 mb-1">픽업일 *</label>
               <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-blue-900" />
             </div>
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-blue-800 mb-1">메모</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+            <label className="text-base font-medium text-blue-800 mb-1">메모</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={4} />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-blue-800 mb-1">원고 이미지</label>
+            <label className="text-base font-medium text-blue-800 mb-1">원고 이미지</label>
             <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
-            {imagePreview && <img src={imagePreview} className="max-h-40 object-contain border rounded" />}
+            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
           </div>
 
           <div className="flex items-center space-x-2">
             <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-sm text-sky-600 font-medium">🚨 급함</span>
+            <span className="text-base text-sky-600 font-medium">🚨 급함</span>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button onClick={clearForm} className="bg-slate-200 px-4 py-2 rounded">취소</button>
-            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-4 py-2 rounded" disabled={isSubmitting}>
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <button onClick={clearForm} className="bg-slate-200 px-5 py-2 rounded">취소</button>
+            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-5 py-2 rounded" disabled={isSubmitting}>
               {isSubmitting ? '등록 중...' : '등록'}
             </button>
           </div>
         </div>
       )}
 
-      <section className="max-w-screen-2xl mx-auto space-y-8">
+      <section className="max-w-screen-2xl mx-auto space-y-10">
         {([
           ['🔥 긴급 작업', urgent, 'text-sky-600'],
           ['📋 진행 중', regular, 'text-blue-700'],
@@ -255,8 +255,8 @@ export default function Board() {
           ['🗑️ 삭제됨', deleted, 'text-slate-500']
         ] as const).map(([title, items, color], i) => (
           <div key={i}>
-            <h2 className={`font-semibold text-lg ${color} mb-2`}>{title}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <h2 className={`font-semibold text-2xl ${color} mb-4`}>{title}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {(items as RequestItem[]).map(renderCard)}
             </div>
           </div>
