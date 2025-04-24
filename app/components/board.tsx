@@ -1,3 +1,5 @@
+// app/components/board.tsx
+
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -168,12 +170,8 @@ export default function Board() {
         )}
         {isActive && (
           <div className="flex gap-2 justify-end pt-2">
-            <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">
-              완료
-            </button>
-            <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-xs">
-              삭제
-            </button>
+            <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">완료</button>
+            <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-xs">삭제</button>
           </div>
         )}
         {item.completed && <span className="text-emerald-500 text-xs">✅ 완료됨</span>}
@@ -188,7 +186,7 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans px-4 py-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen">
+    <div className="font-sans px-4 py-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen overflow-x-hidden">
       <div className="flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
@@ -201,17 +199,17 @@ export default function Board() {
 
       {error && <div className="max-w-screen-xl mx-auto bg-red-50 border border-red-400 text-red-700 p-4 rounded mb-4">{error}</div>}
 
-      {/* 생략 가능: showForm 폼 영역 */}
-      {/* ... */}
-
-      <section className="max-w-screen-xl mx-auto space-y-10">
+      <section className="max-w-screen-xl mx-auto space-y-10 pb-32">
         <div>
           <h2 className="font-semibold text-base text-blue-700 mb-2">📋 진행 중</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {inProgress.map(renderCard)}
           </div>
         </div>
+      </section>
 
+      {/* 아래는 별도 영역으로 분리해 스크롤 시 보이도록 */}
+      <section className="max-w-screen-xl mx-auto space-y-10 pt-12 border-t">
         <div>
           <h2 className="font-semibold text-base text-emerald-600 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
