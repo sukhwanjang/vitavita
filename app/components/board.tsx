@@ -202,6 +202,49 @@ export default function Board() {
         </button>
       </div>
 
+      {/* 작업 추가 입력 폼 */}
+      {showForm && (
+        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-blue-800 mb-1">업체명 *</label>
+              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-blue-800 mb-1">프로그램명 *</label>
+              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-blue-800 mb-1">픽업일 *</label>
+              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-blue-900" />
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-base font-medium text-blue-800 mb-1">메모</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-base font-medium text-blue-800 mb-1">원고 이미지</label>
+            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
+            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
+            <span className="text-base text-sky-600 font-medium">🚨 급함</span>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <button onClick={clearForm} className="bg-slate-200 px-5 py-2 rounded-md">취소</button>
+            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+              {isSubmitting ? '등록 중...' : '등록'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {error && <div className="max-w-screen-xl mx-auto bg-red-50 border border-red-400 text-red-700 p-4 rounded mb-4">{error}</div>}
 
       <section className="max-w-screen-2xl mx-auto space-y-10 pb-32">
