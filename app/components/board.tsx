@@ -226,14 +226,14 @@ export default function Board() {
         />
       ))}
 
-      {/* 이미지 전체화면 모달 */}
+      {/* 모달 */}
       {modalImage && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setModalImage(null)}>
           <img src={modalImage} className="max-w-full max-h-full" />
         </div>
       )}
 
-      {/* 로고 & 버튼 */}
+      {/* 상단 */}
       <div className="relative z-10 flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
@@ -250,8 +250,76 @@ export default function Board() {
         </button>
       </div>
 
-      {/* 나머지 입력 폼 및 리스트는 그대로 유지 */}
-      {/* 여기에 입력 폼과 카드 목록 붙이면 완성 */}
+      {/* 입력 폼 */}
+      {showForm && (
+        <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col">
+              <label className="font-medium text-gray-800 mb-1">업체명 *</label>
+              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
+              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
+              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="font-medium text-gray-800 mb-1">메모</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
+            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
+            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
+            <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
+            <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+              {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 카드 리스트 */}
+      <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
+        <div>
+          <h2 className="font-semibold text-base text-gray-800 mb-2">📋 진행 중</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            {inProgress.map(renderCard)}
+          </div>
+        </div>
+
+        {showCompleted && (
+          <div>
+            <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {completed.map(renderCard)}
+            </div>
+          </div>
+        )}
+
+        {showDeleted && (
+          <div>
+            <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {deleted.map(renderCard)}
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
