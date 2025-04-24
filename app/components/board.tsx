@@ -1,5 +1,3 @@
-// app/components/board.tsx
-
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -20,8 +18,6 @@ interface RequestItem {
   is_urgent: boolean;
   is_deleted: boolean;
   created_at: string;
-  updated_at?: string;
-  deleted_at?: string | null;
 }
 
 export default function Board() {
@@ -36,6 +32,8 @@ export default function Board() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -136,21 +134,14 @@ export default function Board() {
   };
 
   const handleComplete = async (id: number) => {
-    const { error } = await supabase.from('request').update({
-      completed: true,
-      is_urgent: false,
-      updated_at: new Date().toISOString(),
-    }).eq('id', id);
-    if (!error) fetchRequests();
+    await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
+    fetchRequests();
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
-    const { error } = await supabase.from('request').update({
-      is_deleted: true,
-      deleted_at: new Date().toISOString(),
-    }).eq('id', id);
-    if (!error) fetchRequests();
+    await supabase.from('request').update({ is_deleted: true }).eq('id', id);
+    fetchRequests();
   };
 
   const renderCard = (item: RequestItem) => {
@@ -191,9 +182,15 @@ export default function Board() {
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
-      <div className="flex justify-end max-w-screen-xl mx-auto mb-4">
+      <div className="flex justify-end max-w-screen-xl mx-auto mb-4 gap-2">
         <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 text-sm">
           {showForm ? '입력 닫기' : '작업 추가'}
+        </button>
+        <button onClick={() => setShowCompleted(!showCompleted)} className="bg-emerald-500 text-white px-4 py-2 rounded shadow hover:bg-emerald-600 text-sm">
+          {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
+        </button>
+        <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 text-sm">
+          {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
 
@@ -206,23 +203,24 @@ export default function Board() {
             {inProgress.map(renderCard)}
           </div>
         </div>
-      </section>
 
-      {/* 아래는 별도 영역으로 분리해 스크롤 시 보이도록 */}
-      <section className="max-w-screen-xl mx-auto space-y-10 pt-12 border-t">
-        <div>
-          <h2 className="font-semibold text-base text-emerald-600 mb-2">✅ 완료</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {completed.map(renderCard)}
+        {showCompleted && (
+          <div>
+            <h2 className="font-semibold text-base text-emerald-600 mb-2">✅ 완료</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {completed.map(renderCard)}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div>
-          <h2 className="font-semibold text-base text-slate-500 mb-2">🗑️ 삭제됨</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {deleted.map(renderCard)}
+        {showDeleted && (
+          <div>
+            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑️ 삭제됨</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {deleted.map(renderCard)}
+            </div>
           </div>
-        </div>
+        )}
       </section>
     </div>
   );
