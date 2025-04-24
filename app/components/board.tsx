@@ -175,7 +175,7 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className="p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-sm h-[420px] min-w-[250px] max-w-xs break-words">
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border ${item.is_urgent ? 'border-pink-400' : 'border-gray-200'} flex flex-col justify-between text-sm h-[420px] min-w-[250px] max-w-xs break-words`}>
         <div className="mb-4 space-y-2 overflow-hidden text-ellipsis">
           <p className="truncate"><strong>업체명:</strong> <span className="break-all">{item.company}</span></p>
           <p className="truncate"><strong>프로그램명:</strong> <span className="break-all">{item.program}</span></p>
@@ -267,7 +267,7 @@ export default function Board() {
 
           <div className="flex items-center space-x-2">
             <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-sm text-red-600 font-medium">🚨 급함</span>
+            <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
           </div>
 
           <div className="flex justify-end space-x-4 pt-4 border-t">
