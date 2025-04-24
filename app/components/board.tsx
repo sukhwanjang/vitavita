@@ -41,6 +41,8 @@ export default function Board() {
     const { data, error } = await supabase
       .from('request')
       .select('*')
+      .order('is_deleted', { ascending: true })
+      .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) setError(`데이터 로딩 실패: ${error.message}`);
@@ -110,16 +112,9 @@ export default function Board() {
       }
     }
 
-    const { error } = await supabase.from('request').insert([{
-      company,
-      program,
-      pickup_date: pickupDate,
-      note,
-      image_url: imageUrl,
-      is_urgent: isUrgent,
-      completed: false,
-      is_deleted: false
-    }]);
+    const { error } = await supabase.from('request').insert([
+      { company, program, pickup_date: pickupDate, note, image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false },
+    ]);
 
     setIsSubmitting(false);
     if (error) setError(`등록 실패: ${error.message}`);
@@ -154,12 +149,12 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow flex flex-col justify-between text-[15px] ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'} h-[350px] min-w-[220px]`}>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-[15px] h-[350px] min-w-[220px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
         <div>
-          <p><strong>업체명:</strong> {item.company}</p>
-          <p><strong>프로그램명:</strong> {item.program}</p>
-          <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
-          {item.note && <p className="mt-1 bg-blue-50 p-2 rounded text-sm">📝 {item.note}</p>}
+          <p className="text-gray-800 font-semibold">업체명: {item.company}</p>
+          <p className="text-gray-700">프로그램명: {item.program}</p>
+          <p className="text-gray-600">픽업일: 📅 {item.pickup_date}</p>
+          {item.note && <p className="mt-1 bg-gray-100 p-2 rounded text-sm text-gray-800">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
@@ -169,12 +164,12 @@ export default function Board() {
         <div className="pt-2">
           {isActive && (
             <div className="flex gap-2 justify-end">
-              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">완료</button>
-              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm">삭제</button>
+              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800 text-sm">완료</button>
+              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 text-sm">삭제</button>
             </div>
           )}
-          {item.completed && <span className="text-emerald-500 text-sm">✅ 완료됨</span>}
-          {item.is_deleted && <span className="text-gray-400 text-sm">🗑️ 삭제됨</span>}
+          {item.completed && <span className="text-green-600 text-sm">✅ 완료됨</span>}
+          {item.is_deleted && <span className="text-gray-500 text-sm">🗑️ 삭제됨</span>}
           {item.is_urgent && <span className="text-red-500 text-sm font-bold">🚨 긴급</span>}
         </div>
       </div>
@@ -183,35 +178,72 @@ export default function Board() {
 
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
-  const deleted = requests.filter(r => r.is_deleted).slice(0, 10); // 최대 10개
+  const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans px-4 py-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen overflow-x-hidden">
+    <div className="font-sans px-4 py-8 w-full bg-white text-gray-900 min-h-screen overflow-x-hidden">
       <div className="flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
       <div className="flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 text-sm">
+        <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
-        <button onClick={() => setShowCompleted(!showCompleted)} className="bg-emerald-500 text-white px-4 py-2 rounded shadow hover:bg-emerald-600 text-sm">
+        <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
           {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
         </button>
-        <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 text-sm">
+        <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
           {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
 
+      {/* 작업 추가 폼 */}
       {showForm && (
         <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
-          {/* 입력 폼 영역 생략 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-gray-800 mb-1">업체명 *</label>
+              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-gray-800 mb-1">프로그램명 *</label>
+              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-base font-medium text-gray-800 mb-1">픽업일 *</label>
+              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-base font-medium text-gray-800 mb-1">메모</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-base font-medium text-gray-800 mb-1">원고 이미지</label>
+            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
+            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
+            <span className="text-base text-red-600 font-medium">🚨 급함</span>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-4 border-t">
+            <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
+            <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+              {isSubmitting ? '등록 중...' : '등록'}
+            </button>
+          </div>
         </div>
       )}
 
       <section className="max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
-          <h2 className="font-semibold text-base text-blue-700 mb-2">📋 진행 중</h2>
+          <h2 className="font-semibold text-base text-gray-800 mb-2">📋 진행 중</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             {inProgress.map(renderCard)}
           </div>
@@ -219,7 +251,7 @@ export default function Board() {
 
         {showCompleted && (
           <div>
-            <h2 className="font-semibold text-base text-emerald-600 mb-2">✅ 완료</h2>
+            <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {completed.map(renderCard)}
             </div>
@@ -228,7 +260,7 @@ export default function Board() {
 
         {showDeleted && (
           <div>
-            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑 삭제됨 (최신순 10개)</h2>
+            <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {deleted.map(renderCard)}
             </div>
