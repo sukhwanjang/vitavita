@@ -43,12 +43,8 @@ export default function Board() {
       .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error) {
-      setError(`데이터 로딩 실패: ${error.message}`);
-      setRequests([]);
-    } else {
-      setRequests(data || []);
-    }
+    if (error) setError(`데이터 로딩 실패: ${error.message}`);
+    else setRequests(data || []);
   }, []);
 
   useEffect(() => {
@@ -119,9 +115,8 @@ export default function Board() {
     ]);
 
     setIsSubmitting(false);
-    if (error) {
-      setError(`등록 실패: ${error.message}`);
-    } else {
+    if (error) setError(`등록 실패: ${error.message}`);
+    else {
       clearForm();
       fetchRequests();
     }
@@ -160,7 +155,7 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow flex flex-col space-y-3 text-base font-sans ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-lg flex flex-col space-y-3 text-[15px] ${isUrgent ? 'border-2 border-sky-400' : 'border border-slate-200'}`}>
         <div>
           <p><strong>업체명:</strong> {item.company}</p>
           <p><strong>프로그램명:</strong> {item.program}</p>
@@ -174,10 +169,10 @@ export default function Board() {
         )}
         {isActive && (
           <div className="flex gap-2 justify-end pt-2">
-            <button onClick={() => handleComplete(item.id)} className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">
+            <button onClick={() => handleComplete(item.id)} className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">
               완료
             </button>
-            <button onClick={() => handleDelete(item.id)} className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm">
+            <button onClick={() => handleDelete(item.id)} className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">
               삭제
             </button>
           </div>
@@ -195,19 +190,19 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans p-6 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6 max-w-screen-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-900">비타민사인 작업 현황판</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-base">
+    <div className="font-sans p-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen">
+      <div className="flex justify-between items-center mb-8 max-w-screen-2xl mx-auto">
+        <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">비타민사인 작업 현황판</h1>
+        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-5 py-2 rounded-md shadow hover:bg-blue-700 transition">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
       </div>
 
-      {error && <div className="max-w-screen-2xl mx-auto bg-blue-100 border border-blue-400 text-blue-800 p-4 rounded mb-6">{error}</div>}
+      {error && <div className="max-w-screen-2xl mx-auto bg-red-50 border border-red-400 text-red-700 p-4 rounded mb-6">{error}</div>}
 
       {showForm && (
-        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col">
               <label className="text-base font-medium text-blue-800 mb-1">업체명 *</label>
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
@@ -239,15 +234,15 @@ export default function Board() {
           </div>
 
           <div className="flex justify-end space-x-4 pt-4 border-t">
-            <button onClick={clearForm} className="bg-slate-200 px-5 py-2 rounded">취소</button>
-            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-5 py-2 rounded" disabled={isSubmitting}>
+            <button onClick={clearForm} className="bg-slate-200 px-5 py-2 rounded-md">취소</button>
+            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
               {isSubmitting ? '등록 중...' : '등록'}
             </button>
           </div>
         </div>
       )}
 
-      <section className="max-w-screen-2xl mx-auto space-y-10">
+      <section className="max-w-screen-2xl mx-auto space-y-12">
         {([
           ['🔥 긴급 작업', urgent, 'text-sky-600'],
           ['📋 진행 중', regular, 'text-blue-700'],
@@ -255,8 +250,8 @@ export default function Board() {
           ['🗑️ 삭제됨', deleted, 'text-slate-500']
         ] as const).map(([title, items, color], i) => (
           <div key={i}>
-            <h2 className={`font-semibold text-2xl ${color} mb-4`}>{title}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <h2 className={`font-semibold text-xl ${color} mb-4`}>{title}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {(items as RequestItem[]).map(renderCard)}
             </div>
           </div>
