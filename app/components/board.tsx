@@ -167,12 +167,12 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-4 bg-white rounded shadow flex flex-col space-y-2 ${isUrgent ? 'border-2 border-red-500' : ''}`}>
+      <div key={item.id} className={`p-4 bg-white rounded shadow flex flex-col space-y-2 ${isUrgent ? 'border-2 border-rose-500' : ''}`}>
         <div>
           <h3 className="font-bold">{item.company}</h3>
           <p className="text-sm text-gray-500">{item.program}</p>
           <p className="text-sm">📅 {item.pickup_date}</p>
-          {item.note && <p className="text-xs mt-1 bg-yellow-100 p-1 rounded">📝 {item.note}</p>}
+          {item.note && <p className="text-xs mt-1 bg-yellow-50 p-1 rounded">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
@@ -188,7 +188,7 @@ export default function Board() {
           {isActive && (
             <div className="space-x-2">
               <button onClick={() => handleComplete(item.id)} className="text-green-600 hover:underline">완료</button>
-              <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline">삭제</button>
+              <button onClick={() => handleDelete(item.id)} className="text-rose-500 hover:underline">삭제</button>
             </div>
           )}
         </div>
@@ -202,61 +202,61 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">비타민사인 작업 현황판</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+    <div className="p-6 w-full bg-neutral-100 min-h-screen">
+      <div className="flex justify-between items-center mb-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold text-neutral-800">비타민사인 작업 현황판</h1>
+        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
       </div>
 
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 p-3 rounded mb-4">{error}</div>}
+      {error && <div className="max-w-7xl mx-auto bg-rose-100 border border-rose-400 text-rose-700 p-3 rounded mb-4">{error}</div>}
 
       {showForm && (
-        <div className="bg-white border p-6 rounded shadow mb-6 space-y-5">
+        <div className="max-w-7xl mx-auto bg-white border p-6 rounded shadow mb-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">업체명 *</label>
+              <label className="text-sm font-medium text-neutral-700 mb-1">업체명 *</label>
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">프로그램명 *</label>
+              <label className="text-sm font-medium text-neutral-700 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">픽업일 *</label>
-              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-700" />
+              <label className="text-sm font-medium text-neutral-700 mb-1">픽업일 *</label>
+              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-neutral-700" />
             </div>
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">메모</label>
+            <label className="text-sm font-medium text-neutral-700 mb-1">메모</label>
             <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-700 mb-1">원고 이미지</label>
+            <label className="text-sm font-medium text-neutral-700 mb-1">원고 이미지</label>
             <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
             {imagePreview && <img src={imagePreview} className="max-h-40 object-contain border rounded" />}
           </div>
 
           <div className="flex items-center space-x-2">
             <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-sm text-red-600 font-medium">🚨 급함</span>
+            <span className="text-sm text-rose-500 font-medium">🚨 급함</span>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button onClick={clearForm} className="bg-gray-200 px-4 py-2 rounded">취소</button>
-            <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded" disabled={isSubmitting}>
+            <button onClick={clearForm} className="bg-neutral-300 px-4 py-2 rounded">취소</button>
+            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-4 py-2 rounded" disabled={isSubmitting}>
               {isSubmitting ? '등록 중...' : '등록'}
             </button>
           </div>
         </div>
       )}
 
-      <section className="space-y-8">
+      <section className="max-w-7xl mx-auto space-y-8">
         <div>
-          <h2 className="font-semibold text-lg text-red-600 mb-2">🔥 긴급 작업</h2>
+          <h2 className="font-semibold text-lg text-rose-500 mb-2">🔥 긴급 작업</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{urgent.map(renderCard)}</div>
         </div>
         <div>
@@ -264,7 +264,7 @@ export default function Board() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{regular.map(renderCard)}</div>
         </div>
         <div>
-          <h2 className="font-semibold text-lg text-green-600 mb-2">✅ 완료</h2>
+          <h2 className="font-semibold text-lg text-emerald-600 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{completed.map(renderCard)}</div>
         </div>
         <div>
