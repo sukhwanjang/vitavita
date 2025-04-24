@@ -166,7 +166,7 @@ export default function Board() {
     const isActive = !item.completed && !item.is_deleted;
     const isUrgent = item.is_urgent && isActive;
     return (
-      <div key={item.id} className={`p-3 bg-white rounded-lg shadow flex flex-col space-y-1 text-sm ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
+      <div key={item.id} className={`p-3 bg-white rounded-lg shadow flex flex-col space-y-1 text-sm font-sans ${isUrgent ? 'border-2 border-sky-400' : ''}`}>
         <div>
           <h3 className="font-bold truncate">{item.company}</h3>
           <p className="text-slate-500 truncate">{item.program}</p>
@@ -201,7 +201,7 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="p-4 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
+    <div className="font-sans p-4 w-full bg-gradient-to-br from-blue-50 to-sky-100 min-h-screen">
       <div className="flex justify-between items-center mb-4 max-w-screen-2xl mx-auto">
         <h1 className="text-2xl font-bold text-blue-900">비타민사인 작업 현황판</h1>
         <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
