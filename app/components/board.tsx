@@ -1,3 +1,5 @@
+// app/components/board.tsx
+
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -147,27 +149,33 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-4 bg-white rounded-xl shadow flex flex-col space-y-2 text-sm ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'} h-[300px]`}>
-        <div className="flex flex-col flex-grow">
+      <div
+        key={item.id}
+        className={`p-6 bg-white rounded-xl shadow flex flex-col justify-between text-[15px] 
+        ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'} h-[350px] min-w-[220px]`}
+      >
+        <div>
           <p><strong>업체명:</strong> {item.company}</p>
           <p><strong>프로그램명:</strong> {item.program}</p>
           <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
-          {item.note && <p className="mt-1 bg-blue-50 p-1 rounded text-xs">📝 {item.note}</p>}
+          {item.note && <p className="mt-1 bg-blue-50 p-2 rounded text-sm">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
-            <img src={item.image_url} className="w-full max-h-24 object-contain border rounded" />
+            <img src={item.image_url} className="w-full max-h-28 object-contain border rounded" />
           </a>
         )}
-        {isActive && (
-          <div className="flex gap-2 justify-end pt-2">
-            <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">완료</button>
-            <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-xs">삭제</button>
-          </div>
-        )}
-        {item.completed && <span className="text-emerald-500 text-xs">✅ 완료됨</span>}
-        {item.is_deleted && <span className="text-gray-400 text-xs">🗑️ 삭제됨</span>}
-        {item.is_urgent && <span className="text-red-500 text-xs font-bold">🚨 긴급</span>}
+        <div className="pt-2">
+          {isActive && (
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm">완료</button>
+              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-sky-600 text-white rounded hover:bg-sky-700 text-sm">삭제</button>
+            </div>
+          )}
+          {item.completed && <span className="text-emerald-500 text-sm">✅ 완료됨</span>}
+          {item.is_deleted && <span className="text-gray-400 text-sm">🗑️ 삭제됨</span>}
+          {item.is_urgent && <span className="text-red-500 text-sm font-bold">🚨 긴급</span>}
+        </div>
       </div>
     );
   };
@@ -182,7 +190,7 @@ export default function Board() {
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
-      <div className="flex justify-end max-w-screen-xl mx-auto mb-4 gap-2">
+      <div className="flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
         <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 text-sm">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
@@ -196,10 +204,10 @@ export default function Board() {
 
       {error && <div className="max-w-screen-xl mx-auto bg-red-50 border border-red-400 text-red-700 p-4 rounded mb-4">{error}</div>}
 
-      <section className="max-w-screen-xl mx-auto space-y-10 pb-32">
+      <section className="max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
           <h2 className="font-semibold text-base text-blue-700 mb-2">📋 진행 중</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             {inProgress.map(renderCard)}
           </div>
         </div>
@@ -207,7 +215,7 @@ export default function Board() {
         {showCompleted && (
           <div>
             <h2 className="font-semibold text-base text-emerald-600 mb-2">✅ 완료</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {completed.map(renderCard)}
             </div>
           </div>
@@ -215,8 +223,8 @@ export default function Board() {
 
         {showDeleted && (
           <div>
-            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑️ 삭제됨</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑 삭제됨</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {deleted.map(renderCard)}
             </div>
           </div>
