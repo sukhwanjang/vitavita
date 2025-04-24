@@ -1,3 +1,5 @@
+// app/components/board.tsx
+
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -173,12 +175,12 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className="p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-sm h-[420px] min-w-[250px]">
-        <div className="mb-4 space-y-2">
-          <p><strong>업체명:</strong> {item.company}</p>
-          <p><strong>프로그램명:</strong> {item.program}</p>
-          <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
-          {item.note && <p className="bg-gray-100 p-2 rounded">📝 {item.note}</p>}
+      <div key={item.id} className="p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-sm h-[420px] min-w-[250px] max-w-xs break-words">
+        <div className="mb-4 space-y-2 overflow-hidden">
+          <p className="truncate"><strong>업체명:</strong> <span className="break-all">{item.company}</span></p>
+          <p className="truncate"><strong>프로그램명:</strong> <span className="break-all">{item.program}</span></p>
+          <p className="truncate"><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
+          {item.note && <p className="bg-gray-100 p-2 rounded text-sm break-words overflow-hidden">{item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
@@ -206,8 +208,6 @@ export default function Board() {
 
   return (
     <div className="relative bg-gradient-to-b from-white via-slate-50 to-gray-100 min-h-screen text-gray-900 px-4 py-8 font-sans">
-
-      {/* 벚꽃 애니메이션 */}
       {[...Array(15)].map((_, i) => (
         <div
           key={i}
@@ -236,48 +236,6 @@ export default function Board() {
           {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
-
-      {showForm && (
-        <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">업체명 *</label>
-              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
-              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
-              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
-            </div>
-          </div>
-
-          <div className="flex flex-col">
-            <label className="font-medium text-gray-800 mb-1">메모</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
-            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
-            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-sm text-red-600 font-medium">🚨 급함</span>
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-4 border-t">
-            <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
-            <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
-              {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
-            </button>
-          </div>
-        </div>
-      )}
 
       <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
