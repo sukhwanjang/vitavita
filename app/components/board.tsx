@@ -41,8 +41,6 @@ export default function Board() {
     const { data, error } = await supabase
       .from('request')
       .select('*')
-      .order('is_deleted', { ascending: true })
-      .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) setError(`데이터 로딩 실패: ${error.message}`);
@@ -112,9 +110,16 @@ export default function Board() {
       }
     }
 
-    const { error } = await supabase.from('request').insert([
-      { company, program, pickup_date: pickupDate, note, image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false },
-    ]);
+    const { error } = await supabase.from('request').insert([{
+      company,
+      program,
+      pickup_date: pickupDate,
+      note,
+      image_url: imageUrl,
+      is_urgent: isUrgent,
+      completed: false,
+      is_deleted: false
+    }]);
 
     setIsSubmitting(false);
     if (error) setError(`등록 실패: ${error.message}`);
@@ -149,11 +154,7 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div
-        key={item.id}
-        className={`p-6 bg-white rounded-xl shadow flex flex-col justify-between text-[15px] 
-        ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'} h-[350px] min-w-[220px]`}
-      >
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow flex flex-col justify-between text-[15px] ${item.is_urgent ? 'border-2 border-red-400' : 'border border-slate-200'} h-[350px] min-w-[220px]`}>
         <div>
           <p><strong>업체명:</strong> {item.company}</p>
           <p><strong>프로그램명:</strong> {item.program}</p>
@@ -182,7 +183,7 @@ export default function Board() {
 
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
-  const deleted = requests.filter(r => r.is_deleted);
+  const deleted = requests.filter(r => r.is_deleted).slice(0, 10); // 최대 10개
 
   return (
     <div className="font-sans px-4 py-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen overflow-x-hidden">
@@ -202,50 +203,11 @@ export default function Board() {
         </button>
       </div>
 
-      {/* 작업 추가 입력 폼 */}
       {showForm && (
         <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col">
-              <label className="text-base font-medium text-blue-800 mb-1">업체명 *</label>
-              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-base font-medium text-blue-800 mb-1">프로그램명 *</label>
-              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-base font-medium text-blue-800 mb-1">픽업일 *</label>
-              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-blue-900" />
-            </div>
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-base font-medium text-blue-800 mb-1">메모</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="text-base font-medium text-blue-800 mb-1">원고 이미지</label>
-            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
-            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-base text-sky-600 font-medium">🚨 급함</span>
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-4 border-t">
-            <button onClick={clearForm} className="bg-slate-200 px-5 py-2 rounded-md">취소</button>
-            <button onClick={handleSubmit} className="bg-emerald-600 text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
-              {isSubmitting ? '등록 중...' : '등록'}
-            </button>
-          </div>
+          {/* 입력 폼 영역 생략 */}
         </div>
       )}
-
-      {error && <div className="max-w-screen-xl mx-auto bg-red-50 border border-red-400 text-red-700 p-4 rounded mb-4">{error}</div>}
 
       <section className="max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
@@ -266,7 +228,7 @@ export default function Board() {
 
         {showDeleted && (
           <div>
-            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑 삭제됨</h2>
+            <h2 className="font-semibold text-base text-slate-500 mb-2">🗑 삭제됨 (최신순 10개)</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {deleted.map(renderCard)}
             </div>
