@@ -112,9 +112,16 @@ export default function Board() {
       }
     }
 
-    const { error } = await supabase.from('request').insert([
-      { company, program, pickup_date: pickupDate, note, image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false },
-    ]);
+    const { error } = await supabase.from('request').insert([{
+      company,
+      program,
+      pickup_date: pickupDate,
+      note,
+      image_url: imageUrl,
+      is_urgent: isUrgent,
+      completed: false,
+      is_deleted: false
+    }]);
 
     setIsSubmitting(false);
     if (error) setError(`등록 실패: ${error.message}`);
@@ -149,10 +156,10 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-[15px] h-[400px] min-w-[240px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
-        <div className="mb-3 space-y-1">
-          <p className="text-gray-800 font-semibold">업체명:<span className="ml-2">{item.company}</span></p>
-          <p className="text-gray-700">프로그램명:<span className="ml-2">{item.program}</span></p>
+      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-[15px] h-[420px] min-w-[250px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
+        <div className="mb-4 space-y-2">
+          <p className="text-gray-800 font-semibold">업체명: <span className="ml-2">{item.company}</span></p>
+          <p className="text-gray-700">프로그램명: <span className="ml-2">{item.program}</span></p>
           <p className="text-gray-600">픽업일: 📅 {item.pickup_date}</p>
           {item.note && <p className="mt-1 bg-gray-100 p-2 rounded text-sm text-gray-800">📝 {item.note}</p>}
         </div>
@@ -181,7 +188,7 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans px-4 py-8 w-full min-h-screen overflow-x-hidden bg-gradient-to-b from-gray-900 via-gray-100 to-white text-gray-900">
+    <div className="font-sans px-4 py-8 w-full min-h-screen overflow-x-hidden bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef] text-gray-900">
       <div className="flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
