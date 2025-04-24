@@ -36,6 +36,8 @@ export default function Board() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -103,32 +105,36 @@ export default function Board() {
 
     setIsSubmitting(true);
     setError(null);
-    let imageUrl = null;
+    let imageUrl = imagePreview;
+
     if (image) {
-      imageUrl = await uploadImage(image);
-      if (!imageUrl) {
+      const uploaded = await uploadImage(image);
+      if (!uploaded) {
         setIsSubmitting(false);
         return;
       }
+      imageUrl = uploaded;
     }
 
-    const { error } = await supabase.from('request').insert([{
-      company,
-      program,
-      pickup_date: pickupDate,
-      note,
-      image_url: imageUrl,
-      is_urgent: isUrgent,
-      completed: false,
-      is_deleted: false
-    }]);
+    if (editMode && editingId !== null) {
+      const { error } = await supabase.from('request').update({
+        company, program, pickup_date: pickupDate, note,
+        image_url: imageUrl, is_urgent: isUrgent
+      }).eq('id', editingId);
+
+      if (error) setError(`수정 실패: ${error.message}`);
+    } else {
+      const { error } = await supabase.from('request').insert([{
+        company, program, pickup_date: pickupDate, note,
+        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false
+      }]);
+
+      if (error) setError(`등록 실패: ${error.message}`);
+    }
 
     setIsSubmitting(false);
-    if (error) setError(`등록 실패: ${error.message}`);
-    else {
-      clearForm();
-      fetchRequests();
-    }
+    clearForm();
+    fetchRequests();
   };
 
   const clearForm = () => {
@@ -140,6 +146,20 @@ export default function Board() {
     setImagePreview(null);
     setIsUrgent(false);
     setShowForm(false);
+    setEditMode(false);
+    setEditingId(null);
+  };
+
+  const handleEdit = (item: RequestItem) => {
+    setCompany(item.company);
+    setProgram(item.program);
+    setPickupDate(item.pickup_date);
+    setNote(item.note);
+    setImagePreview(item.image_url ?? null);
+    setIsUrgent(item.is_urgent);
+    setEditingId(item.id);
+    setEditMode(true);
+    setShowForm(true);
   };
 
   const handleComplete = async (id: number) => {
@@ -156,28 +176,28 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border border-rose-100 flex flex-col justify-between text-[15px] h-[420px] min-w-[250px] ${item.is_urgent ? 'border-2 border-red-400' : 'hover:shadow-lg transition'}`}>
+      <div key={item.id} className="p-6 bg-white rounded-xl shadow-md border border-gray-200 flex flex-col justify-between text-sm h-[420px] min-w-[250px]">
         <div className="mb-4 space-y-2">
-          <p className="text-rose-800 font-semibold">업체명: <span className="ml-2">{item.company}</span></p>
-          <p className="text-rose-700">프로그램명: <span className="ml-2">{item.program}</span></p>
-          <p className="text-rose-600">픽업일: 📅 {item.pickup_date}</p>
-          {item.note && <p className="mt-1 bg-rose-50 p-2 rounded text-sm text-rose-800">📝 {item.note}</p>}
+          <p><strong>업체명:</strong> {item.company}</p>
+          <p><strong>프로그램명:</strong> {item.program}</p>
+          <p><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
+          {item.note && <p className="bg-gray-100 p-2 rounded">📝 {item.note}</p>}
         </div>
         {item.image_url && (
           <a href={item.image_url} target="_blank" rel="noopener noreferrer">
             <img src={item.image_url} className="w-full max-h-28 object-contain border rounded" />
           </a>
         )}
-        <div className="pt-2">
+        <div className="pt-2 flex flex-wrap gap-2 justify-end">
           {isActive && (
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-sm">완료</button>
-              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-rose-400 text-white rounded hover:bg-rose-500 text-sm">삭제</button>
-            </div>
+            <>
+              <button onClick={() => handleEdit(item)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">수정</button>
+              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">완료</button>
+              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs">삭제</button>
+            </>
           )}
-          {item.completed && <span className="text-green-600 text-sm">✅ 완료됨</span>}
-          {item.is_deleted && <span className="text-gray-400 text-sm">🗑 삭제됨</span>}
-          {item.is_urgent && <span className="text-red-500 text-sm font-bold">🚨 긴급</span>}
+          {item.completed && <span className="text-green-600 text-xs">✅ 완료됨</span>}
+          {item.is_deleted && <span className="text-gray-400 text-xs">🗑 삭제됨</span>}
         </div>
       </div>
     );
@@ -188,60 +208,61 @@ export default function Board() {
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="font-sans px-4 py-8 w-full min-h-screen overflow-x-hidden bg-gradient-to-b from-rose-50 to-white text-rose-900">
+    <div className="bg-gradient-to-b from-gray-100 to-white min-h-screen text-gray-900 px-4 py-8 font-sans">
       <div className="flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
       <div className="flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
-        <button onClick={() => setShowForm(!showForm)} className="bg-rose-700 text-white px-4 py-2 rounded hover:bg-rose-800 text-sm">
-          {showForm ? '입력 닫기' : '작업 추가'}
+        <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
+          {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
         </button>
-        <button onClick={() => setShowCompleted(!showCompleted)} className="bg-rose-100 text-rose-900 px-4 py-2 rounded hover:bg-rose-200 text-sm">
+        <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
           {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
         </button>
-        <button onClick={() => setShowDeleted(!showDeleted)} className="bg-rose-100 text-rose-900 px-4 py-2 rounded hover:bg-rose-200 text-sm">
+        <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
           {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
 
+      {/* 입력 폼은 생략 가능 — 기존과 동일하게 위치 유지 */}
       {showForm && (
-        <div className="max-w-screen-2xl mx-auto bg-white border border-rose-100 p-6 rounded-xl shadow mb-8 space-y-5">
+        <div className="max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col">
-              <label className="text-base font-medium text-rose-900 mb-1">업체명 *</label>
+              <label className="font-medium text-gray-800 mb-1">업체명 *</label>
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-base font-medium text-rose-900 mb-1">프로그램명 *</label>
+              <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-              <label className="text-base font-medium text-rose-900 mb-1">픽업일 *</label>
-              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-rose-800" />
+              <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
+              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
             </div>
           </div>
 
           <div className="flex flex-col">
-            <label className="text-base font-medium text-rose-900 mb-1">메모</label>
+            <label className="font-medium text-gray-800 mb-1">메모</label>
             <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-base font-medium text-rose-900 mb-1">원고 이미지</label>
+            <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
             <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
             {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
           </div>
 
           <div className="flex items-center space-x-2">
             <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-base text-red-600 font-medium">🚨 급함</span>
+            <span className="text-sm text-red-600 font-medium">🚨 급함</span>
           </div>
 
           <div className="flex justify-end space-x-4 pt-4 border-t">
-            <button onClick={clearForm} className="bg-rose-100 px-5 py-2 rounded-md">취소</button>
-            <button onClick={handleSubmit} className="bg-rose-600 text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
-              {isSubmitting ? '등록 중...' : '등록'}
+            <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
+            <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+              {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
             </button>
           </div>
         </div>
@@ -249,7 +270,7 @@ export default function Board() {
 
       <section className="max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
-          <h2 className="font-semibold text-base text-rose-800 mb-2">📋 진행 중</h2>
+          <h2 className="font-semibold text-base text-gray-800 mb-2">📋 진행 중</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
             {inProgress.map(renderCard)}
           </div>
@@ -266,7 +287,7 @@ export default function Board() {
 
         {showDeleted && (
           <div>
-            <h2 className="font-semibold text-base text-rose-500 mb-2">🗑 삭제됨</h2>
+            <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {deleted.map(renderCard)}
             </div>
