@@ -42,8 +42,6 @@ export default function Board() {
     const { data, error } = await supabase
       .from('request')
       .select('*')
-      .order('is_deleted', { ascending: true })
-      .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) setError(`데이터 로딩 실패: ${error.message}`);
@@ -95,6 +93,7 @@ export default function Board() {
     const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
     return data?.publicUrl ?? null;
   };
+
   const handleSubmit = async () => {
     if (!company || !program || !pickupDate) {
       setError('업체명, 프로그램명, 픽업일은 필수입니다.');
@@ -201,39 +200,17 @@ export default function Board() {
       </div>
     );
   };
+
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
     <div className="relative bg-gradient-to-b from-white via-slate-50 to-gray-100 min-h-screen text-gray-900 px-4 py-8 font-sans">
-      {/* 벚꽃 애니메이션 */}
-      {[...Array(15)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-6 h-6 bg-[url('/petal.png')] bg-contain bg-no-repeat animate-fall"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${5 + Math.random() * 10}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            zIndex: 0,
-          }}
-        />
-      ))}
-
-      {/* 이미지 확대 모달 */}
-      {modalImage && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setModalImage(null)}>
-          <img src={modalImage} className="max-w-full max-h-full" />
-        </div>
-      )}
-
-      {/* 로고 */}
       <div className="relative z-10 flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
-      {/* 상단 버튼 */}
       <div className="relative z-10 flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
         <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
           {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
@@ -245,6 +222,12 @@ export default function Board() {
           {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
+
+      {modalImage && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setModalImage(null)}>
+          <img src={modalImage} className="max-w-full max-h-full" />
+        </div>
+      )}
 
       {/* 입력 폼 */}
       {showForm && (
