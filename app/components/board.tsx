@@ -191,10 +191,12 @@ export default function Board() {
 
   return (
     <div className="font-sans p-8 w-full bg-gradient-to-b from-sky-100 to-white min-h-screen">
-      <div className="flex justify-between items-center mb-8 max-w-screen-2xl mx-auto">
-        <div className="w-full flex justify-center">
-          <img src="/logo.png" alt="Vitamin Sign Logo" className="h-24" />
-        </div>
+      {/* 상단 로고 중앙 정렬 */}
+      <div className="flex justify-center mb-8">
+        <img src="/logo.png" alt="Vitamin Sign Logo" className="h-20 object-contain" />
+      </div>
+
+      <div className="flex justify-end max-w-screen-2xl mx-auto mb-6">
         <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-5 py-2 rounded-md shadow hover:bg-blue-700 transition">
           {showForm ? '입력 닫기' : '작업 추가'}
         </button>
