@@ -207,19 +207,7 @@ export default function Board() {
 
   return (
     <div className="relative bg-gradient-to-b from-white via-slate-50 to-gray-100 min-h-screen text-gray-900 px-4 py-8 font-sans">
-      {/* 벚꽃 애니메이션 */}
-      {[...Array(15)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-6 h-6 bg-[url('/petal.png')] bg-contain bg-no-repeat animate-fall"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${5 + Math.random() * 10}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            zIndex: 0,
-          }}
-        />
-      ))}
+
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
