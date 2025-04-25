@@ -211,7 +211,7 @@ export default function Board() {
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex items-center justify-center z-50" onClick={() => setModalImage(null)}>
+        <div className="relative bg-gradient-to-b from-blue-800 via-blue-700 to-blue-600 min-h-screen text-gray-100 px-4 py-8 font-sans">
           <img src={modalImage} className="max-w-full max-h-full" />
         </div>
       )}
