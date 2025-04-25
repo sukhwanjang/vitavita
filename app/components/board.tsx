@@ -211,7 +211,7 @@ export default function Board() {
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
-        <div className="relative bg-gradient-to-b from-blue-800 via-blue-700 to-blue-600 min-h-screen text-gray-100 px-4 py-8 font-sans">
+        <div className="relative bg-gradient-to-b from-white via-slate-50 to-gray-100 min-h-screen text-gray-900 px-4 py-8 font-sans">
           <img src={modalImage} className="max-w-full max-h-full" />
         </div>
       )}
