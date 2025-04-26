@@ -332,9 +332,23 @@ export default function Board() {
               </div>
             )}
   
-            {item.is_deleted && (
-              <span className="text-gray-400 text-xs">🗑 삭제됨</span>
-            )}
+  {item.is_deleted && (
+  <div className="flex items-center gap-2">
+    <span className="text-gray-400 text-xs">🗑 삭제됨</span>
+    <button
+      onClick={async () => {
+        if (window.confirm('진짜로 완전 삭제할까요?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      완전 삭제
+    </button>
+  </div>
+)}
+
           </div>
         </div>
       </div>
