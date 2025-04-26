@@ -351,28 +351,30 @@ export default function Board() {
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
       </div>
 
-      {/* 상단 버튼 */}
-      {/* 상단 버튼들 */}
-<div className="relative z-10 flex justify-end max-w-screen-2xl mx-auto mb-2">
+      {/* 상단 버튼 통합 */}
+<div className="relative z-10 flex justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
+  {/* 왼쪽: 오늘 작업 출력 */}
   <button
     onClick={handlePrintTodayWork}
     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
   >
     오늘 작업 출력
   </button>
+
+  {/* 오른쪽: 작업 추가, 완료 보기, 삭제 보기 */}
+  <div className="flex gap-2">
+    <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
+      {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
+    </button>
+    <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
+      {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
+    </button>
+    <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
+      {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
+    </button>
+  </div>
 </div>
 
-<div className="relative z-10 flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
-  <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
-    {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
-  </button>
-  <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
-    {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
-  </button>
-  <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
-    {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
-  </button>
-</div>
 
       <button
   onClick={handlePrintTodayWork}
