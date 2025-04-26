@@ -250,19 +250,19 @@ export default function Board() {
               <>
                 <button
                   onClick={() => handleEdit(item)}
-                  className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs"
+                  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
                 >
                   수정
                 </button>
                 <button
                   onClick={() => handleComplete(item.id)}
-                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                 >
                   완료
                 </button>
                 <button
                   onClick={() => handleDelete(item.id)}
-                  className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
+                  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
                 >
                   삭제
                 </button>
