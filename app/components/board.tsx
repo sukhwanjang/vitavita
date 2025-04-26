@@ -32,6 +32,7 @@ export default function Board() {
     }
   }, [selectedItem]);
   const [company, setCompany] = useState('');
+  const [savedScrollY, setSavedScrollY] = useState(0);
   const [program, setProgram] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [note, setNote] = useState('');
@@ -46,6 +47,12 @@ export default function Board() {
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const handleCloseModal = () => {
+    setModalImage(null);
+    window.scrollTo(0, savedScrollY);
+  };
+  
+  
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -199,6 +206,10 @@ export default function Board() {
     await supabase.from('request').update({ completed: false }).eq('id', id);
     fetchRequests();
   };
+  const handleImageClick = (url: string) => {
+    setSavedScrollY(window.scrollY); // 현재 스크롤 저장
+    setModalImage(url); // 모달 띄우기
+  };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
@@ -310,7 +321,7 @@ export default function Board() {
   {item.image_url && (
     <img
       src={item.image_url}
-      onClick={() => setModalImage(item.image_url!)}
+      onClick={() => handleImageClick(item.image_url!)}
       className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
     />
   )}
