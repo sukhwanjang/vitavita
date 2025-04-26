@@ -468,17 +468,16 @@ export default function Board() {
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
-  <div className="flex flex-col items-center justify-center mt-10">
-    <img src={modalImage} className="max-w-full h-auto object-contain" />
-    <button
-      onClick={handleCloseModal}
-      className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-    >
-      닫기
-    </button>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300">
+    <div className="transition-transform duration-500 scale-100 hover:scale-105">
+      <img
+        src={modalImage}
+        className="max-w-full max-h-full rounded-lg shadow-lg"
+        onClick={handleCloseModal}
+      />
+    </div>
   </div>
 )}
-
 
       {/* 로고 */}
       <div className="relative z-10 flex justify-center mb-2">
