@@ -3,7 +3,9 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
-    extend: {
+    extend: {fontFamily: {
+      sans: ['"Noto Sans KR"', 'sans-serif'],
+    },
       animation: {
         fall: "fall 10s linear infinite",
       },
@@ -13,9 +15,7 @@ const config: Config = {
           "100%": { transform: "translateY(110vh) rotate(360deg)" },
         },
       },
-      fontFamily: {
-        sans: ['"Noto Sans KR"', "sans-serif"],
-      },
+      
     },
   },
   plugins: [],
