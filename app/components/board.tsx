@@ -48,8 +48,8 @@ export default function Board() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const handleCloseModal = () => {
-    setModalImage(null);
-    window.scrollTo(0, savedScrollY);
+    setModalImage(null); // 이미지 없애기
+    window.scrollTo({ top: savedScrollY, behavior: "smooth" }); // 부드럽게 원래로
   };
   
   
@@ -207,8 +207,9 @@ export default function Board() {
     fetchRequests();
   };
   const handleImageClick = (url: string) => {
-    setSavedScrollY(window.scrollY); // 현재 스크롤 저장
-    setModalImage(url); // 모달 띄우기
+    setSavedScrollY(window.scrollY); // 현재 위치 저장
+    setModalImage(url);               // 이미지 저장
+    window.scrollTo({ top: 0, behavior: "smooth" }); // 부드럽게 올라가기
   };
 
   const handleDelete = async (id: number) => {
@@ -467,18 +468,14 @@ export default function Board() {
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-4 rounded-lg max-w-3xl w-full max-h-full overflow-auto">
-      <img src={modalImage} alt="확대 이미지" className="object-contain w-full h-auto" />
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={handleCloseModal}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          닫기
-        </button>
-      </div>
-    </div>
+  <div className="flex flex-col items-center justify-center mt-10">
+    <img src={modalImage} className="max-w-full h-auto object-contain" />
+    <button
+      onClick={handleCloseModal}
+      className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    >
+      닫기
+    </button>
   </div>
 )}
 
