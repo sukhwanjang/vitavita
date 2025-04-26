@@ -225,7 +225,23 @@ export default function Board() {
               <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs">삭제</button>
             </>
           )}
-          {item.completed && <span className="text-green-600 text-xs">✅ 완료됨</span>}
+          {item.completed && (
+  <div className="flex items-center gap-2">
+    <span className="text-green-600 text-xs">✅ 완료됨</span>
+    <button
+      onClick={async () => {
+        if (window.confirm('정말 삭제하시겠습니까?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      삭제
+    </button>
+  </div>
+)}
+
           {item.is_deleted && <span className="text-gray-400 text-xs">🗑 삭제됨</span>}
         </div>
       </div>
