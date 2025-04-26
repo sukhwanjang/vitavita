@@ -197,35 +197,38 @@ export default function Board() {
     const todayRequests = requests.filter(r => r.created_at.startsWith(today));
   
     let html = `
-      <html>
-      <head><title>오늘 작업 출력</title></head>
-      <body style="font-family: sans-serif; padding: 20px;">
-      <h1>오늘 작업한 내용</h1>
-      <ul>
-    `;
-  
-    todayRequests.forEach((item) => {
-      html += `<li style="margin-bottom: 10px;">
-        <strong>업체명:</strong> ${item.company}<br/>
-        <strong>프로그램명:</strong> ${item.program}<br/>
-        <strong>업로드 시간:</strong> ${new Date(item.created_at).toLocaleString()}<br/>
-        ${
-          item.completed
-            ? `<strong>완료:</strong> 완료됨`
-            : `<strong>완료:</strong> 아직 완료 안 됨`
-        }
-      </li>`;
-    });
-  
-    html += `</ul></body></html>`;
-  
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
+<html>
+<head><title>오늘 작업 출력</title></head>
+<body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
+<h1 style="font-size: 16px;">오늘 작업한 내용</h1>
+<table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
+  <thead style="background-color:#f0f0f0;">
+    <tr>
+      <th>업체명</th>
+      <th>프로그램명</th>
+      <th>업로드 시간</th>
+      <th>완료 여부</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+todayRequests.forEach((item) => {
+  html += `
+    <tr>
+      <td>${item.company}</td>
+      <td>${item.program}</td>
+      <td>${new Date(item.created_at).toLocaleString()}</td>
+      <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+    </tr>
+  `;
+});
+html += `
+  </tbody>
+</table>
+</body>
+</html>
+`;
+
   
 
   const renderCard = (item: RequestItem) => {
