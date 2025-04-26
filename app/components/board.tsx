@@ -45,10 +45,33 @@ export default function Board() {
       .order('is_deleted', { ascending: true })
       .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false });
-
-    if (error) setError(`데이터 로딩 실패: ${error.message}`);
-    else setRequests(data || []);
+  
+    if (error) {
+      setError(`데이터 로딩 실패: ${error.message}`);
+      return;
+    }
+  
+    // 완료 항목 100개 초과 시 오래된 것부터 삭제
+    const completed = data.filter(r => r.completed && !r.is_deleted);
+    if (completed.length > 100) {
+      const toDelete = completed.slice(100);
+      await Promise.all(toDelete.map(r =>
+        supabase.from('request').delete().eq('id', r.id)
+      ));
+    }
+  
+    // 삭제된 항목 10개 초과 시 Supabase에서 완전 삭제
+    const deleted = data.filter(r => r.is_deleted);
+    if (deleted.length > 10) {
+      const toDelete = deleted.slice(10);
+      await Promise.all(toDelete.map(r =>
+        supabase.from('request').delete().eq('id', r.id)
+      ));
+    }
+  
+    setRequests(data || []);
   }, []);
+  
 
   useEffect(() => {
     fetchRequests();
