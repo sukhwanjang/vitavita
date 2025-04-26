@@ -213,12 +213,26 @@ export default function Board() {
       <tbody>
     `;
     todayRequests.forEach((item) => {
+      const pickupDaysLeft = item.pickup_date
+        ? Math.max(
+            0,
+            Math.ceil(
+              (new Date(item.pickup_date).getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+          )
+        : null;
+    
       html += `
         <tr>
           <td>${item.company}</td>
           <td>${item.program}</td>
           <td>${new Date(item.created_at).toLocaleString()}</td>
-          <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+          <td>
+            ${item.completed 
+              ? '완료됨' 
+              : `아직 완료 안 됨 ${pickupDaysLeft !== null ? `(D-${pickupDaysLeft})` : ''}`}
+          </td>
         </tr>
       `;
     });
