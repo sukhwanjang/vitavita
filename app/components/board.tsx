@@ -23,6 +23,14 @@ interface RequestItem {
 export default function Board() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
+  useEffect(() => {
+    if (selectedItem) {
+      const timer = setTimeout(() => {
+        setSelectedItem(null);
+      }, 2000); // 2초 후 자동 닫힘
+      return () => clearTimeout(timer);
+    }
+  }, [selectedItem]);
   const [company, setCompany] = useState('');
   const [program, setProgram] = useState('');
   const [pickupDate, setPickupDate] = useState('');
