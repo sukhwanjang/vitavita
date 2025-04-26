@@ -400,9 +400,9 @@ export default function Board() {
 
 
       {/* 로고 */}
-      <div className="relative z-10 flex justify-center mb-6">
-        <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
-      </div>
+      <div className="relative z-10 flex justify-center mb-2">
+  <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
+</div>
 
       {/* 상단 버튼 통합 */}
 <div className="relative z-10 flex justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
