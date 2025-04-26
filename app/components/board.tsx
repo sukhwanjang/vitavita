@@ -310,6 +310,7 @@ export default function Board() {
         </div>
       )}
 
+
       {/* 로고 */}
       <div className="relative z-10 flex justify-center mb-6">
         <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
