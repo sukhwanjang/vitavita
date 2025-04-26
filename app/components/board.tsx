@@ -193,61 +193,60 @@ export default function Board() {
     fetchRequests();
   };
 
-  const renderCard = (item: RequestItem) => {
+   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
+  
     return (
-      <div key={item.id} className={`p-4 bg-white rounded-2xl shadow-md border ${item.is_urgent ? 'border-pink-400' : 'border-gray-200'} flex flex-col justify-between text-base h-[500px] min-w-[320px] max-w-sm break-words font-sans`}>
-        <div className="mb-4 space-y-2 overflow-hidden text-ellipsis">
-          <p className="truncate"><strong>업체명:</strong> <span className="break-all">{item.company}</span></p>
-          <p className="truncate"><strong>프로그램명:</strong> <span className="break-all">{item.program}</span></p>
-          <p className="truncate">
-  <strong>픽업일:</strong>{' '}
-  <span className={`break-all ${item.pickup_date === new Date().toISOString().slice(0, 10) ? 'text-blue-600 font-semibold' : ''}`}>
-    📅 {item.pickup_date}
-  </span>
-</p>
-
-          {item.note && <p className="bg-gray-100 p-2 rounded text-sm break-words">{item.note}</p>}
+      <div
+        key={item.id}
+        className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border ${
+          item.completed ? 'border-gray-300' : 'border-blue-500'
+        }`}
+      >
+        {/* 상단바 */}
+        <div
+          className={`h-8 ${
+            item.completed ? 'bg-gray-200' : 'bg-blue-500'
+          } flex items-center justify-center text-white text-xs font-bold`}
+        >
+          {item.completed ? '완료' : '진행중'}
         </div>
-        {item.image_url && (
-  <img
-  src={item.image_url}
-  onClick={() => setModalImage(item.image_url!)}
-  className="cursor-pointer w-full max-h-40 object-contain border rounded"
-/>
-
-)}
-<p className="text-xs text-gray-500 mt-2">📅 업로드: {new Date(item.created_at).toLocaleString()}</p>
-        <div className="pt-2 flex flex-wrap gap-2 justify-end">
-          {isActive && (
-            <>
-              <button onClick={() => handleEdit(item)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs">수정</button>
-              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">완료</button>
-              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs">삭제</button>
-            </>
+  
+        {/* 내용 */}
+        <div className="flex flex-col p-4 space-y-2 bg-white h-full">
+          <div>
+            <p className="text-lg font-bold truncate">{item.company}</p>
+            <p className="text-sm text-gray-600 truncate">{item.program}</p>
+          </div>
+  
+          {item.image_url && (
+            <img
+              src={item.image_url}
+              onClick={() => setModalImage(item.image_url!)}
+              className="cursor-pointer w-full h-32 object-cover rounded-md border"
+            />
           )}
-          {item.completed && (
-  <div className="flex items-center gap-2">
-    <span className="text-green-600 text-xs">✅ 완료됨</span>
-    <button
-      onClick={async () => {
-        if (window.confirm('정말 삭제하시겠습니까?')) {
-          await supabase.from('request').delete().eq('id', item.id);
-          fetchRequests();
-        }
-      }}
-      className="text-xs text-red-500 underline hover:text-red-700"
-    >
-      삭제
-    </button>
-  </div>
-)}
-
-          {item.is_deleted && <span className="text-gray-400 text-xs">🗑 삭제됨</span>}
+  
+          <div className="text-sm text-gray-700">
+            📅 픽업 D-
+            {item.pickup_date
+              ? Math.max(
+                  0,
+                  Math.ceil(
+                    (new Date(item.pickup_date).getTime() - new Date().getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                )
+              : '-'}
+          </div>
+  
+          {item.note && (
+            <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
+          )}
         </div>
       </div>
     );
-  };
+  };  
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
