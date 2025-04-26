@@ -326,29 +326,41 @@ export default function Board() {
 
   
           {/* 버튼 영역 */}
-          <div className="pt-2 flex flex-wrap gap-2 justify-end">
-            {isActive && (
-              <>
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
-                >
-                  수정
-                </button>
-                <button
-                  onClick={() => handleComplete(item.id)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                >
-                  완료
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
-                >
-                  삭제
-                </button>
-              </>
-            )}
+          <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
+  {isActive && (
+    <>
+      {/* 업로드 시간 추가 */}
+      <span className="text-[10px] text-gray-400 mr-auto">
+        🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })}
+      </span>
+
+      <button
+        onClick={() => handleEdit(item)}
+        className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
+      >
+        수정
+      </button>
+      <button
+        onClick={() => handleComplete(item.id)}
+        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+      >
+        완료
+      </button>
+      <button
+        onClick={() => handleDelete(item.id)}
+        className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+      >
+        삭제
+      </button>
+    </>
+  )}
+
   
   {item.completed && (
   <div className="flex items-center gap-2">
