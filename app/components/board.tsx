@@ -193,7 +193,7 @@ export default function Board() {
     fetchRequests();
   };
 
-   const renderCard = (item: RequestItem) => {
+  const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
   
     return (
@@ -203,7 +203,7 @@ export default function Board() {
           item.completed ? 'border-gray-300' : 'border-blue-500'
         }`}
       >
-        {/* 상단바 */}
+        {/* 상단 바 */}
         <div
           className={`h-8 ${
             item.completed ? 'bg-gray-200' : 'bg-blue-500'
@@ -212,7 +212,7 @@ export default function Board() {
           {item.completed ? '완료' : '진행중'}
         </div>
   
-        {/* 내용 */}
+        {/* 카드 본문 */}
         <div className="flex flex-col p-4 space-y-2 bg-white h-full">
           <div>
             <p className="text-lg font-bold truncate">{item.company}</p>
@@ -243,10 +243,58 @@ export default function Board() {
           {item.note && (
             <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
           )}
+  
+          {/* 버튼 영역 */}
+          <div className="pt-2 flex flex-wrap gap-2 justify-end">
+            {isActive && (
+              <>
+                <button
+                  onClick={() => handleEdit(item)}
+                  className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs"
+                >
+                  수정
+                </button>
+                <button
+                  onClick={() => handleComplete(item.id)}
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                >
+                  완료
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
+                >
+                  삭제
+                </button>
+              </>
+            )}
+  
+            {item.completed && (
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 text-xs">✅ 완료됨</span>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('정말 삭제하시겠습니까?')) {
+                      await supabase.from('request').delete().eq('id', item.id);
+                      fetchRequests();
+                    }
+                  }}
+                  className="text-xs text-red-500 underline hover:text-red-700"
+                >
+                  삭제
+                </button>
+              </div>
+            )}
+  
+            {item.is_deleted && (
+              <span className="text-gray-400 text-xs">🗑 삭제됨</span>
+            )}
+          </div>
         </div>
       </div>
     );
-  };  
+  };
+    
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
