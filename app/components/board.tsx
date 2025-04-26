@@ -192,6 +192,41 @@ export default function Board() {
     await supabase.from('request').update({ is_deleted: true }).eq('id', id);
     fetchRequests();
   };
+  const handlePrintTodayWork = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRequests = requests.filter(r => r.created_at.startsWith(today));
+  
+    let html = `
+      <html>
+      <head><title>오늘 작업 출력</title></head>
+      <body style="font-family: sans-serif; padding: 20px;">
+      <h1>오늘 작업한 내용</h1>
+      <ul>
+    `;
+  
+    todayRequests.forEach((item) => {
+      html += `<li style="margin-bottom: 10px;">
+        <strong>업체명:</strong> ${item.company}<br/>
+        <strong>프로그램명:</strong> ${item.program}<br/>
+        <strong>업로드 시간:</strong> ${new Date(item.created_at).toLocaleString()}<br/>
+        ${
+          item.completed
+            ? `<strong>완료:</strong> 완료됨`
+            : `<strong>완료:</strong> 아직 완료 안 됨`
+        }
+      </li>`;
+    });
+  
+    html += `</ul></body></html>`;
+  
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+  
 
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
@@ -328,6 +363,13 @@ export default function Board() {
           {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
         </button>
       </div>
+      <button
+  onClick={handlePrintTodayWork}
+  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+>
+  오늘 작업 출력
+</button>
+
 
       {/* 입력 폼 */}
       {showForm && (
