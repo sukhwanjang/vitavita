@@ -181,12 +181,13 @@ export default function Board() {
           {item.note && <p className="bg-gray-100 p-2 rounded text-sm break-words">{item.note}</p>}
         </div>
         {item.image_url && (
-          <img
-            src={item.image_url}
-            onClick={() => setModalImage(item.image_url!)}
-            className="cursor-pointer w-full max-h-28 object-contain border rounded"
-          />
-        )}
+  <img
+    src={item.image_url}
+    onClick={() => setModalImage(item.image_url!)}
+    className="cursor-pointer w-full max-h-28 object-contain border rounded"
+  />
+)}
+<p className="text-xs text-gray-500 mt-2">📅 업로드: {new Date(item.created_at).toLocaleString()}</p>
         <div className="pt-2 flex flex-wrap gap-2 justify-end">
           {isActive && (
             <>
