@@ -221,10 +221,10 @@ export default function Board() {
   
           {item.image_url && (
             <img
-              src={item.image_url}
-              onClick={() => setModalImage(item.image_url!)}
-              className="cursor-pointer w-full h-32 object-cover rounded-md border"
-            />
+            src={item.image_url}
+            onClick={() => setModalImage(item.image_url!)}
+            className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
+          />          
           )}
   
           <div className="text-sm text-gray-700">
