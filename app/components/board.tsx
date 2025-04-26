@@ -269,12 +269,16 @@ export default function Board() {
       >
         {/* 상단 바 */}
         <div
-          className={`h-8 ${
-            item.completed ? 'bg-gray-200' : 'bg-blue-500'
-          } flex items-center justify-center text-white text-xs font-bold`}
-        >
-          {item.completed ? '완료' : '진행중'}
-        </div>
+  className={`h-8 ${
+    item.completed
+      ? 'bg-gray-200'
+      : item.is_urgent
+      ? 'bg-red-500'
+      : 'bg-blue-500'
+  } flex items-center justify-center text-white text-xs font-bold`}
+>
+  {item.completed ? '완료' : item.is_urgent ? '급함' : '진행중'}
+</div>
   
         {/* 카드 본문 */}
         <div className="flex flex-col p-4 space-y-2 bg-white h-full">
