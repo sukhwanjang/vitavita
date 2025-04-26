@@ -21,6 +21,8 @@ interface RequestItem {
 }
 
 export default function Board() {
+  const [authorized, setAuthorized] = useState(false);
+const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
   useEffect(() => {
