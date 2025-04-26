@@ -335,17 +335,27 @@ const [passwordInput, setPasswordInput] = useState('')
   )}
 
   {/* 기존 픽업일 표시 */}
-  <div className="text-sm text-gray-700">
-    📅 픽업 {item.pickup_date ? (() => {
-      const daysLeft = Math.ceil(
-        (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-        / (1000 * 60 * 60 * 24)
-      );
-      if (daysLeft === 0) return '오늘';
-      if (daysLeft > 0) return `D-${daysLeft}`;
-      return '지남';
-    })() : '-'}
-  </div>
+  <div className={`text-sm font-bold ${
+  (() => {
+    const daysLeft = item.pickup_date
+      ? Math.ceil(
+          (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+          / (1000 * 60 * 60 * 24)
+        )
+      : null;
+    return daysLeft === 0 ? 'text-red-500' : 'text-gray-700';
+  })()
+}`}>
+  📅 픽업 {item.pickup_date ? (() => {
+    const daysLeft = Math.ceil(
+      (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+      / (1000 * 60 * 60 * 24)
+    );
+    if (daysLeft === 0) return '오늘';
+    if (daysLeft > 0) return `D-${daysLeft}`;
+    return '지남';
+  })() : '-'}
+</div>
 
   {/* 메모 */}
   {item.note && (
