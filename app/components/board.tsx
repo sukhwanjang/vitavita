@@ -316,7 +316,7 @@ export default function Board() {
       </div>
 
       {/* 상단 버튼 */}
-      <div className="relative z-10 flex justify-end max-w-screen-2xl mx-auto mb-4 gap-2">
+      <div className="relative z-10 flex justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
         <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
           {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
         </button>
@@ -374,8 +374,8 @@ export default function Board() {
       {/* 카드 리스트 */}
       <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
-          <h2 className="font-semibold text-base text-gray-800 mb-2 text-center">📂 발주 파일</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {inProgress.map(renderCard)}
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function Board() {
         {showCompleted && (
           <div>
             <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {completed.map(renderCard)}
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function Board() {
         {showDeleted && (
           <div>
             <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {deleted.map(renderCard)}
             </div>
           </div>
