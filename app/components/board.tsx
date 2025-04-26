@@ -295,17 +295,6 @@ export default function Board() {
     />
   )}
 
-  {/* 업로드 시간 표시 추가 */}
-  <div className="text-xs text-gray-400">
-  🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })}
-</div>
-
   {/* 기존 픽업일 표시 */}
   <div className="text-sm text-gray-700">
     📅 픽업 {item.pickup_date ? (() => {
