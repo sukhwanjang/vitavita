@@ -375,7 +375,7 @@ export default function Board() {
       <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
         <div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {inProgress.map(renderCard)}
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function Board() {
         {showCompleted && (
           <div>
             <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {completed.map(renderCard)}
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function Board() {
         {showDeleted && (
           <div>
             <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {deleted.map(renderCard)}
             </div>
           </div>
