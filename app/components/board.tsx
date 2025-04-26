@@ -177,7 +177,13 @@ export default function Board() {
         <div className="mb-4 space-y-2 overflow-hidden text-ellipsis">
           <p className="truncate"><strong>업체명:</strong> <span className="break-all">{item.company}</span></p>
           <p className="truncate"><strong>프로그램명:</strong> <span className="break-all">{item.program}</span></p>
-          <p className="truncate"><strong>픽업일:</strong> 📅 {item.pickup_date}</p>
+          <p className="truncate">
+  <strong>픽업일:</strong>{' '}
+  <span className={`break-all ${item.pickup_date === new Date().toISOString().slice(0, 10) ? 'text-blue-600 font-semibold' : ''}`}>
+    📅 {item.pickup_date}
+  </span>
+</p>
+
           {item.note && <p className="bg-gray-100 p-2 rounded text-sm break-words">{item.note}</p>}
         </div>
         {item.image_url && (
