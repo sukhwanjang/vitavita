@@ -196,7 +196,7 @@ export default function Board() {
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     return (
-      <div key={item.id} className={`p-6 bg-white rounded-xl shadow-md border ${item.is_urgent ? 'border-pink-400' : 'border-gray-200'} flex flex-col justify-between text-sm h-[420px] min-w-[250px] max-w-xs break-words`}>
+      <div key={item.id} className={`p-4 bg-white rounded-2xl shadow-md border ${item.is_urgent ? 'border-pink-400' : 'border-gray-200'} flex flex-col justify-between text-base h-[500px] min-w-[320px] max-w-sm break-words font-sans`}>
         <div className="mb-4 space-y-2 overflow-hidden text-ellipsis">
           <p className="truncate"><strong>업체명:</strong> <span className="break-all">{item.company}</span></p>
           <p className="truncate"><strong>프로그램명:</strong> <span className="break-all">{item.program}</span></p>
@@ -211,10 +211,11 @@ export default function Board() {
         </div>
         {item.image_url && (
   <img
-    src={item.image_url}
-    onClick={() => setModalImage(item.image_url!)}
-    className="cursor-pointer w-full max-h-28 object-contain border rounded"
-  />
+  src={item.image_url}
+  onClick={() => setModalImage(item.image_url!)}
+  className="cursor-pointer w-full max-h-40 object-contain border rounded"
+/>
+
 )}
 <p className="text-xs text-gray-500 mt-2">📅 업로드: {new Date(item.created_at).toLocaleString()}</p>
         <div className="pt-2 flex flex-wrap gap-2 justify-end">
