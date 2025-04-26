@@ -186,6 +186,10 @@ export default function Board() {
     await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
     fetchRequests();
   };
+  const handleRecover = async (id: number) => {
+    await supabase.from('request').update({ completed: false }).eq('id', id);
+    fetchRequests();
+  };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
@@ -329,23 +333,29 @@ export default function Board() {
               </>
             )}
   
-            {item.completed && (
-              <div className="flex items-center gap-2">
-                <span className="text-green-600 text-xs">✅ 완료됨</span>
-                <button
-                  onClick={async () => {
-                    if (window.confirm('정말 삭제하시겠습니까?')) {
-                      await supabase.from('request').delete().eq('id', item.id);
-                      fetchRequests();
-                    }
-                  }}
-                  className="text-xs text-red-500 underline hover:text-red-700"
-                >
-                  삭제
-                </button>
-              </div>
-            )}
-  
+  {item.completed && (
+  <div className="flex items-center gap-2">
+    <span className="text-green-600 text-xs">✅ 완료됨</span>
+    <button
+      onClick={() => handleRecover(item.id)}
+      className="text-xs text-blue-500 underline hover:text-blue-700"
+    >
+      복구
+    </button>
+    <button
+      onClick={async () => {
+        if (window.confirm('정말 삭제하시겠습니까?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      삭제
+    </button>
+  </div>
+)}
+
   {item.is_deleted && (
   <div className="flex items-center gap-2">
     <span className="text-gray-400 text-xs">🗑 삭제됨</span>
