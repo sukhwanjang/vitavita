@@ -309,12 +309,12 @@ const [passwordInput, setPasswordInput] = useState('')
                 / (1000 * 60 * 60 * 24)
               )
             : null;
-          if (daysLeft === 0) return 'bg-red-400'; // 오늘
-          if (daysLeft === 1) return 'bg-yellow-400'; // D-1
-          return item.is_urgent ? 'bg-red-500' : 'bg-blue-500'; // 기본 급함/진행중
+          if (daysLeft === 0) return 'bg-red-400'; // 오늘만 빨간색
+          return item.is_urgent ? 'bg-red-500' : 'bg-blue-500'; // 나머지는 급함 빨간/일반 파란
         })()
   } flex items-center justify-center text-white text-xs font-bold`}
 >
+
   {item.completed ? '완료' : item.is_urgent ? '급함' : '진행중'}
 </div>
 
