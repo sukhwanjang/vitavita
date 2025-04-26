@@ -282,34 +282,42 @@ export default function Board() {
   
         {/* 카드 본문 */}
         <div className="flex flex-col p-4 space-y-2 bg-white h-full">
-          <div>
-            <p className="text-lg font-bold truncate">{item.company}</p>
-            <p className="text-sm text-gray-600 truncate">{item.program}</p>
-          </div>
-  
-          {item.image_url && (
-            <img
-            src={item.image_url}
-            onClick={() => setModalImage(item.image_url!)}
-            className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
-          />          
-          )}
-  
-          <div className="text-sm text-gray-700">
-          📅 픽업 {item.pickup_date ? (() => {
-  const daysLeft = Math.ceil(
-    (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-    / (1000 * 60 * 60 * 24)
-  );
-  if (daysLeft === 0) return '오늘';
-  if (daysLeft > 0) return `D-${daysLeft}`;
-  return '지남';
-})() : '-'}
-          </div>
-  
-          {item.note && (
-            <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
-          )}
+  <div>
+    <p className="text-lg font-bold truncate">{item.company}</p>
+    <p className="text-sm text-gray-600 truncate">{item.program}</p>
+  </div>
+
+  {item.image_url && (
+    <img
+      src={item.image_url}
+      onClick={() => setModalImage(item.image_url!)}
+      className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
+    />
+  )}
+
+  {/* 업로드 시간 표시 추가 */}
+  <div className="text-xs text-gray-400">
+    🕒 업로드 {new Date(item.created_at).toLocaleString()}
+  </div>
+
+  {/* 기존 픽업일 표시 */}
+  <div className="text-sm text-gray-700">
+    📅 픽업 {item.pickup_date ? (() => {
+      const daysLeft = Math.ceil(
+        (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+        / (1000 * 60 * 60 * 24)
+      );
+      if (daysLeft === 0) return '오늘';
+      if (daysLeft > 0) return `D-${daysLeft}`;
+      return '지남';
+    })() : '-'}
+  </div>
+
+  {/* 메모 */}
+  {item.note && (
+    <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
+  )}
+
   
           {/* 버튼 영역 */}
           <div className="pt-2 flex flex-wrap gap-2 justify-end">
