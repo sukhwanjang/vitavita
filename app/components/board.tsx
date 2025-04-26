@@ -194,7 +194,7 @@ export default function Board() {
   };
   const handlePrintTodayWork = () => {
     const today = new Date().toISOString().slice(0, 10);
-    const todayRequests = requests.filter(r => r.created_at.startsWith(today));
+    const todayRequests = requests.filter(r => r.created_at.startsWith(today)).reverse();
    
     let html = `
     <html>
