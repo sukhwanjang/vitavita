@@ -31,6 +31,7 @@ export default function Board() {
       return () => clearTimeout(timer);
     }
   }, [selectedItem]);
+  const [fadeOut, setFadeOut] = useState(false);
   const [company, setCompany] = useState('');
   const [savedScrollY, setSavedScrollY] = useState(0);
   const [program, setProgram] = useState('');
@@ -48,8 +49,12 @@ export default function Board() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const handleCloseModal = () => {
-    setModalImage(null); // 이미지 없애기
-    window.scrollTo({ top: savedScrollY, behavior: "smooth" }); // 부드럽게 원래로
+    setFadeOut(true);
+    setTimeout(() => {
+      setModalImage(null);
+      setFadeOut(false);
+      window.scrollTo({ top: savedScrollY, behavior: "smooth" });
+    }, 500);
   };
   
   
@@ -468,7 +473,11 @@ export default function Board() {
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
-  <div className="flex flex-col items-center justify-center mt-10">
+  <div
+    className={`flex flex-col items-center justify-center mt-10 transition-opacity duration-500 ${
+      fadeOut ? 'opacity-0' : 'opacity-100'
+    }`}
+  >
     <img src={modalImage} className="max-w-full h-auto object-contain" />
     <button
       onClick={handleCloseModal}
