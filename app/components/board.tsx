@@ -375,15 +375,6 @@ export default function Board() {
   </div>
 </div>
 
-
-      <button
-  onClick={handlePrintTodayWork}
-  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
->
-  오늘 작업 출력
-</button>
-
-
       {/* 입력 폼 */}
       {showForm && (
         <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
