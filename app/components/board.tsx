@@ -215,20 +215,18 @@ const [passwordInput, setPasswordInput] = useState('')
         const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
         if (input) {
           input.onchange = async (e: any) => {
-            await handlePhotoUpload(e, id);  // 사진 업로드
-            await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id); // 완료 업데이트
-            fetchRequests();
+            await handlePhotoUpload(e, id);  // 사진 업로드(=> 여기서 completed 처리함)
           };
           input.click();
         }
-        return;
+        return;  // ✅ 사진 찍는 쪽은 여기서 끝낸다 (더이상 completed 업데이트 안함)
       }
     }
   
-    // PC거나 "아니요" 누른 경우 그냥 완료 처리
+    // PC거나 "아니요" 누른 경우만 별도로 완료 처리
     await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
     fetchRequests();
-  };
+  };  
   
   
   const handleRecover = async (id: number) => {
