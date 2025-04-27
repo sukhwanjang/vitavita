@@ -206,14 +206,27 @@ const [passwordInput, setPasswordInput] = useState('')
   };
 
   const handleComplete = async (id: number) => {
-    const wantPhoto = window.confirm('사진을 촬영하시겠습니까?');
-    if (wantPhoto) {
-      document.getElementById(`photo-input-${id}`)?.click();
-    } else {
-      await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
-      fetchRequests();
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  
+    if (isMobile) {
+      const wantPhoto = window.confirm('사진을 촬영하시겠습니까?');
+      if (wantPhoto) {
+        const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
+        if (input) {
+          input.onchange = async (e: any) => {
+            await handlePhotoUpload(e, id);
+          };
+          input.click();
+        }
+        return;
+      }
     }
+  
+    // PC거나 "아니요" 누른 경우 그냥 완료 처리
+    await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
+    fetchRequests();
   };
+  
   
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
