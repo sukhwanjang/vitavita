@@ -14,7 +14,6 @@ interface RequestItem {
   pickup_date: string;
   note: string;
   image_url: string | null;
-  photo_url: string | null;  // ✅ 촬영한 완료사진 저장
   completed: boolean;
   is_urgent: boolean;
   is_deleted: boolean;
@@ -207,73 +206,13 @@ const [passwordInput, setPasswordInput] = useState('')
   };
 
   const handleComplete = async (id: number) => {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
-    if (isMobile) {
-      const wantPhoto = window.confirm('사진을 촬영하시겠습니까?');
-      if (wantPhoto) {
-        const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
-        if (input) {
-          input.onchange = async (e) => {
-            const target = e.target as HTMLInputElement;
-            await handlePhotoUpload(e as unknown as ChangeEvent<HTMLInputElement>, id);
-          };
-          input.click();
-        }
-        return; // 사진 찍기 선택했으면 여기서 끝
-      }
-    }
-  
-    // PC거나 "아니요" 누른 경우
     await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
     fetchRequests();
   };
-  
-  
-
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
     fetchRequests();
   };
-  const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>, id: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-  
-    try {
-      setIsSubmitting(true); // ✅ 업로드 시작 시 로딩 표시
-  
-      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-      const { error: uploadError } = await supabase.storage.from('request-images').upload(fileName, file);
-  
-      if (uploadError) {
-        alert('사진 업로드 실패: ' + uploadError.message);
-        return;
-      }
-  
-      const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
-      const publicUrl = data?.publicUrl ?? null;
-  
-      if (!publicUrl) {
-        alert('업로드 URL 생성 실패');
-        return;
-      }
-  
-      await supabase.from('request').update({
-        completed: true,
-        is_urgent: false,
-        photo_url: publicUrl
-      }).eq('id', id);
-  
-      alert('📸 사진 업로드 완료!'); // ✅ 업로드 성공 시 알림
-      fetchRequests();
-    } catch (err: any) {
-      alert('오류 발생: ' + (err?.message || '알 수 없는 오류'));
-    } finally {
-      setIsSubmitting(false); // ✅ 로딩 종료
-    }
-  };
-  
-  
   const handleImageClick = (url: string) => {
     setSavedScrollY(window.scrollY); // 현재 위치 저장
     setModalImage(url);               // 이미지 저장
@@ -340,116 +279,166 @@ const [passwordInput, setPasswordInput] = useState('')
 };
   
 
-const renderCard = (item: RequestItem) => {
-  const isActive = !item.completed && !item.is_deleted;
+  const renderCard = (item: RequestItem) => {
+    const isActive = !item.completed && !item.is_deleted;
+  
+    return (
+      <div
+  key={item.id}
+  onClick={() => setSelectedItem(item)}   // 🔥 이거 추가
+  className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border cursor-pointer ${
+    item.completed ? 'border-gray-300' : 'border-blue-500'
+  }`}
+>
 
-  return (
-    <div
-      key={item.id}
-      onClick={() => setSelectedItem(item)}
-      className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border cursor-pointer ${
-        item.completed ? 'border-gray-300' : 'border-blue-500'
-      }`}
+        {/* 상단 바 */}
+        <div
+  className={`h-8 ${
+    item.completed
+      ? 'bg-gray-200'
+      : (() => {
+          const daysLeft = item.pickup_date
+            ? Math.ceil(
+                (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+                / (1000 * 60 * 60 * 24)
+              )
+            : null;
+          if (daysLeft === 0) return 'bg-red-400'; // 오늘만 빨간색
+          return item.is_urgent ? 'bg-red-500' : 'bg-blue-500'; // 나머지는 급함 빨간/일반 파란
+        })()
+  } flex items-center justify-center text-white text-xs font-bold`}
+>
+
+  {item.completed ? '완료' : item.is_urgent ? '급함' : '진행중'}
+</div>
+
+  
+        {/* 카드 본문 */}
+        <div className="flex flex-col p-4 space-y-2 bg-white h-full">
+  <div>
+    <p className="text-lg font-bold truncate">{item.company}</p>
+    <p className="text-sm text-gray-600 truncate">{item.program}</p>
+  </div>
+
+  {item.image_url && (
+    <img
+      src={item.image_url}
+      onClick={() => handleImageClick(item.image_url!)}
+      className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
+    />
+  )}
+
+  {/* 기존 픽업일 표시 */}
+  <div className={`text-sm font-bold ${
+  (() => {
+    const daysLeft = item.pickup_date
+      ? Math.ceil(
+          (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+          / (1000 * 60 * 60 * 24)
+        )
+      : null;
+    return daysLeft === 0 ? 'text-red-500' : 'text-gray-700';
+  })()
+}`}>
+  📅 픽업 {item.pickup_date ? (() => {
+    const daysLeft = Math.ceil(
+      (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+      / (1000 * 60 * 60 * 24)
+    );
+    if (daysLeft === 0) return '오늘';
+    if (daysLeft > 0) return `D-${daysLeft}`;
+    return '지남';
+  })() : '-'}
+</div>
+
+  {/* 메모 */}
+  {item.note && (
+    <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
+  )}
+
+  
+          {/* 버튼 영역 */}
+          <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
+  {isActive && (
+    <>
+      {/* 업로드 시간 추가 */}
+      <span className="text-[10px] text-gray-400 mr-auto">
+        🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })}
+      </span>
+
+      <button
+        onClick={() => handleEdit(item)}
+        className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
+      >
+        수정
+      </button>
+      <button
+        onClick={() => handleComplete(item.id)}
+        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+      >
+        완료
+      </button>
+      <button
+        onClick={() => handleDelete(item.id)}
+        className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+      >
+        삭제
+      </button>
+    </>
+  )}
+
+  
+  {item.completed && (
+  <div className="flex items-center gap-2">
+    <span className="text-green-600 text-xs">✅ 완료됨</span>
+    <button
+      onClick={() => handleRecover(item.id)}
+      className="text-xs text-blue-500 underline hover:text-blue-700"
     >
-      {/* ✅ 숨겨진 input - 카드 최상단 1개만 */}
-      <input
-        type="file"
-        id={`photo-input-${item.id}`}
-        accept="image/*"
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={(e) => handlePhotoUpload(e, item.id)}
-      />
+      복구
+    </button>
+    <button
+      onClick={async () => {
+        if (window.confirm('정말 삭제하시겠습니까?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      삭제
+    </button>
+  </div>
+)}
 
-      {/* 상단 바 */}
-      <div className={`h-8 ${item.completed ? 'bg-gray-200' : item.is_urgent ? 'bg-red-500' : 'bg-blue-500'} flex items-center justify-center text-white text-xs font-bold`}>
-        {item.completed ? '완료' : item.is_urgent ? '급함' : '진행중'}
-      </div>
+  {item.is_deleted && (
+  <div className="flex items-center gap-2">
+    <span className="text-gray-400 text-xs">🗑 삭제됨</span>
+    <button
+      onClick={async () => {
+        if (window.confirm('진짜로 완전 삭제할까요?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      완전 삭제
+    </button>
+  </div>
+)}
 
-      {/* 카드 내용 */}
-      <div className="flex flex-col p-4 space-y-2 bg-white h-full">
-        <div>
-          <p className="text-lg font-bold truncate">{item.company}</p>
-          <p className="text-sm text-gray-600 truncate">{item.program}</p>
-        </div>
-
-        {/* 이미지 */}
-        {item.image_url && (
-          <img
-            src={item.image_url}
-            onClick={() => handleImageClick(item.image_url!)}
-            className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
-          />
-        )}
-
-        {/* 픽업일 */}
-        <div className="text-sm font-bold text-gray-700">
-          📅 픽업 {item.pickup_date || '-'}
-        </div>
-
-        {/* 메모 */}
-        {item.note && (
-          <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
-        )}
-
-        {/* 버튼 영역 */}
-        <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
-          {/* 업로드 시간 */}
-          <span className="text-[10px] text-gray-400 mr-auto">
-            🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
-              month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-            })}
-          </span>
-
-          {/* 진행중이면 수정/완료/삭제 */}
-          {isActive && (
-            <>
-              <button onClick={() => handleEdit(item)} className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs">수정</button>
-              <button onClick={() => handleComplete(item.id)} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs">완료</button>
-              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs">삭제</button>
-            </>
-          )}
-
-          {/* 완료되면 재촬영/복구/삭제 */}
-          {item.completed && (
-            <>
-              {item.photo_url && (
-                <button
-                  onClick={() => handleImageClick(item.photo_url!)}
-                  className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
-                >
-                  📸 사진
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  const input = document.getElementById(`photo-input-${item.id}`) as HTMLInputElement;
-                  input?.click();
-                }}
-                className="px-2 py-1 bg-pink-500 text-white rounded hover:bg-pink-600 text-xs"
-              >
-                📷 재촬영
-              </button>
-              <button onClick={() => handleRecover(item.id)} className="text-xs text-blue-500 underline hover:text-blue-700">복구</button>
-              <button
-                onClick={async () => {
-                  if (window.confirm('정말 삭제하시겠습니까?')) {
-                    await supabase.from('request').delete().eq('id', item.id);
-                    fetchRequests();
-                  }
-                }}
-                className="text-xs text-red-500 underline hover:text-red-700"
-              >
-                삭제
-              </button>
-            </>
-          )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
     
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
