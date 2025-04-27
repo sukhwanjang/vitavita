@@ -206,13 +206,42 @@ const [passwordInput, setPasswordInput] = useState('')
   };
 
   const handleComplete = async (id: number) => {
-    await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
-    fetchRequests();
+    const wantPhoto = window.confirm('사진을 촬영하시겠습니까?');
+    if (wantPhoto) {
+      document.getElementById(`photo-input-${id}`)?.click();
+    } else {
+      await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
+      fetchRequests();
+    }
   };
+  
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
     fetchRequests();
   };
+  const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    const { error } = await supabase.storage.from('request-images').upload(fileName, file);
+    if (error) {
+      alert('사진 업로드 실패: ' + error.message);
+      return;
+    }
+  
+    const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
+    const publicUrl = data?.publicUrl ?? null;
+  
+    await supabase.from('request').update({
+      completed: true,
+      is_urgent: false,
+      image_url: publicUrl
+    }).eq('id', id);
+  
+    fetchRequests();
+  };
+  
   const handleImageClick = (url: string) => {
     setSavedScrollY(window.scrollY); // 현재 위치 저장
     setModalImage(url);               // 이미지 저장
@@ -359,6 +388,14 @@ const [passwordInput, setPasswordInput] = useState('')
   
           {/* 버튼 영역 */}
           <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
+          <input
+  type="file"
+  id={`photo-input-${item.id}`}
+  accept="image/*"
+  capture="environment"
+  style={{ display: 'none' }}
+  onChange={(e) => handlePhotoUpload(e, item.id)}
+/>
   {isActive && (
     <>
       {/* 업로드 시간 추가 */}
