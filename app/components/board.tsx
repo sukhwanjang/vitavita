@@ -225,14 +225,21 @@ const [passwordInput, setPasswordInput] = useState('')
     fetchRequests();
   };
   const handlePrintTodayWork = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const todayRequests = requests.filter(r => r.created_at.startsWith(today)).reverse();
-   
-    let html = `
+  const now = new Date();
+  // UTC 기준 한국시간(+9시간)으로 변환
+  const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const today = koreaTime.toISOString().slice(0, 10); // 한국 날짜로 today 결정
+
+  const todayRequests = requests.filter(r => {
+    const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
+    return createdAtKorea.toISOString().slice(0, 10) === today;
+  }).reverse();
+
+  let html = `
     <html>
     <head><title>오늘 작업 출력</title></head>
     <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
-    <h1 style="font-size: 16px;">오늘 작업한 내용</h1>
+    <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
     <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
       <thead style="background-color:#f0f0f0;">
         <tr>
@@ -243,46 +250,33 @@ const [passwordInput, setPasswordInput] = useState('')
         </tr>
       </thead>
       <tbody>
-    `;
-    todayRequests.forEach((item) => {
-      const pickupDaysLeft = item.pickup_date
-        ? Math.max(
-            0,
-            Math.ceil(
-              (new Date(item.pickup_date).getTime() - new Date().getTime()) /
-                (1000 * 60 * 60 * 24)
-            )
-          )
-        : null;
-    
-      html += `
-        <tr>
-          <td>${item.company}</td>
-          <td>${item.program}</td>
-          <td>${new Date(item.created_at).toLocaleString()}</td>
-          <td>
-            ${item.completed 
-              ? '완료됨' 
-              : `아직 완료 안 됨 ${pickupDaysLeft !== null ? `(D-${pickupDaysLeft})` : ''}`}
-          </td>
-        </tr>
-      `;
-    });
+  `;
+
+  todayRequests.forEach((item) => {
     html += `
+      <tr>
+        <td>${item.company}</td>
+        <td>${item.program}</td>
+        <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
+        <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+      </tr>
+    `;
+  });
+
+  html += `
       </tbody>
     </table>
     </body>
     </html>
-    `;
-    
-  
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
+  `;
+
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  }
+};
   
 
   const renderCard = (item: RequestItem) => {
