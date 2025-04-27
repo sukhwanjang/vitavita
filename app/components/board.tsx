@@ -234,25 +234,40 @@ const [passwordInput, setPasswordInput] = useState('')
     const file = e.target.files?.[0];
     if (!file) return;
   
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-    const { error } = await supabase.storage.from('request-images').upload(fileName, file);
-    if (error) {
-      alert('사진 업로드 실패: ' + error.message);
-      return;
+    try {
+      setIsSubmitting(true); // ✅ 업로드 시작 시 로딩 표시
+  
+      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      const { error: uploadError } = await supabase.storage.from('request-images').upload(fileName, file);
+  
+      if (uploadError) {
+        alert('사진 업로드 실패: ' + uploadError.message);
+        return;
+      }
+  
+      const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
+      const publicUrl = data?.publicUrl ?? null;
+  
+      if (!publicUrl) {
+        alert('업로드 URL 생성 실패');
+        return;
+      }
+  
+      await supabase.from('request').update({
+        completed: true,
+        is_urgent: false,
+        photo_url: publicUrl
+      }).eq('id', id);
+  
+      alert('📸 사진 업로드 완료!'); // ✅ 업로드 성공 시 알림
+      fetchRequests();
+    } catch (err: any) {
+      alert('오류 발생: ' + (err?.message || '알 수 없는 오류'));
+    } finally {
+      setIsSubmitting(false); // ✅ 로딩 종료
     }
-  
-    const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
-    const publicUrl = data?.publicUrl ?? null;
-  
-    // ✅ 이제 촬영 사진은 photo_url에만 저장!
-    await supabase.from('request').update({
-      completed: true,
-      is_urgent: false,
-      photo_url: publicUrl  // ✅ 여기에만 저장
-    }).eq('id', id);
-  
-    fetchRequests();
   };
+  
   
   const handleImageClick = (url: string) => {
     setSavedScrollY(window.scrollY); // 현재 위치 저장
