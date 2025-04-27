@@ -215,7 +215,9 @@ const [passwordInput, setPasswordInput] = useState('')
         const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
         if (input) {
           input.onchange = async (e: any) => {
-            await handlePhotoUpload(e, id);
+            await handlePhotoUpload(e, id);  // 사진 업로드
+            await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id); // 완료 업데이트
+            fetchRequests();
           };
           input.click();
         }
@@ -446,22 +448,24 @@ const [passwordInput, setPasswordInput] = useState('')
   )}
 
   
-  {item.completed && (
+{item.completed && (
   <div className="flex items-center gap-2">
     <span className="text-green-600 text-xs">✅ 완료됨</span>
+
+    {/* 📸 촬영 사진 버튼 따로 분리해서 추가 */}
+    {item.photo_url && (
+      <button
+        onClick={() => handleImageClick(item.photo_url!)}
+        className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
+      >
+        📸 사진
+      </button>
+    )}
+
     <button
       onClick={() => handleRecover(item.id)}
       className="text-xs text-blue-500 underline hover:text-blue-700"
     >
-      {item.photo_url && (
-  <button
-    onClick={() => handleImageClick(item.photo_url!)}
-    className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
-  >
-    📸 사진
-  </button>
-)}
-
       복구
     </button>
     <button
