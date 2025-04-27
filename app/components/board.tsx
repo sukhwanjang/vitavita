@@ -445,7 +445,7 @@ const [passwordInput, setPasswordInput] = useState('')
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="relative bg-[#f7f6f3] min-h-screen text-gray-900 px-4 py-8 font-sans">
+    <div className="relative bg-[#f0f4f8] min-h-screen text-gray-900 px-4 py-8 font-sans">
       {selectedItem && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
