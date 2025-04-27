@@ -214,9 +214,6 @@ const [passwordInput, setPasswordInput] = useState('')
       if (wantPhoto) {
         const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
         if (input) {
-          input.onchange = async (e: any) => {
-            await handlePhotoUpload(e, id);
-          };
           input.click();
         }
         return;  // ✅ 사진 찍는 쪽은 여기서 끝낸다 (더이상 completed 업데이트 안함)
