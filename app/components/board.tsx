@@ -465,6 +465,15 @@ const [passwordInput, setPasswordInput] = useState('')
 
     {/* ✅ 완료된 항목에도 "사진 재촬영" 버튼 추가 */}
     <div className="flex items-center gap-2">
+      {/* 📷 재촬영용 숨겨진 input (완료카드용) */}
+<input
+  type="file"
+  id={`photo-input-${item.id}`}
+  accept="image/*"
+  capture="environment"
+  style={{ display: 'none' }}
+  onChange={(e) => handlePhotoUpload(e, item.id)}
+/>
       <button
         onClick={() => {
           const input = document.getElementById(`photo-input-${item.id}`) as HTMLInputElement;
