@@ -14,6 +14,7 @@ interface RequestItem {
   pickup_date: string;
   note: string;
   image_url: string | null;
+  photo_url: string | null;  // ✅ 촬영한 완료사진 저장
   completed: boolean;
   is_urgent: boolean;
   is_deleted: boolean;
@@ -246,10 +247,11 @@ const [passwordInput, setPasswordInput] = useState('')
     const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
     const publicUrl = data?.publicUrl ?? null;
   
+    // ✅ 이제 촬영 사진은 photo_url에만 저장!
     await supabase.from('request').update({
       completed: true,
       is_urgent: false,
-      image_url: publicUrl
+      photo_url: publicUrl  // ✅ 여기에만 저장
     }).eq('id', id);
   
     fetchRequests();
@@ -451,6 +453,15 @@ const [passwordInput, setPasswordInput] = useState('')
       onClick={() => handleRecover(item.id)}
       className="text-xs text-blue-500 underline hover:text-blue-700"
     >
+      {item.photo_url && (
+  <button
+    onClick={() => handleImageClick(item.photo_url!)}
+    className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
+  >
+    📸 사진
+  </button>
+)}
+
       복구
     </button>
     <button
