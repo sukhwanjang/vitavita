@@ -446,13 +446,11 @@ const [passwordInput, setPasswordInput] = useState('')
   )}
 
   
-{item.completed && (
+{item.completed ? (
+  // 완료 카드용 버튼
   <div className="flex flex-col gap-2 w-full">
-
     <div className="flex items-center justify-between">
       <span className="text-green-600 text-xs">✅ 완료됨</span>
-
-      {/* ✅ 사진 보기 버튼 */}
       {item.photo_url && (
         <button
           onClick={() => handleImageClick(item.photo_url!)}
@@ -462,18 +460,16 @@ const [passwordInput, setPasswordInput] = useState('')
         </button>
       )}
     </div>
-
-    {/* ✅ 완료된 항목에도 "사진 재촬영" 버튼 추가 */}
     <div className="flex items-center gap-2">
-      {/* 📷 재촬영용 숨겨진 input (완료카드용) */}
-<input
-  type="file"
-  id={`photo-input-${item.id}`}
-  accept="image/*"
-  capture="environment"
-  style={{ display: 'none' }}
-  onChange={(e) => handlePhotoUpload(e, item.id)}
-/>
+      {/* ✅ 여기에만 input 생성 */}
+      <input
+        type="file"
+        id={`photo-input-${item.id}`}
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={(e) => handlePhotoUpload(e, item.id)}
+      />
       <button
         onClick={() => {
           const input = document.getElementById(`photo-input-${item.id}`) as HTMLInputElement;
@@ -483,26 +479,22 @@ const [passwordInput, setPasswordInput] = useState('')
       >
         📷 재촬영
       </button>
-
-      <button
-        onClick={() => handleRecover(item.id)}
-        className="text-xs text-blue-500 underline hover:text-blue-700"
-      >
-        복구
-      </button>
-      <button
-        onClick={async () => {
-          if (window.confirm('정말 삭제하시겠습니까?')) {
-            await supabase.from('request').delete().eq('id', item.id);
-            fetchRequests();
-          }
-        }}
-        className="text-xs text-red-500 underline hover:text-red-700"
-      >
-        삭제
-      </button>
+      {/* 복구, 삭제 버튼 */}
     </div>
-
+  </div>
+) : (
+  // 진행중 카드용 버튼
+  <div className="flex flex-wrap gap-2 items-center justify-end">
+    {/* ✅ 여기에만 input 생성 */}
+    <input
+      type="file"
+      id={`photo-input-${item.id}`}
+      accept="image/*"
+      capture="environment"
+      style={{ display: 'none' }}
+      onChange={(e) => handlePhotoUpload(e, item.id)}
+    />
+    {/* 수정, 완료, 삭제 버튼 */}
   </div>
 )}
 
