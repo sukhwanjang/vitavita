@@ -447,38 +447,56 @@ const [passwordInput, setPasswordInput] = useState('')
 
   
 {item.completed && (
-  <div className="flex items-center gap-2">
-    <span className="text-green-600 text-xs">✅ 완료됨</span>
+  <div className="flex flex-col gap-2 w-full">
 
-    {/* 📸 촬영 사진 버튼 따로 분리해서 추가 */}
-    {item.photo_url && (
+    <div className="flex items-center justify-between">
+      <span className="text-green-600 text-xs">✅ 완료됨</span>
+
+      {/* ✅ 사진 보기 버튼 */}
+      {item.photo_url && (
+        <button
+          onClick={() => handleImageClick(item.photo_url!)}
+          className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
+        >
+          📸 사진
+        </button>
+      )}
+    </div>
+
+    {/* ✅ 완료된 항목에도 "사진 재촬영" 버튼 추가 */}
+    <div className="flex items-center gap-2">
       <button
-        onClick={() => handleImageClick(item.photo_url!)}
-        className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs"
+        onClick={() => {
+          const input = document.getElementById(`photo-input-${item.id}`) as HTMLInputElement;
+          input?.click();
+        }}
+        className="px-2 py-1 bg-pink-500 text-white rounded hover:bg-pink-600 text-xs"
       >
-        📸 사진
+        📷 재촬영
       </button>
-    )}
 
-    <button
-      onClick={() => handleRecover(item.id)}
-      className="text-xs text-blue-500 underline hover:text-blue-700"
-    >
-      복구
-    </button>
-    <button
-      onClick={async () => {
-        if (window.confirm('정말 삭제하시겠습니까?')) {
-          await supabase.from('request').delete().eq('id', item.id);
-          fetchRequests();
-        }
-      }}
-      className="text-xs text-red-500 underline hover:text-red-700"
-    >
-      삭제
-    </button>
+      <button
+        onClick={() => handleRecover(item.id)}
+        className="text-xs text-blue-500 underline hover:text-blue-700"
+      >
+        복구
+      </button>
+      <button
+        onClick={async () => {
+          if (window.confirm('정말 삭제하시겠습니까?')) {
+            await supabase.from('request').delete().eq('id', item.id);
+            fetchRequests();
+          }
+        }}
+        className="text-xs text-red-500 underline hover:text-red-700"
+      >
+        삭제
+      </button>
+    </div>
+
   </div>
 )}
+
 
   {item.is_deleted && (
   <div className="flex items-center gap-2">
