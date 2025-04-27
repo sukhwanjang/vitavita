@@ -215,7 +215,7 @@ const [passwordInput, setPasswordInput] = useState('')
         const input = document.getElementById(`photo-input-${id}`) as HTMLInputElement;
         if (input) {
           input.onchange = async (e: any) => {
-            await handlePhotoUpload(e, id);  // 사진 업로드(=> 여기서 completed 처리함)
+            await handlePhotoUpload(e, id);
           };
           input.click();
         }
@@ -228,7 +228,7 @@ const [passwordInput, setPasswordInput] = useState('')
     fetchRequests();
   };  
   
-  
+
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
     fetchRequests();
