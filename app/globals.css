@@ -48,3 +48,15 @@ thead th {
 tbody td {
   @apply px-4 py-2 border-b;
 }
+@keyframes urgent-blink {
+  0%, 100% {
+    background-color: #fecaca; /* 연한 빨강 */
+  }
+  50% {
+    background-color: #f87171; /* 진한 빨강 */
+  }
+}
+
+.animate-urgent {
+  animation: urgent-blink 1.5s infinite;
+}

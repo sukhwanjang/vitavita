@@ -285,11 +285,12 @@ const [passwordInput, setPasswordInput] = useState('')
     return (
       <div
   key={item.id}
-  onClick={() => setSelectedItem(item)}   // 🔥 이거 추가
-  className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border cursor-pointer ${
-    item.completed ? 'border-gray-300' : 'border-blue-500'
+  onClick={() => setSelectedItem(item)}
+  className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ${
+    item.completed ? 'border-gray-300' : item.is_urgent ? 'border-red-500 animate-urgent' : 'border-blue-500'
   }`}
 >
+
 
         {/* 상단 바 */}
         <div
