@@ -225,58 +225,58 @@ const [passwordInput, setPasswordInput] = useState('')
     fetchRequests();
   };
   const handlePrintTodayWork = () => {
-  const now = new Date();
-  // UTC 기준 한국시간(+9시간)으로 변환
-  const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const today = koreaTime.toISOString().slice(0, 10); // 한국 날짜로 today 결정
-
-  const todayRequests = requests.filter(r => {
-    const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
-    return createdAtKorea.toISOString().slice(0, 10) === today;
-  }).reverse();
-
-  let html = `
-    <html>
-    <head><title>오늘 작업 출력</title></head>
-    <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
-    <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
-    <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
-      <thead style="background-color:#f0f0f0;">
-        <tr>
-          <th>업체명</th>
-          <th>프로그램명</th>
-          <th>업로드 시간</th>
-          <th>완료 여부</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  todayRequests.forEach((item) => {
-    html += `
-      <tr>
-        <td>${item.company}</td>
-        <td>${item.program}</td>
-        <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
-        <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
-      </tr>
+    const now = new Date();
+    const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const today = koreaTime.toISOString().slice(0, 10);
+  
+    const todayRequests = requests.filter(r => {
+      const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
+      return createdAtKorea.toISOString().slice(0, 10) === today;
+    }).reverse();
+  
+    let html = `
+      <html>
+      <head><title>오늘 작업 출력</title></head>
+      <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
+      <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
+      <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
+        <thead style="background-color:#f0f0f0;">
+          <tr>
+            <th>업체명</th>
+            <th>프로그램명</th>
+            <th>메모</th>
+            <th>완료 여부</th>
+          </tr>
+        </thead>
+        <tbody>
     `;
-  });
-
-  html += `
-      </tbody>
-    </table>
-    </body>
-    </html>
-  `;
-
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
-  }
-};
+  
+    todayRequests.forEach((item) => {
+      html += `
+        <tr>
+          <td>${item.company}</td>
+          <td>${item.program}</td>
+          <td>${item.note || '-'}</td> <!-- 메모 출력! -->
+          <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+        </tr>
+      `;
+    });
+  
+    html += `
+        </tbody>
+      </table>
+      </body>
+      </html>
+    `;
+  
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+  
   
 
   const renderCard = (item: RequestItem) => {
