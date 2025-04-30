@@ -285,8 +285,15 @@ const [passwordInput, setPasswordInput] = useState('')
   
     return (
       <div
-  key={item.id}
->
+        key={item.id}
+        className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ${
+          item.completed
+            ? 'border-gray-300'
+            : item.is_urgent
+            ? 'border-red-500 animate-urgent'
+            : 'border-blue-500'
+        }`}
+      >
 
 
         {/* 상단 바 */}
