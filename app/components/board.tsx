@@ -307,7 +307,10 @@ const [passwordInput, setPasswordInput] = useState('')
     return (
       <div
   key={item.id}
-  className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ..."
+  onClick={() => setSelectedItem(item)}
+  className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ${
+    item.completed ? 'border-gray-300' : item.is_urgent ? 'border-red-500 animate-urgent' : 'border-blue-500'
+  }`}
 >
 
 
@@ -399,18 +402,37 @@ const [passwordInput, setPasswordInput] = useState('')
         수정
       </button>
       <button
+        onClick={() => handleComplete(item.id)}
+        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+      >
+        완료
+      </button>
+      <button
+        onClick={() => handleDelete(item.id)}
+        className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+      >
+        삭제
+      </button>
+    </>
+  )}
+
+  
+  {item.completed && (
+  <div className="flex items-center gap-2">
+    <span className="text-green-600 text-xs">✅ 완료됨</span>
+    <button
   onClick={(e) => {
-    e.stopPropagation(); // 카드 클릭 이벤트 차단
-    handleComplete(item.id);
+    e.stopPropagation(); // 이벤트 전파 중단
+    handleRecover(item.id);
   }}
-  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+  className="text-xs text-blue-500 underline hover:text-blue-700"
 >
-  완료
+  복구
 </button>
 
 <button
   onClick={async (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // 이벤트 전파 중단
     if (window.confirm('정말 삭제하시겠습니까?')) {
       await supabase.from('request').delete().eq('id', item.id);
       fetchRequests();
@@ -421,30 +443,6 @@ const [passwordInput, setPasswordInput] = useState('')
   삭제
 </button>
 
-    </>
-  )}
-
-  
-  {item.completed && (
-  <div className="flex items-center gap-2">
-    <span className="text-green-600 text-xs">✅ 완료됨</span>
-    <button
-      onClick={() => handleRecover(item.id)}
-      className="text-xs text-blue-500 underline hover:text-blue-700"
-    >
-      복구
-    </button>
-    <button
-      onClick={async () => {
-        if (window.confirm('정말 삭제하시겠습니까?')) {
-          await supabase.from('request').delete().eq('id', item.id);
-          fetchRequests();
-        }
-      }}
-      className="text-xs text-red-500 underline hover:text-red-700"
-    >
-      삭제
-    </button>
   </div>
 )}
 
@@ -495,6 +493,37 @@ const [passwordInput, setPasswordInput] = useState('')
 
   return (
     <div className="relative bg-[#F8F6F1] min-h-screen text-gray-900 px-4 py-8 font-sans">
+      {selectedItem && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
+      <h2 className="text-2xl font-bold mb-4">상세 정보</h2>
+      <div className="space-y-2 text-sm text-gray-700">
+        <div><strong>업체명:</strong> {selectedItem.company}</div>
+        <div><strong>프로그램명:</strong> {selectedItem.program}</div>
+        <div><strong>메모:</strong> {selectedItem.note || '-'}</div>
+        <div><strong>업로드:</strong> {new Date(selectedItem.created_at).toLocaleString('ko-KR', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })}</div>
+        <div><strong>픽업일:</strong> {selectedItem.pickup_date || '-'}</div>
+      </div>
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => setSelectedItem(null)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       {/* 이미지 확대 모달 */}
       {modalImage && (
   <div
@@ -619,7 +648,7 @@ const [passwordInput, setPasswordInput] = useState('')
         <div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {filteredInProgress.map(renderCard)}
+            {filteredInProgress.map(renderCard)}
           </div>
         </div>
 
