@@ -18,14 +18,12 @@ interface RequestItem {
   is_urgent: boolean;
   is_deleted: boolean;
   created_at: string;
-  creator?: string;
 }
 
 export default function Board() {
   const [authorized, setAuthorized] = useState(false);
 const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [creator, setCreator] = useState('');
   const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
   useEffect(() => {
     if (selectedItem) {
@@ -52,8 +50,6 @@ const [passwordInput, setPasswordInput] = useState('')
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
-  const [searchText, setSearchText] = useState('');
-
   const handleCloseModal = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -150,11 +146,6 @@ const [passwordInput, setPasswordInput] = useState('')
       setError('업체명, 프로그램명, 픽업일은 필수입니다.');
       return;
     }
-    if (!creator) {
-      setError('작업자를 선택해주세요.');
-      setIsSubmitting(false);
-      return;
-    }
 
     setIsSubmitting(true);
     setError(null);
@@ -168,35 +159,22 @@ const [passwordInput, setPasswordInput] = useState('')
       }
       imageUrl = uploaded;
     }
-  
+
     if (editMode && editingId !== null) {
       const { error } = await supabase.from('request').update({
-        company,
-        program,
-        pickup_date: pickupDate,
-        note,
-        image_url: imageUrl,
-        is_urgent: isUrgent,
-        creator,
+        company, program, pickup_date: pickupDate, note,
+        image_url: imageUrl, is_urgent: isUrgent
       }).eq('id', editingId);
-  
+
       if (error) setError(`수정 실패: ${error.message}`);
     } else {
       const { error } = await supabase.from('request').insert([{
-        company,
-        program,
-        pickup_date: pickupDate,
-        note,
-        image_url: imageUrl,
-        is_urgent: isUrgent,
-        completed: false,
-        is_deleted: false,
-        creator, // 이 필드가 올바르게 설정되어야 합니다.
+        company, program, pickup_date: pickupDate, note,
+        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false
       }]);
-  
       if (error) setError(`등록 실패: ${error.message}`);
     }
-  
+
     setIsSubmitting(false);
     clearForm();
     fetchRequests();
@@ -247,58 +225,58 @@ const [passwordInput, setPasswordInput] = useState('')
     fetchRequests();
   };
   const handlePrintTodayWork = () => {
-    const now = new Date();
-    const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const today = koreaTime.toISOString().slice(0, 10);
-  
-    const todayRequests = requests.filter(r => {
-      const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
-      return createdAtKorea.toISOString().slice(0, 10) === today;
-    }).reverse();
-  
-    let html = `
-      <html>
-      <head><title>오늘 작업 출력</title></head>
-      <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
-      <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
-      <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
-        <thead style="background-color:#f0f0f0;">
-          <tr>
-            <th>업체명 / 작업자</th>
-            <th>프로그램명</th>
-            <th>메모</th>
-            <th>완료 여부</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-  
-    todayRequests.forEach((item) => {
-      html += `
+  const now = new Date();
+  // UTC 기준 한국시간(+9시간)으로 변환
+  const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const today = koreaTime.toISOString().slice(0, 10); // 한국 날짜로 today 결정
+
+  const todayRequests = requests.filter(r => {
+    const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
+    return createdAtKorea.toISOString().slice(0, 10) === today;
+  }).reverse();
+
+  let html = `
+    <html>
+    <head><title>오늘 작업 출력</title></head>
+    <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
+    <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
+    <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
+      <thead style="background-color:#f0f0f0;">
         <tr>
-          <td>${item.company}${item.creator ? ` / ${item.creator}` : ''}</td>
-          <td>${item.program}</td>
-          <td>${item.note || '-'}</td> <!-- 메모 출력! -->
-          <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+          <th>업체명</th>
+          <th>프로그램명</th>
+          <th>업로드 시간</th>
+          <th>완료 여부</th>
         </tr>
-      `;
-    });
-  
+      </thead>
+      <tbody>
+  `;
+
+  todayRequests.forEach((item) => {
     html += `
-        </tbody>
-      </table>
-      </body>
-      </html>
+      <tr>
+        <td>${item.company}</td>
+        <td>${item.program}</td>
+        <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
+        <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+      </tr>
     `;
-  
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-  
+  });
+
+  html += `
+      </tbody>
+    </table>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  }
+};
   
 
   const renderCard = (item: RequestItem) => {
@@ -421,51 +399,28 @@ const [passwordInput, setPasswordInput] = useState('')
   <div className="flex items-center gap-2">
     <span className="text-green-600 text-xs">✅ 완료됨</span>
     <button
-  onClick={(e) => {
-    e.stopPropagation(); // 카드 클릭 방지
-    handleEdit(item);
-  }}
-  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
->
-  수정
-</button>
-
-<button
-  onClick={(e) => {
-    e.stopPropagation(); // 카드 클릭 방지
-    handleComplete(item.id);
-  }}
-  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
->
-  완료
-</button>
-
-<button
-  onClick={(e) => {
-    e.stopPropagation(); // 카드 클릭 방지
-    handleDelete(item.id);
-  }}
-  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
->
-  삭제
-</button>
-
-
-  </div>
-)}
-
-{item.is_deleted && (
-  <div className="flex items-center gap-2">
-    <span className="text-gray-400 text-xs">🗑 삭제됨</span>
-    <button
-      onClick={async () => {
-        await supabase.from('request').update({ is_deleted: false }).eq('id', item.id);
-        fetchRequests();
-      }}
+      onClick={() => handleRecover(item.id)}
       className="text-xs text-blue-500 underline hover:text-blue-700"
     >
       복구
     </button>
+    <button
+      onClick={async () => {
+        if (window.confirm('정말 삭제하시겠습니까?')) {
+          await supabase.from('request').delete().eq('id', item.id);
+          fetchRequests();
+        }
+      }}
+      className="text-xs text-red-500 underline hover:text-red-700"
+    >
+      삭제
+    </button>
+  </div>
+)}
+
+  {item.is_deleted && (
+  <div className="flex items-center gap-2">
+    <span className="text-gray-400 text-xs">🗑 삭제됨</span>
     <button
       onClick={async () => {
         if (window.confirm('진짜로 완전 삭제할까요?')) {
@@ -480,27 +435,18 @@ const [passwordInput, setPasswordInput] = useState('')
   </div>
 )}
 
-
           </div>
         </div>
       </div>
     );
   };
     
-  const filteredInProgress = requests.filter(r =>
-    !r.is_deleted &&
-    !r.completed &&
-    (
-      r.company.toLowerCase().includes(searchText.toLowerCase()) ||
-      r.program.toLowerCase().includes(searchText.toLowerCase()) ||
-      r.creator?.toLowerCase().includes(searchText.toLowerCase())
-    )
-  );
+  const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="relative bg-[#F8F6F1] min-h-screen text-gray-900 px-4 py-8 font-sans">
+    <div className="relative bg-[#D5E5F2] min-h-screen text-gray-900 px-4 py-8 font-sans">
       {selectedItem && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
@@ -568,15 +514,6 @@ const [passwordInput, setPasswordInput] = useState('')
 
   {/* 오른쪽: 작업 추가, 완료 보기, 삭제 보기 */}
   <div className="flex gap-2">
-  <div className="flex gap-2 items-center">
-  <input
-    type="text"
-    value={searchText}
-    onChange={(e) => setSearchText(e.target.value)}
-    placeholder="검색 (업체명, 프로그램명, 작업자)"
-    className="border px-3 py-2 rounded-md text-sm"
-  />
-</div>
     <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
       {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
     </button>
@@ -601,25 +538,6 @@ const [passwordInput, setPasswordInput] = useState('')
               <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
             </div>
-            <div className="flex flex-col">
-  <label className="font-medium text-gray-800 mb-2">작업자 선택</label>
-  <div className="grid grid-cols-2 gap-2">
-    {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
-      <button
-        key={name}
-        onClick={() => setCreator(name)}
-        className={`p-2 rounded-xl border text-sm font-semibold ${
-          creator === name
-            ? 'bg-blue-500 text-white border-blue-600'
-            : 'bg-white text-gray-800 border-gray-300'
-        } hover:shadow`}
-      >
-        {name}
-      </button>
-    ))}
-  </div>
-  {error && <p className="text-red-500 text-sm">{error}</p>}
-</div>
             <div className="flex flex-col">
               <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
               <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
@@ -656,7 +574,7 @@ const [passwordInput, setPasswordInput] = useState('')
         <div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {filteredInProgress.map(renderCard)}
+            {inProgress.map(renderCard)}
           </div>
         </div>
 
