@@ -580,6 +580,7 @@ const [passwordInput, setPasswordInput] = useState('')
       </button>
     ))}
   </div>
+  {error && <p className="text-red-500 text-sm">{error}</p>}
 </div>
             <div className="flex flex-col">
               <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
