@@ -422,26 +422,34 @@ const [passwordInput, setPasswordInput] = useState('')
     <span className="text-green-600 text-xs">✅ 완료됨</span>
     <button
   onClick={(e) => {
-    e.stopPropagation(); // 이벤트 전파 중단
-    handleRecover(item.id);
+    e.stopPropagation(); // 카드 클릭 방지
+    handleEdit(item);
   }}
-  className="text-xs text-blue-500 underline hover:text-blue-700"
+  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
 >
-  복구
+  수정
 </button>
 
 <button
-  onClick={async (e) => {
-    e.stopPropagation(); // 이벤트 전파 중단
-    if (window.confirm('정말 삭제하시겠습니까?')) {
-      await supabase.from('request').delete().eq('id', item.id);
-      fetchRequests();
-    }
+  onClick={(e) => {
+    e.stopPropagation(); // 카드 클릭 방지
+    handleComplete(item.id);
   }}
-  className="text-xs text-red-500 underline hover:text-red-700"
+  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+>
+  완료
+</button>
+
+<button
+  onClick={(e) => {
+    e.stopPropagation(); // 카드 클릭 방지
+    handleDelete(item.id);
+  }}
+  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
 >
   삭제
 </button>
+
 
   </div>
 )}
