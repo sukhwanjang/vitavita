@@ -399,17 +399,28 @@ const [passwordInput, setPasswordInput] = useState('')
         수정
       </button>
       <button
-        onClick={() => handleComplete(item.id)}
-        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-      >
-        완료
-      </button>
-      <button
-        onClick={() => handleDelete(item.id)}
-        className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
-      >
-        삭제
-      </button>
+  onClick={(e) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 차단
+    handleComplete(item.id);
+  }}
+  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+>
+  완료
+</button>
+
+<button
+  onClick={async (e) => {
+    e.stopPropagation();
+    if (window.confirm('정말 삭제하시겠습니까?')) {
+      await supabase.from('request').delete().eq('id', item.id);
+      fetchRequests();
+    }
+  }}
+  className="text-xs text-red-500 underline hover:text-red-700"
+>
+  삭제
+</button>
+
     </>
   )}
 
