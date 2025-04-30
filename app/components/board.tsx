@@ -189,7 +189,7 @@ const [passwordInput, setPasswordInput] = useState('')
         is_urgent: isUrgent,
         completed: false,
         is_deleted: false,
-        creator,
+        creator, // 이 필드가 올바르게 설정되어야 합니다.
       }]);
   
       if (error) setError(`등록 실패: ${error.message}`);
