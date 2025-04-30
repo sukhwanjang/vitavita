@@ -18,12 +18,14 @@ interface RequestItem {
   is_urgent: boolean;
   is_deleted: boolean;
   created_at: string;
+  creator?: string;
 }
 
 export default function Board() {
   const [authorized, setAuthorized] = useState(false);
 const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [creator, setCreator] = useState('');
   const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
   useEffect(() => {
     if (selectedItem) {
@@ -170,7 +172,7 @@ const [passwordInput, setPasswordInput] = useState('')
     } else {
       const { error } = await supabase.from('request').insert([{
         company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false
+        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false,creator
       }]);
       if (error) setError(`등록 실패: ${error.message}`);
     }
@@ -538,6 +540,15 @@ const [passwordInput, setPasswordInput] = useState('')
               <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
             </div>
+            <div className="flex flex-col">
+  <label className="font-medium text-gray-800 mb-1">작업자 이름</label>
+  <input
+    type="text"
+    value={creator}
+    onChange={e => setCreator(e.target.value)}
+    className="border rounded px-3 py-2"
+  />
+</div>
             <div className="flex flex-col">
               <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
               <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
