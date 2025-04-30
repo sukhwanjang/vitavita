@@ -161,13 +161,18 @@ const [passwordInput, setPasswordInput] = useState('')
       }
       imageUrl = uploaded;
     }
-
+  
     if (editMode && editingId !== null) {
       const { error } = await supabase.from('request').update({
-        company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent
+        company,
+        program,
+        pickup_date: pickupDate,
+        note,
+        image_url: imageUrl,
+        is_urgent: isUrgent,
+        creator,
       }).eq('id', editingId);
-
+  
       if (error) setError(`수정 실패: ${error.message}`);
     } else {
       const { error } = await supabase.from('request').insert([{
@@ -179,11 +184,12 @@ const [passwordInput, setPasswordInput] = useState('')
         is_urgent: isUrgent,
         completed: false,
         is_deleted: false,
-        creator: creator || null, // creator가 없으면 null 처리
+        creator,
       }]);
+  
       if (error) setError(`등록 실패: ${error.message}`);
     }
-
+  
     setIsSubmitting(false);
     clearForm();
     fetchRequests();
