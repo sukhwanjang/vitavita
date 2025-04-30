@@ -18,6 +18,7 @@ interface RequestItem {
   is_urgent: boolean;
   is_deleted: boolean;
   created_at: string;
+  creator: string;
 }
 
 export default function Board() {
@@ -263,7 +264,7 @@ const [passwordInput, setPasswordInput] = useState('')
   todayRequests.forEach((item) => {
     html += `
       <tr>
-        <td>${item.company}</td>
+        <td>${item.company}${item.creator ? ' [' + item.creator + ']' : ''}</td>
         <td>${item.program}</td>
         <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
         <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
