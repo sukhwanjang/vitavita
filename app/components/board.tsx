@@ -543,14 +543,23 @@ const [passwordInput, setPasswordInput] = useState('')
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
             </div>
             <div className="flex flex-col">
-  <label className="font-medium text-gray-800 mb-1">작업자</label>
-  <input
-    type="text"
-    value={creator}
-    onChange={(e) => setCreator(e.target.value)}
-    className="border rounded px-3 py-2"
-    placeholder="ex) 김한별"
-  />
+  <label className="font-medium text-gray-800 mb-2">작업자 선택</label>
+  <div className="grid grid-cols-2 gap-2">
+    {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
+      <button
+        key={name}
+        onClick={() => setCreator(name)}
+        className={`p-2 rounded-xl border text-sm font-semibold ${
+          creator === name
+            ? 'bg-blue-500 text-white border-blue-600'
+            : 'bg-white text-gray-800 border-gray-300'
+        } hover:shadow`}
+      >
+        {name}
+      </button>
+    ))}
+  </div>
+  {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
 </div>
             <div className="flex flex-col">
               <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
