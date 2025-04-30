@@ -171,8 +171,15 @@ const [passwordInput, setPasswordInput] = useState('')
       if (error) setError(`수정 실패: ${error.message}`);
     } else {
       const { error } = await supabase.from('request').insert([{
-        company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false,creator
+        company,
+        program,
+        pickup_date: pickupDate,
+        note,
+        image_url: imageUrl,
+        is_urgent: isUrgent,
+        completed: false,
+        is_deleted: false,
+        creator: creator || null, // creator가 없으면 null 처리
       }]);
       if (error) setError(`등록 실패: ${error.message}`);
     }
@@ -420,9 +427,18 @@ const [passwordInput, setPasswordInput] = useState('')
   </div>
 )}
 
-  {item.is_deleted && (
+{item.is_deleted && (
   <div className="flex items-center gap-2">
     <span className="text-gray-400 text-xs">🗑 삭제됨</span>
+    <button
+      onClick={async () => {
+        await supabase.from('request').update({ is_deleted: false }).eq('id', item.id);
+        fetchRequests();
+      }}
+      className="text-xs text-blue-500 underline hover:text-blue-700"
+    >
+      복구
+    </button>
     <button
       onClick={async () => {
         if (window.confirm('진짜로 완전 삭제할까요?')) {
@@ -436,6 +452,7 @@ const [passwordInput, setPasswordInput] = useState('')
     </button>
   </div>
 )}
+
 
           </div>
         </div>
