@@ -25,15 +25,6 @@ export default function Board() {
   const [authorized, setAuthorized] = useState(false);
 const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
-  useEffect(() => {
-    if (selectedItem) {
-      const timer = setTimeout(() => {
-        setSelectedItem(null);
-      }, 2000); // 2초 후 자동 닫힘
-      return () => clearTimeout(timer);
-    }
-  }, [selectedItem]);
   const [fadeOut, setFadeOut] = useState(false);
   const [company, setCompany] = useState('');
   const [savedScrollY, setSavedScrollY] = useState(0);
@@ -295,10 +286,6 @@ const [passwordInput, setPasswordInput] = useState('')
     return (
       <div
   key={item.id}
-  onClick={() => setSelectedItem(item)}
-  className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ${
-    item.completed ? 'border-gray-300' : item.is_urgent ? 'border-red-500 animate-urgent' : 'border-blue-500'
-  }`}
 >
 
 
@@ -462,36 +449,6 @@ const [passwordInput, setPasswordInput] = useState('')
 
   return (
     <div className="relative bg-[#D5E5F2] min-h-screen text-gray-900 px-4 py-8 font-sans">
-      {selectedItem && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full">
-      <h2 className="text-2xl font-bold mb-4">상세 정보</h2>
-      <div className="space-y-2 text-sm text-gray-700">
-        <div><strong>업체명:</strong> {selectedItem.company}</div>
-        <div><strong>프로그램명:</strong> {selectedItem.program}</div>
-        <div><strong>메모:</strong> {selectedItem.note || '-'}</div>
-        <div><strong>업로드:</strong> {new Date(selectedItem.created_at).toLocaleString('ko-KR', {
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        })}</div>
-        <div><strong>픽업일:</strong> {selectedItem.pickup_date || '-'}</div>
-      </div>
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={() => setSelectedItem(null)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
-        >
-          닫기
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
