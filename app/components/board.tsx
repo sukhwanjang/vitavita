@@ -262,7 +262,7 @@ const [passwordInput, setPasswordInput] = useState('')
       <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
         <thead style="background-color:#f0f0f0;">
           <tr>
-            <th>업체명</th>
+            <th>업체명 / 작업자</th>
             <th>프로그램명</th>
             <th>메모</th>
             <th>완료 여부</th>
@@ -274,7 +274,7 @@ const [passwordInput, setPasswordInput] = useState('')
     todayRequests.forEach((item) => {
       html += `
         <tr>
-          <td>${item.company}</td>
+          <td>${item.company}${item.creator ? ` / ${item.creator}` : ''}</td>
           <td>${item.program}</td>
           <td>${item.note || '-'}</td> <!-- 메모 출력! -->
           <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
