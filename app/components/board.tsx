@@ -148,6 +148,11 @@ const [passwordInput, setPasswordInput] = useState('')
       setError('업체명, 프로그램명, 픽업일은 필수입니다.');
       return;
     }
+    if (!creator) {
+      setError('작업자를 선택해주세요.');
+      setIsSubmitting(false);
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
