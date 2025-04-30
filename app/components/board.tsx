@@ -50,6 +50,7 @@ const [passwordInput, setPasswordInput] = useState('')
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [creator, setCreator] = useState('');
   const handleCloseModal = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -169,8 +170,15 @@ const [passwordInput, setPasswordInput] = useState('')
       if (error) setError(`수정 실패: ${error.message}`);
     } else {
       const { error } = await supabase.from('request').insert([{
-        company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent, completed: false, is_deleted: false
+        company,
+        program,
+        pickup_date: pickupDate,
+        note,
+        image_url: imageUrl,
+        is_urgent: isUrgent,
+        completed: false,
+        is_deleted: false,
+        creator, // 🔥 여기에 추가!
       }]);
       if (error) setError(`등록 실패: ${error.message}`);
     }
@@ -534,6 +542,16 @@ const [passwordInput, setPasswordInput] = useState('')
               <label className="font-medium text-gray-800 mb-1">업체명 *</label>
               <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
             </div>
+            <div className="flex flex-col">
+  <label className="font-medium text-gray-800 mb-1">작업자</label>
+  <input
+    type="text"
+    value={creator}
+    onChange={(e) => setCreator(e.target.value)}
+    className="border rounded px-3 py-2"
+    placeholder="ex) 김한별"
+  />
+</div>
             <div className="flex flex-col">
               <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
               <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
