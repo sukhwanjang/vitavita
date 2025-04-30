@@ -52,6 +52,8 @@ const [passwordInput, setPasswordInput] = useState('')
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
+
   const handleCloseModal = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -471,7 +473,15 @@ const [passwordInput, setPasswordInput] = useState('')
     );
   };
     
-  const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
+  const filteredInProgress = requests.filter(r =>
+    !r.is_deleted &&
+    !r.completed &&
+    (
+      r.company.toLowerCase().includes(searchText.toLowerCase()) ||
+      r.program.toLowerCase().includes(searchText.toLowerCase()) ||
+      r.creator?.toLowerCase().includes(searchText.toLowerCase())
+    )
+  );
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
@@ -544,6 +554,15 @@ const [passwordInput, setPasswordInput] = useState('')
 
   {/* 오른쪽: 작업 추가, 완료 보기, 삭제 보기 */}
   <div className="flex gap-2">
+  <div className="flex gap-2 items-center">
+  <input
+    type="text"
+    value={searchText}
+    onChange={(e) => setSearchText(e.target.value)}
+    placeholder="검색 (업체명, 프로그램명, 작업자)"
+    className="border px-3 py-2 rounded-md text-sm"
+  />
+</div>
     <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
       {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
     </button>
@@ -623,7 +642,7 @@ const [passwordInput, setPasswordInput] = useState('')
         <div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {inProgress.map(renderCard)}
+        {filteredInProgress.map(renderCard)}
           </div>
         </div>
 
