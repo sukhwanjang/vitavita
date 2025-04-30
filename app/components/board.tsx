@@ -52,6 +52,7 @@ const [passwordInput, setPasswordInput] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [creator, setCreator] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const handleCloseModal = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -451,6 +452,11 @@ const [passwordInput, setPasswordInput] = useState('')
   };
     
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
+  const filteredInProgress = inProgress.filter((item) =>
+    item.company.includes(searchQuery) ||
+    item.program.includes(searchQuery) ||
+    item.creator?.includes(searchQuery)
+  );
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
@@ -512,7 +518,7 @@ const [passwordInput, setPasswordInput] = useState('')
 
 
       {/* 상단 버튼 통합 */}
-<div className="relative z-10 flex justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
+<div className="relative z-10 flex flex-wrap justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
   {/* 왼쪽: 오늘 작업 출력 */}
   <button
     onClick={handlePrintTodayWork}
@@ -521,17 +527,18 @@ const [passwordInput, setPasswordInput] = useState('')
     오늘 작업 출력
   </button>
 
-  {/* 오른쪽: 작업 추가, 완료 보기, 삭제 보기 */}
+  {/* 가운데: 검색 입력 */}
+  <input
+    type="text"
+    placeholder="🔍 업체명, 프로그램명, 작업자 검색"
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="flex-1 max-w-xs px-4 py-2 border rounded text-sm"
+  />
+
+  {/* 오른쪽: 기능 버튼 */}
   <div className="flex gap-2">
-    <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">
-      {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
-    </button>
-    <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
-      {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
-    </button>
-    <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">
-      {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
-    </button>
+    {/* 기존 버튼들 */}
   </div>
 </div>
 
@@ -602,7 +609,7 @@ const [passwordInput, setPasswordInput] = useState('')
         <div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {inProgress.map(renderCard)}
+        {filteredInProgress.map(renderCard)}
           </div>
         </div>
 
