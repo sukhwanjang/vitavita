@@ -307,7 +307,7 @@ const [passwordInput, setPasswordInput] = useState('')
     return (
       <div
   key={item.id}
-  className={`flex flex-col justify-between rounded-2xl shadow-md ...`}
+  className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ..."
 >
 
 
