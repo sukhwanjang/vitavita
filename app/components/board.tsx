@@ -656,7 +656,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                   </div>
                   <div className="flex gap-2 justify-end items-center mt-2">
                     <button onClick={async () => { await supabase.from('request').update({ is_just_upload: false }).eq('id', item.id); fetchRequests(); }} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
-                    <button onClick={async () => { await supabase.from('request').update({ is_deleted: true }).eq('id', item.id); fetchRequests(); }} className="bg-red-100 text-red-600 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-red-200 transition">삭제</button>
                   </div>
                 </div>
               </div>
