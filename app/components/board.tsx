@@ -225,7 +225,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
     const todayRequests = requests.filter(r => {
       const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
-      return createdAtKorea.toISOString().slice(0, 10) === today;
+      return createdAtKorea.toISOString().slice(0, 10) === today && !r.is_deleted;
     }).reverse();
 
     // 작업자별로 그룹화
