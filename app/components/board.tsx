@@ -573,10 +573,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setIsJustUpload(true);
-                  router.push('/justupload');
-                }}
+                onClick={() => setIsJustUpload(!isJustUpload)}
                 className={`px-4 py-2 rounded-lg border font-semibold text-sm transition-colors duration-200 ${isJustUpload ? 'bg-yellow-400 text-yellow-900 border-yellow-500' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-yellow-100'}`}
               >
                 바빠서 원고만 올림
@@ -657,8 +654,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                   <div className="text-xs text-gray-500 mt-2">
                     <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
                   </div>
-                  <div className="flex justify-end mt-2">
-                    <button onClick={() => { router.push('/'); setTimeout(() => { window.location.href = '/'; }, 100); }} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition mr-2">작업폴더로 이동</button>
+                  <div className="flex gap-2 justify-end mt-2 items-center">
+                    <button onClick={() => { router.push('/'); setTimeout(() => { window.location.href = '/'; }, 100); }} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
                     <button onClick={() => handleDelete(item.id)} className="bg-red-100 text-red-600 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-red-200 transition">삭제</button>
                   </div>
                 </div>
