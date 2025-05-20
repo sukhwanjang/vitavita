@@ -339,8 +339,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
           {item.image_url && (
             <img
               src={item.image_url}
-              onClick={() => handleImageClick(item.image_url!)}
-              className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
+              onClick={() => setModalImage(item.image_url!)}
+              className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50 transition-transform duration-200 hover:scale-105 hover:shadow-lg"
             />
           )}
           {/* 기존 픽업일 표시 */}
@@ -583,6 +583,28 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                 {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* 고급 이미지 확대 모달 */}
+      {modalImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
+          onClick={() => setModalImage(null)}
+        >
+          <div
+            className="relative max-w-3xl w-full flex flex-col items-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={modalImage}
+              className="rounded-xl shadow-2xl max-h-[80vh] transition-transform duration-300 scale-100 bg-white"
+              style={{ background: '#fff' }}
+            />
+            <button
+              className="absolute top-2 right-2 text-white text-3xl font-bold bg-black bg-opacity-40 rounded-full px-3 py-1 hover:bg-opacity-70 transition"
+              onClick={() => setModalImage(null)}
+            >×</button>
           </div>
         </div>
       )}
