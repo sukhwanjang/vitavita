@@ -18,12 +18,13 @@ interface RequestItem {
   completed: boolean;
   is_urgent: boolean;
   is_deleted: boolean;
+  is_just_upload?: boolean;
   created_at: string;
-  creator: string;
   updated_at?: string;
+  creator: string;
 }
 
-export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
+export default function Board({ only }: { only?: 'completed' | 'deleted' | 'justupload' }) {
   const [authorized, setAuthorized] = useState(false);
   const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -46,6 +47,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [creator, setCreator] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isJustUpload, setIsJustUpload] = useState(false);
   const router = useRouter();
 
   const handleCloseModal = () => {
@@ -161,7 +163,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
     if (editMode && editingId !== null) {
       const { error } = await supabase.from('request').update({
         company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent
+        image_url: imageUrl, is_urgent: isUrgent, is_just_upload: isJustUpload
       }).eq('id', editingId);
 
       if (error) setError(`수정 실패: ${error.message}`);
@@ -175,6 +177,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
         is_urgent: isUrgent,
         completed: false,
         is_deleted: false,
+        is_just_upload: isJustUpload,
         creator, // 🔥 여기에 추가!
       }]);
       if (error) setError(`등록 실패: ${error.message}`);
@@ -457,6 +460,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   );
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
+  const justUpload = requests.filter(r => r.is_just_upload);
 
   // 상단 헤더(로고+버튼그룹) 분리
   const renderHeader = (
@@ -471,6 +475,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
         <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
         <button onClick={() => router.push('/completed')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">✅ 완료 보기</button>
         <button onClick={() => router.push('/deleted')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">🗑 삭제 보기</button>
+        <button onClick={() => router.push('/justupload')} className="bg-yellow-200 text-yellow-900 px-4 py-2 rounded hover:bg-yellow-300 text-sm font-semibold border border-yellow-400">바쁘니까 일단 올려둠</button>
       </div>
     </div>
   );
@@ -544,8 +549,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
                 )}
               </div>
             </div>
-            {/* 급함 토글 버튼 */}
-            <div className="flex items-center mt-4">
+            {/* 급함 토글 + 바빠서 원고만 올림 버튼 */}
+            <div className="flex items-center mt-4 gap-4">
               <button
                 type="button"
                 onClick={() => setIsUrgent(!isUrgent)}
@@ -555,6 +560,13 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
                   className={`inline-block w-7 h-7 transform bg-white rounded-full shadow transition-transform duration-200 ${isUrgent ? 'translate-x-8' : 'translate-x-1'}`}
                 />
                 <span className={`absolute left-2 text-xs font-semibold ${isUrgent ? 'text-white' : 'text-gray-600'}`}>급함</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsJustUpload(!isJustUpload)}
+                className={`px-4 py-2 rounded-lg border font-semibold text-sm transition-colors duration-200 ${isJustUpload ? 'bg-yellow-400 text-yellow-900 border-yellow-500' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-yellow-100'}`}
+              >
+                바빠서 원고만 올림
               </button>
             </div>
             <div className="flex justify-end space-x-4 pt-4 border-t mt-6">
@@ -598,6 +610,29 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
             {deleted.map(item => (
               <div key={item.id} className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 border-gray-300 bg-white">
                 <div className="h-8 bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold">삭제됨</div>
+                <div className="flex flex-col p-4 space-y-2">
+                  <div>
+                    <p className="text-lg font-bold truncate">{item.company}</p>
+                    <p className="text-sm text-gray-600 truncate">{item.program}</p>
+                  </div>
+                  {item.image_url && (
+                    <img src={item.image_url} className="w-full h-32 object-contain rounded-md border bg-gray-50" />
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : only === 'justupload' ? (
+        <div className="max-w-screen-2xl mx-auto">
+          <h2 className="font-semibold text-base text-yellow-700 mb-2">📤 바빠서 원고만 올림</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {justUpload.map(item => (
+              <div key={item.id} className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 border-yellow-400 bg-white">
+                <div className="h-8 bg-yellow-200 flex items-center justify-center text-yellow-900 text-xs font-bold">바빠서 원고만 올림</div>
                 <div className="flex flex-col p-4 space-y-2">
                   <div>
                     <p className="text-lg font-bold truncate">{item.company}</p>
