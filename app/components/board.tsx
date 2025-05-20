@@ -475,53 +475,21 @@ const [passwordInput, setPasswordInput] = useState('')
 )}
 
 
-      {/* 로고 */}
-      <div className="relative z-10 flex justify-center mb-2">
-  <img src="/logo.png" alt="Vitamin Sign Logo" className="h-16 object-contain" />
-</div>
-
-
-      {/* 상단 버튼 통합 */}
-<div className="relative z-10 flex flex-wrap justify-between items-center max-w-screen-2xl mx-auto mb-4 gap-2">
-  {/* 왼쪽: 오늘 작업 출력 */}
-  <button
-    onClick={handlePrintTodayWork}
-    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
-  >
-    오늘 작업 출력
-  </button>
-
-  {/* 가운데: 검색 입력 */}
-  <input
-    type="text"
-    placeholder="🔍 업체명, 프로그램명, 작업자 검색"
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    className="flex-1 max-w-xs px-4 py-2 border rounded text-sm"
-  />
-
-  {/* 오른쪽: 기능 버튼 */}
-<div className="flex gap-2">
-  <button
-    onClick={() => setShowForm(!showForm)}
-    className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm"
-  >
-    {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
-  </button>
-  <button
-    onClick={() => setShowCompleted(!showCompleted)}
-    className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm"
-  >
-    {showCompleted ? '완료 숨기기' : '✅ 완료 보기'}
-  </button>
-  <button
-    onClick={() => setShowDeleted(!showDeleted)}
-    className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm"
-  >
-    {showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}
-  </button>
-</div>
-</div>
+      {/* 상단 로고 + 버튼 그룹 */}
+      <div className="flex items-center justify-between max-w-screen-2xl mx-auto mb-4 gap-4">
+        {/* 로고 */}
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain" />
+          <span className="text-2xl font-bold text-indigo-900">비타민사인</span>
+        </div>
+        {/* 버튼 그룹 */}
+        <div className="flex gap-2">
+          <button onClick={handlePrintTodayWork} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">오늘 작업 출력</button>
+          <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
+          <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showCompleted ? '완료 숨기기' : '✅ 완료 보기'}</button>
+          <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}</button>
+        </div>
+      </div>
 
       {/* 입력 폼 */}
       {showForm && (
