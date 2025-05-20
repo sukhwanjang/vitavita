@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 
@@ -25,10 +25,7 @@ interface RequestItem {
 }
 
 export default function Board({ only }: { only?: 'completed' | 'deleted' | 'justupload' }) {
-  const [authorized, setAuthorized] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
-  const [fadeOut, setFadeOut] = useState(false);
   const [company, setCompany] = useState('');
   const [savedScrollY, setSavedScrollY] = useState(0);
   const [program, setProgram] = useState('');
@@ -40,8 +37,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [showDeleted, setShowDeleted] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
@@ -50,17 +45,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const [isJustUpload, setIsJustUpload] = useState(false);
   const [zoom, setZoom] = useState(1);
   const router = useRouter();
-
-  const handleCloseModal = () => {
-    setFadeOut(true);
-    setTimeout(() => {
-      setModalImage(null);
-      setFadeOut(false);
-      window.scrollTo({ top: savedScrollY, behavior: "smooth" });
-    }, 500);
-  };
-  
-  
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -103,7 +87,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
     return () => clearInterval(interval);
   }, [fetchRequests]);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setImage(file);
     if (file) {
@@ -115,7 +99,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
     }
   };
 
-  const handlePasteImage = useCallback((e: ClipboardEvent) => {
+  const handlePasteImage = useCallback((e: React.ClipboardEvent) => {
     const file = e.clipboardData.files?.[0];
     if (file && file.type.startsWith('image/')) {
       setImage(file);
@@ -360,7 +344,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
         ? 'bg-red-400'
         : daysLeft > 0
           ? 'bg-blue-500'
-          : 'bg-gray-200';
+          : 'bg-black';
     const barText = item.is_urgent
       ? '급함'
       : daysLeft === 0
@@ -760,24 +744,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
               {filteredInProgress.map(renderCard)}
             </div>
           </div>
-
-          {showCompleted && (
-            <div>
-              <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {completed.map(renderCard)}
-              </div>
-            </div>
-          )}
-
-          {showDeleted && (
-            <div>
-              <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {deleted.map(renderCard)}
-              </div>
-            </div>
-          )}
         </section>
       )}
     </div>
