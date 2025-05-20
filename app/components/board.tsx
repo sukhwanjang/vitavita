@@ -289,9 +289,26 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   
 
   const handlePrintImage = (imageUrl: string, company: string, program: string) => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const html = `
+    const printContent = `
+      <div style="display: none;">
+        <div class="header" style="text-align: center; margin-bottom: 20px;">
+          <h2>${company}</h2>
+          <p>${program}</p>
+        </div>
+        <div class="image-container" style="max-width: 100%; height: auto;">
+          <img src="${imageUrl}" alt="${company} - ${program}" style="max-width: 100%; height: auto; object-fit: contain;" />
+        </div>
+      </div>
+    `;
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.display = 'none';
+    document.body.appendChild(printFrame);
+    
+    const frameDoc = printFrame.contentWindow?.document;
+    if (frameDoc) {
+      frameDoc.open();
+      frameDoc.write(`
         <html>
           <head>
             <title>${company} - ${program} 출력</title>
@@ -304,19 +321,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                 align-items: center;
                 font-family: sans-serif;
               }
-              .header {
-                text-align: center;
-                margin-bottom: 20px;
-              }
-              .image-container {
-                max-width: 100%;
-                height: auto;
-              }
-              img {
-                max-width: 100%;
-                height: auto;
-                object-fit: contain;
-              }
               @media print {
                 body {
                   padding: 0;
@@ -328,19 +332,18 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
             </style>
           </head>
           <body>
-            <div class="header">
-              <h2>${company}</h2>
-              <p>${program}</p>
-            </div>
-            <div class="image-container">
-              <img src="${imageUrl}" alt="${company} - ${program}" />
-            </div>
+            ${printContent}
           </body>
         </html>
-      `;
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.print();
+      `);
+      frameDoc.close();
+
+      printFrame.onload = () => {
+        printFrame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(printFrame);
+        }, 1000);
+      };
     }
   };
 
