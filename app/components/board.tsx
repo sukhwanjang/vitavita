@@ -487,8 +487,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
           })() : '-'}</div>
           {/* 메모 */}
           {item.note && (
-            <div className="bg-blue-50 border-l-4 border-blue-300 p-2 mt-2 text-xs text-gray-700 rounded flex items-start gap-2">
-              <span className="material-icons text-blue-400 text-base">sticky_note_2</span>
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 mt-2 text-xs text-gray-800 rounded flex items-start gap-2 shadow-sm">
+              <span className="text-lg">📝</span>
               <span>{item.note}</span>
             </div>
           )}
