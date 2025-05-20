@@ -289,23 +289,42 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   
 
   const handlePrintImage = (imageUrl: string, company: string, program: string) => {
-    const printFrame = document.createElement('iframe');
-    printFrame.style.display = 'none';
-    document.body.appendChild(printFrame);
-
-    const frameDoc = printFrame.contentWindow?.document;
-    if (frameDoc) {
-      frameDoc.open();
-      frameDoc.write(`
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const html = `
         <html>
           <head>
             <title>${company} - ${program} 출력</title>
             <style>
-              body { margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .image-container { max-width: 100%; height: auto; }
-              img { max-width: 100%; height: auto; object-fit: contain; }
-              @media print { body { padding: 0; } .header { margin-bottom: 10px; } }
+              body {
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-family: sans-serif;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 20px;
+              }
+              .image-container {
+                max-width: 100%;
+                height: auto;
+              }
+              img {
+                max-width: 100%;
+                height: auto;
+                object-fit: contain;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                }
+                .header {
+                  margin-bottom: 10px;
+                }
+              }
             </style>
           </head>
           <body>
@@ -314,25 +333,14 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
               <p>${program}</p>
             </div>
             <div class="image-container">
-              <img id="print-img" src="${imageUrl}" alt="${company} - ${program}" />
+              <img src="${imageUrl}" alt="${company} - ${program}" />
             </div>
           </body>
         </html>
-      `);
-      frameDoc.close();
-
-      printFrame.onload = () => {
-        const img = printFrame.contentWindow?.document.getElementById('print-img') as HTMLImageElement;
-        if (img) {
-          img.onload = () => {
-            printFrame.contentWindow?.focus();
-            printFrame.contentWindow?.print();
-            setTimeout(() => {
-              document.body.removeChild(printFrame);
-            }, 1000);
-          };
-        }
-      };
+      `;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
 
