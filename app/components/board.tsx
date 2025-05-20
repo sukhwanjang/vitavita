@@ -480,7 +480,6 @@ const [passwordInput, setPasswordInput] = useState('')
         {/* 로고 */}
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain" />
-          <span className="text-2xl font-bold text-indigo-900">비타민사인</span>
         </div>
         {/* 버튼 그룹 */}
         <div className="flex gap-2">
