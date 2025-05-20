@@ -506,8 +506,13 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                 <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
                 <button
                   type="button"
-                  className="mt-1 text-xs text-blue-500 underline hover:text-blue-700 self-start"
-                  onClick={() => setPickupDate(new Date().toISOString().slice(0, 10))}
+                  className="mt-2 inline-block px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold shadow hover:bg-blue-600 transition self-start"
+                  onClick={() => {
+                    const now = new Date();
+                    // 한국시간(UTC+9)으로 변환
+                    const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+                    setPickupDate(korea.toISOString().slice(0, 10));
+                  }}
                 >오늘</button>
               </div>
             </div>
