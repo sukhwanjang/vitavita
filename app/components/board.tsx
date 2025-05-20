@@ -504,6 +504,11 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
               <div className="flex flex-col">
                 <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
                 <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
+                <button
+                  type="button"
+                  className="mt-1 text-xs text-blue-500 underline hover:text-blue-700 self-start"
+                  onClick={() => setPickupDate(new Date().toISOString().slice(0, 10))}
+                >오늘</button>
               </div>
             </div>
             <div className="flex flex-col mt-4">
