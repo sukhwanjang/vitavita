@@ -638,9 +638,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
         </div>
       ) : only === 'justupload' ? (
         <div className="max-w-screen-2xl mx-auto">
-          <div className="flex justify-end mb-4">
-            <button onClick={() => router.push('/')} className="bg-yellow-400 text-yellow-900 px-5 py-2 rounded-lg font-semibold shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
-          </div>
           <h2 className="font-semibold text-base text-yellow-700 mb-2">📤 바빠서 원고만 올림</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {justUpload.map(item => (
@@ -658,7 +655,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                     <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
                   </div>
                   <div className="flex justify-end mt-2">
-                    <button onClick={() => router.push('/')} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
+                    <button onClick={() => { router.push('/'); setTimeout(() => { window.location.href = '/'; }, 100); }} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
                   </div>
                 </div>
               </div>
