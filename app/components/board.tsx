@@ -238,16 +238,83 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
     let html = `
       <html>
-      <head><title>오늘 작업 출력</title></head>
-      <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
-      <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
+      <head>
+        <title>오늘 작업 출력</title>
+        <style>
+          body {
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+            background: #f8fafc;
+            color: #222;
+            margin: 0;
+            padding: 32px 0;
+          }
+          h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            text-align: center;
+            letter-spacing: -1px;
+          }
+          .creator-block {
+            margin-bottom: 40px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 2px 12px 0 #0001;
+            padding: 24px 32px;
+          }
+          .creator-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2563eb;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
+          }
+          table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #f9fafb;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px 0 #0001;
+          }
+          th, td {
+            padding: 10px 12px;
+            font-size: 14px;
+            text-align: left;
+          }
+          th {
+            background: #e0e7ef;
+            color: #222;
+            font-weight: 700;
+            border-bottom: 2px solid #cbd5e1;
+          }
+          tr:nth-child(even) td {
+            background: #f3f6fa;
+          }
+          tr:nth-child(odd) td {
+            background: #fff;
+          }
+          td {
+            border-bottom: 1px solid #e5e7eb;
+          }
+          @media print {
+            body { background: #fff; padding: 0; }
+            .creator-block { box-shadow: none; padding: 12px 0; }
+            table { box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>오늘 작업한 내용 (한국시간)</h1>
     `;
 
     Object.entries(grouped).forEach(([creator, items]) => {
-      html += `<h2 style="margin-top:2em;font-size:15px;">${creator}</h2>`;
+      html += `<div class="creator-block">`;
+      html += `<div class="creator-title">${creator}</div>`;
       html += `
-        <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px; margin-bottom: 1.5em;">
-          <thead style="background-color:#f0f0f0;">
+        <table>
+          <thead>
             <tr>
               <th>업체명</th>
               <th>프로그램명</th>
@@ -267,7 +334,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
           </tr>
         `;
       });
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
     });
 
     html += `</body></html>`;
