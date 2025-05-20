@@ -457,10 +457,27 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
-  // 렌더링 분기
+  // 상단 헤더(로고+버튼그룹) 분리
+  const renderHeader = (
+    <div className="flex items-center justify-between max-w-screen-2xl mx-auto mb-4 gap-4">
+      {/* 로고 */}
+      <div className="flex items-center gap-2">
+        <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain" />
+      </div>
+      {/* 버튼 그룹 */}
+      <div className="flex gap-2">
+        <button onClick={handlePrintTodayWork} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">오늘 작업 출력</button>
+        <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
+        <button onClick={() => router.push('/completed')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">✅ 완료 보기</button>
+        <button onClick={() => router.push('/deleted')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">🗑 삭제 보기</button>
+      </div>
+    </div>
+  );
+
   if (only === 'completed') {
     return (
       <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+        {renderHeader}
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -473,6 +490,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   if (only === 'deleted') {
     return (
       <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+        {renderHeader}
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -503,21 +521,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   </div>
 )}
 
-
-      {/* 상단 로고 + 버튼 그룹 */}
-      <div className="flex items-center justify-between max-w-screen-2xl mx-auto mb-4 gap-4">
-        {/* 로고 */}
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain" />
-        </div>
-        {/* 버튼 그룹 */}
-        <div className="flex gap-2">
-          <button onClick={handlePrintTodayWork} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">오늘 작업 출력</button>
-          <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
-          <button onClick={() => router.push('/completed')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showCompleted ? '완료 숨기기' : '✅ 완료 보기'}</button>
-          <button onClick={() => router.push('/deleted')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}</button>
-        </div>
-      </div>
 
       {/* 입력 폼 */}
       {showForm && (
