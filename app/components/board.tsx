@@ -474,142 +474,113 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
     </div>
   );
 
-  if (only === 'completed') {
-    return (
-      <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
-        {renderHeader}
+  return (
+    <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+      {renderHeader}
+      {only === 'completed' ? (
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {completed.map(renderCard)}
           </div>
         </div>
-      </div>
-    );
-  }
-  if (only === 'deleted') {
-    return (
-      <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
-        {renderHeader}
+      ) : only === 'deleted' ? (
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {deleted.map(renderCard)}
           </div>
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <>
+          {/* 입력 폼 */}
+          {showForm && (
+            <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col">
+                  <label className="font-medium text-gray-800 mb-1">업체명 *</label>
+                  <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
+                </div>
+                <div className="flex flex-col">
+                  <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
+                  <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
+                </div>
+                <div className="flex flex-col">
+                  <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
+                  <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
+                </div>
+              </div>
+              <div className="flex flex-col mt-4">
+                <label className="font-medium text-gray-800 mb-2">작업자 선택</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setCreator(name)}
+                      className={`p-2 rounded-xl border text-sm font-semibold ${
+                        creator === name
+                          ? 'bg-blue-500 text-white border-blue-600'
+                          : 'bg-white text-gray-800 border-gray-300'
+                      } hover:shadow`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+              </div>
+              <div className="flex flex-col">
+                <label className="font-medium text-gray-800 mb-1">메모</label>
+                <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+              </div>
 
-  return (
-    <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+              <div className="flex flex-col">
+                <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
+                <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
+                {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
+              </div>
 
-      {/* 이미지 확대 모달 */}
-      {modalImage && (
-  <div
-    className={`flex flex-col items-center justify-center mt-10 transition-opacity duration-500 ${
-      fadeOut ? 'opacity-0' : 'opacity-100'
-    }`}
-  >
-    <img src={modalImage} className="max-w-full h-auto object-contain" />
-    <button
-      onClick={handleCloseModal}
-      className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-    >
-      닫기
-    </button>
-  </div>
-)}
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
+                <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
+              </div>
 
-
-      {/* 입력 폼 */}
-      {showForm && (
-        <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow mb-8 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">업체명 *</label>
-              <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
-              <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
-            </div>
-            <div className="flex flex-col">
-              <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
-              <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
-            </div>
-          </div>
-          <div className="flex flex-col mt-4">
-            <label className="font-medium text-gray-800 mb-2">작업자 선택</label>
-            <div className="grid grid-cols-2 gap-2">
-              {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
-                <button
-                  key={name}
-                  onClick={() => setCreator(name)}
-                  className={`p-2 rounded-xl border text-sm font-semibold ${
-                    creator === name
-                      ? 'bg-blue-500 text-white border-blue-600'
-                      : 'bg-white text-gray-800 border-gray-300'
-                  } hover:shadow`}
-                >
-                  {name}
+              <div className="flex justify-end space-x-4 pt-4 border-t">
+                <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
+                <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+                  {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
                 </button>
-              ))}
+              </div>
             </div>
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-          </div>
-          <div className="flex flex-col">
-            <label className="font-medium text-gray-800 mb-1">메모</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
-          </div>
+          )}
+          {/* 카드 리스트 */}
+          <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {filteredInProgress.map(renderCard)}
+              </div>
+            </div>
 
-          <div className="flex flex-col">
-            <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
-            <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
-            {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
-          </div>
+            {showCompleted && (
+              <div>
+                <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {completed.map(renderCard)}
+                </div>
+              </div>
+            )}
 
-          <div className="flex items-center space-x-2">
-            <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-            <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-4 border-t">
-            <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
-            <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
-              {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
-            </button>
-          </div>
-        </div>
+            {showDeleted && (
+              <div>
+                <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {deleted.map(renderCard)}
+                </div>
+              </div>
+            )}
+          </section>
+        </>
       )}
-
-      {/* 카드 리스트 */}
-      <section className="relative z-10 max-w-screen-2xl mx-auto space-y-10 pb-32">
-        <div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {filteredInProgress.map(renderCard)}
-          </div>
-        </div>
-
-        {showCompleted && (
-          <div>
-            <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {completed.map(renderCard)}
-            </div>
-          </div>
-        )}
-
-        {showDeleted && (
-          <div>
-            <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {deleted.map(renderCard)}
-            </div>
-          </div>
-        )}
-      </section>
     </div>
   );
 }
