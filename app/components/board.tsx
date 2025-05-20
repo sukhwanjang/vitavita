@@ -218,58 +218,67 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
     fetchRequests();
   };
   const handlePrintTodayWork = () => {
-  const now = new Date();
-  // UTC 기준 한국시간(+9시간)으로 변환
-  const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const today = koreaTime.toISOString().slice(0, 10); // 한국 날짜로 today 결정
+    const now = new Date();
+    // UTC 기준 한국시간(+9시간)으로 변환
+    const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const today = koreaTime.toISOString().slice(0, 10); // 한국 날짜로 today 결정
 
-  const todayRequests = requests.filter(r => {
-    const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
-    return createdAtKorea.toISOString().slice(0, 10) === today;
-  }).reverse();
+    const todayRequests = requests.filter(r => {
+      const createdAtKorea = new Date(new Date(r.created_at).getTime() + 9 * 60 * 60 * 1000);
+      return createdAtKorea.toISOString().slice(0, 10) === today;
+    }).reverse();
 
-  let html = `
-    <html>
-    <head><title>오늘 작업 출력</title></head>
-    <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
-    <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
-    <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px;">
-      <thead style="background-color:#f0f0f0;">
-        <tr>
-          <th>업체명</th>
-          <th>프로그램명</th>
-          <th>업로드 시간</th>
-          <th>완료 여부</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+    // 작업자별로 그룹화
+    const grouped = todayRequests.reduce((acc, item) => {
+      const key = item.creator || '미지정';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {} as Record<string, RequestItem[]>);
 
-  todayRequests.forEach((item) => {
-    html += `
-      <tr>
-        <td>${item.company}${item.creator ? ' [' + item.creator + ']' : ''}</td>
-        <td>${item.program}</td>
-        <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
-        <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
-      </tr>
+    let html = `
+      <html>
+      <head><title>오늘 작업 출력</title></head>
+      <body style="font-family: sans-serif; padding: 10px; font-size: 12px; line-height: 1.4;">
+      <h1 style="font-size: 16px;">오늘 작업한 내용 (한국시간)</h1>
     `;
-  });
 
-  html += `
-      </tbody>
-    </table>
-    </body>
-    </html>
-  `;
+    Object.entries(grouped).forEach(([creator, items]) => {
+      html += `<h2 style="margin-top:2em;font-size:15px;">${creator}</h2>`;
+      html += `
+        <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse: collapse; font-size:12px; margin-bottom: 1.5em;">
+          <thead style="background-color:#f0f0f0;">
+            <tr>
+              <th>업체명</th>
+              <th>프로그램명</th>
+              <th>업로드 시간</th>
+              <th>완료 여부</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      items.forEach((item) => {
+        html += `
+          <tr>
+            <td>${item.company}</td>
+            <td>${item.program}</td>
+            <td>${new Date(item.created_at).toLocaleString('ko-KR')}</td>
+            <td>${item.completed ? '완료됨' : '아직 완료 안 됨'}</td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table>`;
+    });
 
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
-  }
-};
+    html += `</body></html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
   
 
   const handlePrintImage = (imageUrl: string, company: string, program: string) => {
