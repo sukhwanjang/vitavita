@@ -654,10 +654,11 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
               <div className="flex flex-col">
                 <label className="font-semibold text-gray-800 mb-1">픽업일 *</label>
                 <div className="flex gap-2 items-center">
-                  <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 text-gray-800 focus:ring-2 focus:ring-blue-400 transition text-base" />
+                  <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 text-gray-800 focus:ring-2 focus:ring-blue-400 transition text-base h-11" />
                   <button
                     type="button"
-                    className="inline-block px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold shadow hover:bg-blue-600 transition"
+                    className="h-11 px-5 rounded-xl bg-blue-500 text-white text-sm font-semibold shadow hover:bg-blue-600 transition flex items-center"
+                    style={{ minWidth: '56px' }}
                     onClick={() => {
                       const now = new Date();
                       const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
