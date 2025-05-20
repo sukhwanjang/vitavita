@@ -655,8 +655,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                     <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
                   </div>
                   <div className="flex gap-2 justify-end items-center mt-2">
-                    <button onClick={() => { router.push('/'); setTimeout(() => { window.location.href = '/'; }, 100); }} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
-                    <button onClick={() => handleDelete(item.id)} className="bg-red-100 text-red-600 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-red-200 transition">삭제</button>
+                    <button onClick={() => router.push('/')} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
+                    <button onClick={async () => { await handleDelete(item.id); router.push('/deleted'); }} className="bg-red-100 text-red-600 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-red-200 transition">삭제</button>
                   </div>
                 </div>
               </div>
