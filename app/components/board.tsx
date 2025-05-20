@@ -289,22 +289,10 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   
 
   const handlePrintImage = (imageUrl: string, company: string, program: string) => {
-    const printContent = `
-      <div style="display: none;">
-        <div class="header" style="text-align: center; margin-bottom: 20px;">
-          <h2>${company}</h2>
-          <p>${program}</p>
-        </div>
-        <div class="image-container" style="max-width: 100%; height: auto;">
-          <img src="${imageUrl}" alt="${company} - ${program}" style="max-width: 100%; height: auto; object-fit: contain;" />
-        </div>
-      </div>
-    `;
-
     const printFrame = document.createElement('iframe');
     printFrame.style.display = 'none';
     document.body.appendChild(printFrame);
-    
+
     const frameDoc = printFrame.contentWindow?.document;
     if (frameDoc) {
       frameDoc.open();
@@ -313,36 +301,37 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
           <head>
             <title>${company} - ${program} 출력</title>
             <style>
-              body {
-                margin: 0;
-                padding: 20px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                font-family: sans-serif;
-              }
-              @media print {
-                body {
-                  padding: 0;
-                }
-                .header {
-                  margin-bottom: 10px;
-                }
-              }
+              body { margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+              .header { text-align: center; margin-bottom: 20px; }
+              .image-container { max-width: 100%; height: auto; }
+              img { max-width: 100%; height: auto; object-fit: contain; }
+              @media print { body { padding: 0; } .header { margin-bottom: 10px; } }
             </style>
           </head>
           <body>
-            ${printContent}
+            <div class="header">
+              <h2>${company}</h2>
+              <p>${program}</p>
+            </div>
+            <div class="image-container">
+              <img id="print-img" src="${imageUrl}" alt="${company} - ${program}" />
+            </div>
           </body>
         </html>
       `);
       frameDoc.close();
 
       printFrame.onload = () => {
-        printFrame.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
+        const img = printFrame.contentWindow?.document.getElementById('print-img') as HTMLImageElement;
+        if (img) {
+          img.onload = () => {
+            printFrame.contentWindow?.focus();
+            printFrame.contentWindow?.print();
+            setTimeout(() => {
+              document.body.removeChild(printFrame);
+            }, 1000);
+          };
+        }
       };
     }
   };
