@@ -620,12 +620,37 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
         </div>
       </div>
       {/* 버튼 그룹 */}
-      <div className="flex gap-2">
-        <button onClick={handlePrintTodayWork} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">오늘 작업 출력</button>
-        <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
-        <button onClick={() => router.push('/completed')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">✅ 완료 보기</button>
-        <button onClick={() => router.push('/deleted')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">🗑 삭제 보기</button>
-        <button onClick={() => router.push('/justupload')} className="bg-yellow-200 text-yellow-900 px-4 py-2 rounded hover:bg-yellow-300 text-sm font-semibold border border-yellow-400">바쁘니까 일단 올려둠</button>
+      <div className="flex gap-3">
+        <button
+          onClick={handlePrintTodayWork}
+          className="bg-gradient-to-r from-blue-500 to-blue-400 text-white font-bold px-5 py-2 rounded-xl shadow-lg hover:scale-105 hover:from-blue-600 hover:to-blue-500 transition text-base"
+        >
+          <span className="inline-block align-middle mr-1">🗒️</span> 오늘 작업 출력
+        </button>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-black text-white font-bold px-5 py-2 rounded-xl shadow-lg hover:bg-gray-900 hover:scale-105 transition text-base"
+        >
+          <span className="inline-block align-middle mr-1">➕</span> {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
+        </button>
+        <button
+          onClick={() => router.push('/completed')}
+          className="bg-green-50 text-green-800 border border-green-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-green-100 hover:scale-105 transition text-base"
+        >
+          <span className="text-lg">✅</span> 완료 보기
+        </button>
+        <button
+          onClick={() => router.push('/deleted')}
+          className="bg-gray-50 text-gray-500 border border-gray-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-gray-100 hover:scale-105 transition text-base"
+        >
+          <span className="text-lg">🗑</span> 삭제 보기
+        </button>
+        <button
+          onClick={() => router.push('/justupload')}
+          className="bg-yellow-200 text-yellow-900 border border-yellow-400 font-bold px-5 py-2 rounded-xl shadow hover:bg-yellow-300 hover:scale-105 transition text-base"
+        >
+          바쁘니까 일단 올려둠
+        </button>
       </div>
     </div>
   );
