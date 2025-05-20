@@ -20,6 +20,7 @@ interface RequestItem {
   is_deleted: boolean;
   created_at: string;
   creator: string;
+  updated_at?: string;
 }
 
 export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
@@ -462,7 +463,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
     <div className="flex items-center justify-between max-w-screen-2xl mx-auto mb-4 gap-4">
       {/* 로고 */}
       <div className="flex items-center gap-2">
-        <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain" />
+        <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain cursor-pointer" onClick={() => router.push('/')} />
       </div>
       {/* 버튼 그룹 */}
       <div className="flex gap-2">
@@ -481,14 +482,47 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {completed.map(renderCard)}
+            {completed.map(item => (
+              <div key={item.id} className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 border-gray-300 bg-white">
+                <div className="h-8 bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold">완료</div>
+                <div className="flex flex-col p-4 space-y-2">
+                  <div>
+                    <p className="text-lg font-bold truncate">{item.company}</p>
+                    <p className="text-sm text-gray-600 truncate">{item.program}</p>
+                  </div>
+                  {item.image_url && (
+                    <img src={item.image_url} className="w-full h-32 object-contain rounded-md border bg-gray-50" />
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
+                    <div>✅ 완료: {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ) : only === 'deleted' ? (
         <div className="max-w-screen-2xl mx-auto">
           <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {deleted.map(renderCard)}
+            {deleted.map(item => (
+              <div key={item.id} className="flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 border-gray-300 bg-white">
+                <div className="h-8 bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold">삭제됨</div>
+                <div className="flex flex-col p-4 space-y-2">
+                  <div>
+                    <p className="text-lg font-bold truncate">{item.company}</p>
+                    <p className="text-sm text-gray-600 truncate">{item.program}</p>
+                  </div>
+                  {item.image_url && (
+                    <img src={item.image_url} className="w-full h-32 object-contain rounded-md border bg-gray-50" />
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ) : (
