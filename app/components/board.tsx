@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, ChangeEvent, ClipboardEvent } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,9 +22,9 @@ interface RequestItem {
   creator: string;
 }
 
-export default function Board() {
+export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   const [authorized, setAuthorized] = useState(false);
-const [passwordInput, setPasswordInput] = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [fadeOut, setFadeOut] = useState(false);
   const [company, setCompany] = useState('');
@@ -44,6 +45,8 @@ const [passwordInput, setPasswordInput] = useState('')
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [creator, setCreator] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+
   const handleCloseModal = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -454,6 +457,32 @@ const [passwordInput, setPasswordInput] = useState('')
   const completed = requests.filter(r => !r.is_deleted && r.completed);
   const deleted = requests.filter(r => r.is_deleted);
 
+  // 렌더링 분기
+  if (only === 'completed') {
+    return (
+      <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+        <div className="max-w-screen-2xl mx-auto">
+          <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {completed.map(renderCard)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (only === 'deleted') {
+    return (
+      <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+        <div className="max-w-screen-2xl mx-auto">
+          <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {deleted.map(renderCard)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
 
@@ -485,8 +514,8 @@ const [passwordInput, setPasswordInput] = useState('')
         <div className="flex gap-2">
           <button onClick={handlePrintTodayWork} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">오늘 작업 출력</button>
           <button onClick={() => setShowForm(!showForm)} className="bg-black text-white px-4 py-2 rounded hover:bg-gray-900 text-sm">{showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}</button>
-          <button onClick={() => setShowCompleted(!showCompleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showCompleted ? '완료 숨기기' : '✅ 완료 보기'}</button>
-          <button onClick={() => setShowDeleted(!showDeleted)} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}</button>
+          <button onClick={() => router.push('/completed')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showCompleted ? '완료 숨기기' : '✅ 완료 보기'}</button>
+          <button onClick={() => router.push('/deleted')} className="bg-gray-200 text-black px-4 py-2 rounded hover:bg-gray-300 text-sm">{showDeleted ? '삭제 숨기기' : '🗑 삭제 보기'}</button>
         </div>
       </div>
 
