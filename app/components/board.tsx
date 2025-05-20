@@ -686,31 +686,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
       {/* 카드 리스트 및 나머지 분기 */}
       {only === 'completed' ? (
         <div className="max-w-screen-2xl mx-auto">
-          <div className="flex items-center justify-between mb-4 gap-4">
-            <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="Vitamin Sign Logo" className="h-12 object-contain cursor-pointer" onClick={() => router.push('/')} />
-              {/* 검색창 */}
-              <div className="ml-4 flex items-center bg-gray-100 rounded-full px-3 py-1 shadow-inner border border-gray-200 focus-within:ring-2 focus-within:ring-blue-300">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="업체명/프로그램명/작업자 검색"
-                  className="bg-transparent outline-none px-2 py-1 text-sm w-40 md:w-56"
-                />
-                <button
-                  type="button"
-                  className="ml-1 text-gray-500 hover:text-blue-600 p-1 rounded-full transition"
-                  onClick={() => {}}
-                  tabIndex={-1}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
           <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {completed.filter(item =>
