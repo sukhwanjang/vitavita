@@ -289,7 +289,28 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
-  
+    // 날짜 계산
+    const daysLeft = item.pickup_date
+      ? Math.ceil(
+          (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+          / (1000 * 60 * 60 * 24)
+        )
+      : null;
+    // 색상 우선순위: 급함 > 오늘 > 내일이후 > 지남
+    const barColor = item.is_urgent
+      ? 'bg-orange-500'
+      : daysLeft === 0
+        ? 'bg-red-400'
+        : daysLeft > 0
+          ? 'bg-blue-500'
+          : 'bg-gray-200';
+    const barText = item.is_urgent
+      ? '급함'
+      : daysLeft === 0
+        ? '오늘까지'
+        : daysLeft > 0
+          ? `D-${daysLeft}`
+          : '지남';
     return (
       <div
         key={item.id}
@@ -297,155 +318,132 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
           item.completed
             ? 'border-gray-300'
             : item.is_urgent
-            ? 'border-red-500 animate-urgent'
-            : 'border-blue-500'
+            ? 'border-orange-500'
+            : daysLeft === 0
+              ? 'border-red-400'
+              : daysLeft > 0
+                ? 'border-blue-500'
+                : 'border-gray-200'
         }`}
       >
-
-
         {/* 상단 바 */}
-        <div
-  className={`h-8 ${
-    item.completed
-      ? 'bg-gray-200'
-      : (() => {
-          const daysLeft = item.pickup_date
-            ? Math.ceil(
-                (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-                / (1000 * 60 * 60 * 24)
-              )
-            : null;
-          if (daysLeft === 0) return 'bg-red-400'; // 오늘만 빨간색
-          return item.is_urgent ? 'bg-red-500' : 'bg-blue-500'; // 나머지는 급함 빨간/일반 파란
-        })()
-  } flex items-center justify-center text-white text-xs font-bold`}
->
-
-  {item.completed ? '완료' : item.is_urgent ? '급함' : '진행중'}
-</div>
-
-  
+        <div className={`h-8 ${barColor} flex items-center justify-center text-white text-xs font-bold`}>
+          {barText}
+        </div>
         {/* 카드 본문 */}
         <div className="flex flex-col p-4 space-y-2 bg-white h-full">
-  <div>
-    <p className="text-lg font-bold truncate">{item.company}</p>
-    <p className="text-sm text-gray-600 truncate">{item.program}</p>
-  </div>
-
-  {item.image_url && (
-    <img
-      src={item.image_url}
-      onClick={() => handleImageClick(item.image_url!)}
-      className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
-    />
-  )}
-
-  {/* 기존 픽업일 표시 */}
-  <div className={`text-sm font-bold ${
-  (() => {
-    const daysLeft = item.pickup_date
-      ? Math.ceil(
-          (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-          / (1000 * 60 * 60 * 24)
-        )
-      : null;
-    return daysLeft === 0 ? 'text-red-500' : 'text-gray-700';
-  })()
-}`}>
-  📅 픽업 {item.pickup_date ? (() => {
-    const daysLeft = Math.ceil(
-      (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-      / (1000 * 60 * 60 * 24)
-    );
-    if (daysLeft === 0) return '오늘';
-    if (daysLeft > 0) return `D-${daysLeft}`;
-    return '지남';
-  })() : '-'}
-</div>
-
-  {/* 메모 */}
-  {item.note && (
-    <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
-  )}
-
-  
+          <div>
+            <p className="text-lg font-bold truncate">{item.company}</p>
+            <p className="text-sm text-gray-600 truncate">{item.program}</p>
+          </div>
+          {item.image_url && (
+            <img
+              src={item.image_url}
+              onClick={() => handleImageClick(item.image_url!)}
+              className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50"
+            />
+          )}
+          {/* 기존 픽업일 표시 */}
+          <div className={`text-sm font-bold ${
+            (() => {
+              const daysLeft = item.pickup_date
+                ? Math.ceil(
+                    (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+                    / (1000 * 60 * 60 * 24)
+                  )
+                : null;
+              return daysLeft === 0 ? 'text-red-500' : 'text-gray-700';
+            })()
+          }`}>
+            📅 픽업 {item.pickup_date ? (() => {
+              const daysLeft = Math.ceil(
+                (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+                / (1000 * 60 * 60 * 24)
+              );
+              if (daysLeft === 0) return '오늘';
+              if (daysLeft > 0) return `D-${daysLeft}`;
+              return '지남';
+            })() : '-'}
+          </div>
+          {/* 메모 */}
+          {item.note && (
+            <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
+          )}
           {/* 버튼 영역 */}
           <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
-  {isActive && (
-    <>
-      {/* 업로드 시간 추가 */}
-      <span className="text-[10px] text-gray-400 mr-auto">
-        🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        })}
-      </span>
+            {isActive && (
+              <>
+                {/* 업로드 시간 추가 */}
+                <span className="text-[10px] text-gray-400 mr-auto">
+                  🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  })}
+                </span>
 
-      <button
-        onClick={() => handleEdit(item)}
-        className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
-      >
-        수정
-      </button>
-      <button
-        onClick={() => handleComplete(item.id)}
-        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-      >
-        완료
-      </button>
-      <button
-        onClick={() => handleDelete(item.id)}
-        className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
-      >
-        삭제
-      </button>
-    </>
-  )}
+                <button
+                  onClick={() => handleEdit(item)}
+                  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
+                >
+                  수정
+                </button>
+                <button
+                  onClick={() => handleComplete(item.id)}
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                >
+                  완료
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+                >
+                  삭제
+                </button>
+              </>
+            )}
 
-  
-  {item.completed && (
-  <div className="flex items-center gap-2">
-    <span className="text-green-600 text-xs">✅ 완료됨</span>
-    <button
-      onClick={() => handleRecover(item.id)}
-      className="text-xs text-blue-500 underline hover:text-blue-700"
-    >
-      복구
-    </button>
-    <button
-      onClick={async () => {
-        if (window.confirm('정말 삭제하시겠습니까?')) {
-          await supabase.from('request').delete().eq('id', item.id);
-          fetchRequests();
-        }
-      }}
-      className="text-xs text-red-500 underline hover:text-red-700"
-    >
-      삭제
-    </button>
-  </div>
-)}
+            {item.completed && (
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 text-xs">✅ 완료됨</span>
+                <button
+                  onClick={() => handleRecover(item.id)}
+                  className="text-xs text-blue-500 underline hover:text-blue-700"
+                >
+                  복구
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('정말 삭제하시겠습니까?')) {
+                      await supabase.from('request').delete().eq('id', item.id);
+                      fetchRequests();
+                    }
+                  }}
+                  className="text-xs text-red-500 underline hover:text-red-700"
+                >
+                  삭제
+                </button>
+              </div>
+            )}
 
-  {item.is_deleted && (
-  <div className="flex items-center gap-2">
-    <span className="text-gray-400 text-xs">🗑 삭제됨</span>
-    <button
-      onClick={async () => {
-        if (window.confirm('진짜로 완전 삭제할까요?')) {
-          await supabase.from('request').delete().eq('id', item.id);
-          fetchRequests();
-        }
-      }}
-      className="text-xs text-red-500 underline hover:text-red-700"
-    >
-      완전 삭제
-    </button>
-  </div>
-)}
-
+            {item.is_deleted && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-xs">🗑 삭제됨</span>
+                <button
+                  onClick={async () => {
+                    if (window.confirm('진짜로 완전 삭제할까요?')) {
+                      await supabase.from('request').delete().eq('id', item.id);
+                      fetchRequests();
+                    }
+                  }}
+                  className="text-xs text-red-500 underline hover:text-red-700"
+                >
+                  완전 삭제
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
