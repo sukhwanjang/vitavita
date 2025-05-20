@@ -635,103 +635,108 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
       {renderHeader}
       {/* 입력 폼: 팝업(모달)로 구현 */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onPaste={handlePasteImage}>
-          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onPaste={handlePasteImage}>
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 w-full max-w-xl relative animate-fadein">
             <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl font-bold transition"
               onClick={clearForm}
               aria-label="닫기"
             >×</button>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col">
-                <label className="font-medium text-gray-800 mb-1">업체명 *</label>
-                <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="border rounded px-3 py-2" />
+                <label className="font-semibold text-gray-800 mb-1">업체명 *</label>
+                <input type="text" value={company} onChange={e => setCompany(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 transition text-base" />
               </div>
               <div className="flex flex-col">
-                <label className="font-medium text-gray-800 mb-1">프로그램명 *</label>
-                <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="border rounded px-3 py-2" />
+                <label className="font-semibold text-gray-800 mb-1">프로그램명 *</label>
+                <input type="text" value={program} onChange={e => setProgram(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 transition text-base" />
               </div>
               <div className="flex flex-col">
-                <label className="font-medium text-gray-800 mb-1">픽업일 *</label>
-                <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 text-gray-800" />
-                <button
-                  type="button"
-                  className="mt-2 inline-block px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold shadow hover:bg-blue-600 transition self-start"
-                  onClick={() => {
-                    const now = new Date();
-                    // 한국시간(UTC+9)으로 변환
-                    const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-                    setPickupDate(korea.toISOString().slice(0, 10));
-                  }}
-                >오늘</button>
+                <label className="font-semibold text-gray-800 mb-1">픽업일 *</label>
+                <div className="flex gap-2 items-center">
+                  <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 text-gray-800 focus:ring-2 focus:ring-blue-400 transition text-base" />
+                  <button
+                    type="button"
+                    className="inline-block px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold shadow hover:bg-blue-600 transition"
+                    onClick={() => {
+                      const now = new Date();
+                      const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+                      setPickupDate(korea.toISOString().slice(0, 10));
+                    }}
+                  >오늘</button>
+                </div>
               </div>
             </div>
-            <div className="flex flex-col mt-4">
-              <label className="font-medium text-gray-800 mb-2">작업자 선택</label>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col mt-6">
+              <label className="font-semibold text-gray-800 mb-2">작업자 선택</label>
+              <div className="grid grid-cols-2 gap-3">
                 {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
                   <button
                     key={name}
                     onClick={() => setCreator(name)}
-                    className={`p-2 rounded-xl border text-sm font-semibold ${
-                      creator === name
-                        ? 'bg-blue-500 text-white border-blue-600'
-                        : 'bg-white text-gray-800 border-gray-300'
-                    } hover:shadow`}
+                    className={`rounded-full px-4 py-2 font-bold border-2 transition text-base shadow-sm
+                      ${creator === name
+                        ? 'bg-blue-500 text-white border-blue-600 scale-105'
+                        : 'bg-white text-gray-800 border-gray-300 hover:bg-blue-50'}
+                    `}
                   >
                     {name}
                   </button>
                 ))}
               </div>
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
             </div>
-            <div className="flex flex-col mt-4">
-              <label className="font-medium text-gray-800 mb-1">메모</label>
-              <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
+            <div className="flex flex-col mt-6">
+              <label className="font-semibold text-gray-800 mb-1">메모</label>
+              <textarea value={note} onChange={e => setNote(e.target.value)} className="rounded-xl border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 transition text-base" rows={3} />
             </div>
             {/* 원고이미지 업로드 영역 - 붙여넣기만 지원 */}
-            <div className="flex flex-col mt-4">
-              <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
-              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 mb-2 bg-gray-50 cursor-pointer transition hover:border-blue-400">
+            <div className="flex flex-col mt-6">
+              <label className="font-semibold text-gray-800 mb-1">원고 이미지</label>
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-6 mb-2 bg-gray-50 cursor-pointer transition hover:border-blue-400 min-h-[120px]">
                 {imagePreview ? (
                   <div className="relative w-full flex flex-col items-center">
-                    <img src={imagePreview} className="max-h-52 object-contain border rounded mb-2" />
+                    <img src={imagePreview} className="max-h-52 object-contain border rounded-xl mb-2 shadow" />
                     <button
                       onClick={() => { setImage(null); setImagePreview(null); }}
                       className="text-xs text-red-500 hover:text-red-700"
                     >이미지 제거</button>
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-sm text-center">
-                    <span className="block mb-1">여기에 이미지를 <b>Ctrl+V</b>로 붙여넣으세요</span>
+                  <div className="text-gray-400 text-sm text-center flex flex-col items-center gap-1">
+                    <span className="text-2xl">🖼️</span>
+                    <span>여기에 이미지를 <b>Ctrl+V</b>로 붙여넣으세요</span>
                     <span className="text-xs">(파일 선택 없이 캡처만 지원)</span>
                   </div>
                 )}
               </div>
             </div>
             {/* 급함 토글 + 바빠서 원고만 올림 버튼 */}
-            <div className="flex items-center mt-4 gap-4">
+            <div className="flex items-center mt-6 gap-4">
+              {/* 급함 토글 스위치 */}
               <button
                 type="button"
                 onClick={() => setIsUrgent(!isUrgent)}
-                className={`relative inline-flex items-center h-8 rounded-full w-16 transition-colors duration-200 focus:outline-none ${isUrgent ? 'bg-red-600' : 'bg-gray-300'}`}
+                className={`relative inline-flex items-center h-8 w-16 rounded-full transition-colors duration-200 focus:outline-none border-2 ${isUrgent ? 'bg-red-500 border-red-600' : 'bg-gray-200 border-gray-300'}`}
               >
                 <span
                   className={`inline-block w-7 h-7 transform bg-white rounded-full shadow transition-transform duration-200 ${isUrgent ? 'translate-x-8' : 'translate-x-1'}`}
                 />
                 <span className={`absolute left-2 text-xs font-semibold ${isUrgent ? 'text-white' : 'text-gray-600'}`}>급함</span>
               </button>
+              {/* 바빠서 원고만 올림 버튼 */}
               <button
                 type="button"
                 onClick={() => setIsJustUpload(!isJustUpload)}
-                className={`px-4 py-2 rounded-lg border font-semibold text-sm transition-colors duration-200 ${isJustUpload ? 'bg-yellow-400 text-yellow-900 border-yellow-500' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-yellow-100'}`}
+                className={`px-4 py-2 rounded-xl border-2 font-semibold text-base transition-colors duration-200 shadow-sm
+                  ${isJustUpload ? 'bg-yellow-300 text-yellow-900 border-yellow-400 scale-105' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-yellow-100'}`}
               >
                 바빠서 원고만 올림
               </button>
             </div>
-            <div className="flex justify-end space-x-4 pt-4 border-t mt-6">
-              <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
-              <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
+            <div className="flex justify-end space-x-4 pt-6 border-t mt-8">
+              <button onClick={clearForm} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-xl font-semibold shadow hover:bg-gray-200 transition text-base">취소</button>
+              <button onClick={handleSubmit} className="bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold px-8 py-2 rounded-xl shadow-lg hover:scale-105 transition text-base" disabled={isSubmitting}>
                 {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
               </button>
             </div>
