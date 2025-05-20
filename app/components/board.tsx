@@ -431,63 +431,69 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
     return (
       <div
         key={item.id}
-        className={`flex flex-col justify-between rounded-2xl shadow-md overflow-hidden border-2 cursor-pointer ${
+        className={`flex flex-col justify-between rounded-2xl shadow-lg overflow-hidden border bg-white transition-transform duration-200 hover:scale-[1.02] hover:shadow-2xl ${
           item.completed
-            ? 'border-gray-300'
+            ? 'border-gray-200'
             : item.is_urgent
-            ? 'border-orange-500'
+            ? 'border-orange-400'
             : daysLeft === 0
-              ? 'border-red-400'
+              ? 'border-red-300'
               : daysLeft > 0
-                ? 'border-blue-500'
-                : 'border-gray-200'
+                ? 'border-blue-300'
+                : 'border-gray-300'
         }`}
       >
-        {/* 상단 바 */}
-        <div className={`h-8 ${barColor} flex items-center justify-center text-white text-xs font-bold`}>
-          {barText}
+        {/* 상단 상태 뱃지 */}
+        <div className="flex items-center justify-start px-4 pt-4">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm
+            ${item.is_urgent ? 'bg-orange-100 text-orange-700' : daysLeft === 0 ? 'bg-red-100 text-red-700' : daysLeft > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-800 text-white'}`}
+          >
+            {item.is_urgent && <span className="mr-1">⚡</span>}
+            {daysLeft === 0 && !item.is_urgent && <span className="mr-1">📅</span>}
+            {daysLeft < 0 && !item.is_urgent && <span className="mr-1">⏰</span>}
+            {barText}
+          </span>
         </div>
         {/* 카드 본문 */}
-        <div className="flex flex-col p-4 space-y-2 bg-white h-full">
+        <div className="flex flex-col p-4 space-y-3 bg-white h-full">
           <div>
-            <p className="text-lg font-bold truncate">{item.company}</p>
-            <p className="text-sm text-gray-600 truncate">{item.program}</p>
+            <p className="text-xl font-extrabold text-gray-900 truncate mb-1">{item.company}</p>
+            <p className="text-sm text-gray-500 truncate">{item.program}</p>
           </div>
-          {item.image_url && (
-            <img
-              src={item.image_url}
-              onClick={() => setModalImage(item.image_url!)}
-              className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50 transition-transform duration-200 hover:scale-105 hover:shadow-lg"
-            />
-          )}
+          <div className="flex justify-center items-center w-full min-h-[96px]">
+            {item.image_url ? (
+              <img
+                src={item.image_url}
+                onClick={() => setModalImage(item.image_url!)}
+                className="cursor-pointer w-full h-32 object-contain rounded-lg border bg-gray-50 shadow-sm transition-transform duration-200 hover:scale-105 hover:shadow-lg"
+                alt="작업 이미지"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-24 text-gray-300 text-3xl">
+                <span className="material-icons">image_not_supported</span>
+                <span className="text-xs mt-1">이미지 없음</span>
+              </div>
+            )}
+          </div>
           {/* 기존 픽업일 표시 */}
-          <div className={`text-sm font-bold ${
-            (() => {
-              const daysLeft = item.pickup_date
-                ? Math.ceil(
-                    (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-                    / (1000 * 60 * 60 * 24)
-                  )
-                : null;
-              return daysLeft === 0 ? 'text-red-500' : 'text-gray-700';
-            })()
-          }`}>
-            📅 픽업 {item.pickup_date ? (() => {
-              const daysLeft = Math.ceil(
-                (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-                / (1000 * 60 * 60 * 24)
-              );
-              if (daysLeft === 0) return '오늘';
-              if (daysLeft > 0) return `D-${daysLeft}`;
-              return '지남';
-            })() : '-'}
-          </div>
+          <div className={`text-sm font-bold mt-2 ${daysLeft === 0 ? 'text-red-500' : daysLeft < 0 ? 'text-gray-800' : 'text-gray-700'}`}>📅 픽업 {item.pickup_date ? (() => {
+            const daysLeft = Math.ceil(
+              (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+              / (1000 * 60 * 60 * 24)
+            );
+            if (daysLeft === 0) return '오늘';
+            if (daysLeft > 0) return `D-${daysLeft}`;
+            return '지남';
+          })() : '-'}</div>
           {/* 메모 */}
           {item.note && (
-            <div className="text-xs bg-gray-100 p-2 rounded">{item.note}</div>
+            <div className="bg-blue-50 border-l-4 border-blue-300 p-2 mt-2 text-xs text-gray-700 rounded flex items-start gap-2">
+              <span className="material-icons text-blue-400 text-base">sticky_note_2</span>
+              <span>{item.note}</span>
+            </div>
           )}
           {/* 버튼 영역 */}
-          <div className="pt-2 flex flex-wrap gap-2 items-center justify-end">
+          <div className="pt-2 flex flex-wrap gap-2 items-center justify-end mt-2">
             {isActive && (
               <>
                 {/* 업로드 시간 추가 */}
@@ -512,19 +518,19 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
                 <button
                   onClick={() => handleEdit(item)}
-                  className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-500 text-xs"
+                  className="rounded-lg px-4 py-1 font-semibold shadow bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs transition"
                 >
                   수정
                 </button>
                 <button
                   onClick={() => handleComplete(item.id)}
-                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                  className="rounded-lg px-4 py-1 font-semibold shadow bg-green-100 text-green-700 hover:bg-green-200 text-xs transition"
                 >
                   완료
                 </button>
                 <button
                   onClick={() => handleDelete(item.id)}
-                  className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+                  className="rounded-lg px-4 py-1 font-semibold shadow bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs transition"
                 >
                   삭제
                 </button>
