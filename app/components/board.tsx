@@ -478,10 +478,15 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
       {renderHeader}
-      {/* 입력 폼: 헤더 바로 아래에 위치, transition 효과 */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showForm ? 'max-h-[1000px] opacity-100 mb-8' : 'max-h-0 opacity-0 mb-0'}`}>
-        {showForm && (
-          <div className="relative z-10 max-w-screen-2xl mx-auto bg-white border p-6 rounded-xl shadow space-y-5">
+      {/* 입력 폼: 팝업(모달)로 구현 */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl"
+              onClick={clearForm}
+              aria-label="닫기"
+            >×</button>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col">
                 <label className="font-medium text-gray-800 mb-1">업체명 *</label>
@@ -515,31 +520,28 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col mt-4">
               <label className="font-medium text-gray-800 mb-1">메모</label>
               <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
             </div>
-
-            <div className="flex flex-col">
+            <div className="flex flex-col mt-4">
               <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
               <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
               {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
             </div>
-
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mt-4">
               <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
               <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
             </div>
-
-            <div className="flex justify-end space-x-4 pt-4 border-t">
+            <div className="flex justify-end space-x-4 pt-4 border-t mt-6">
               <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
               <button onClick={handleSubmit} className="bg-black text-white px-5 py-2 rounded-md" disabled={isSubmitting}>
                 {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {/* 카드 리스트 및 나머지 분기 */}
       {only === 'completed' ? (
         <div className="max-w-screen-2xl mx-auto">
