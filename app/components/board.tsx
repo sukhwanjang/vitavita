@@ -652,6 +652,9 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                   <div className="text-xs text-gray-500 mt-2">
                     <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
                   </div>
+                  <div className="flex justify-end mt-2">
+                    <button onClick={() => router.push('/')} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded font-semibold text-xs shadow hover:bg-yellow-300 transition">작업폴더로 이동</button>
+                  </div>
                 </div>
               </div>
             ))}
