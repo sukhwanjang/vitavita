@@ -288,6 +288,62 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 };
   
 
+  const handlePrintImage = (imageUrl: string, company: string, program: string) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const html = `
+        <html>
+          <head>
+            <title>${company} - ${program} 출력</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-family: sans-serif;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 20px;
+              }
+              .image-container {
+                max-width: 100%;
+                height: auto;
+              }
+              img {
+                max-width: 100%;
+                height: auto;
+                object-fit: contain;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                }
+                .header {
+                  margin-bottom: 10px;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>${company}</h2>
+              <p>${program}</p>
+            </div>
+            <div class="image-container">
+              <img src="${imageUrl}" alt="${company} - ${program}" />
+            </div>
+          </body>
+        </html>
+      `;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   const renderCard = (item: RequestItem) => {
     const isActive = !item.completed && !item.is_deleted;
     // 날짜 계산
@@ -384,6 +440,15 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
                     hour12: false
                   })}
                 </span>
+
+                {item.image_url && (
+                  <button
+                    onClick={() => handlePrintImage(item.image_url!, item.company, item.program)}
+                    className="px-3 py-1 bg-purple-400 text-white rounded hover:bg-purple-500 text-xs"
+                  >
+                    🖨️ 출력
+                  </button>
+                )}
 
                 <button
                   onClick={() => handleEdit(item)}
