@@ -455,7 +455,7 @@ const [passwordInput, setPasswordInput] = useState('')
   const deleted = requests.filter(r => r.is_deleted);
 
   return (
-    <div className="relative bg-[#D5E5F2] min-h-screen text-gray-900 px-4 py-8 font-sans">
+    <div className="min-h-screen bg-black p-4 md:p-6 font-sans text-gray-800">
 
       {/* 이미지 확대 모달 */}
       {modalImage && (
