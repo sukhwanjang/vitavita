@@ -480,7 +480,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
       {renderHeader}
       {/* 입력 폼: 팝업(모달)로 구현 */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onPaste={handlePasteImage}>
           <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl"
@@ -524,14 +524,38 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' }) {
               <label className="font-medium text-gray-800 mb-1">메모</label>
               <textarea value={note} onChange={e => setNote(e.target.value)} className="border rounded px-3 py-2" rows={3} />
             </div>
+            {/* 원고이미지 업로드 영역 - 붙여넣기만 지원 */}
             <div className="flex flex-col mt-4">
               <label className="font-medium text-gray-800 mb-1">원고 이미지</label>
-              <input type="file" onChange={handleFileChange} accept="image/*" className="mb-2" />
-              {imagePreview && <img src={imagePreview} className="max-h-52 object-contain border rounded" />}
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 mb-2 bg-gray-50 cursor-pointer transition hover:border-blue-400">
+                {imagePreview ? (
+                  <div className="relative w-full flex flex-col items-center">
+                    <img src={imagePreview} className="max-h-52 object-contain border rounded mb-2" />
+                    <button
+                      onClick={() => { setImage(null); setImagePreview(null); }}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >이미지 제거</button>
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-sm text-center">
+                    <span className="block mb-1">여기에 이미지를 <b>Ctrl+V</b>로 붙여넣으세요</span>
+                    <span className="text-xs">(파일 선택 없이 캡처만 지원)</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center space-x-2 mt-4">
-              <input type="checkbox" checked={isUrgent} onChange={e => setIsUrgent(e.target.checked)} />
-              <span className="text-sm text-pink-500 font-medium">🌸 급함</span>
+            {/* 급함 토글 버튼 */}
+            <div className="flex items-center mt-4">
+              <button
+                type="button"
+                onClick={() => setIsUrgent(!isUrgent)}
+                className={`relative inline-flex items-center h-8 rounded-full w-16 transition-colors duration-200 focus:outline-none ${isUrgent ? 'bg-red-600' : 'bg-gray-300'}`}
+              >
+                <span
+                  className={`inline-block w-7 h-7 transform bg-white rounded-full shadow transition-transform duration-200 ${isUrgent ? 'translate-x-8' : 'translate-x-1'}`}
+                />
+                <span className={`absolute left-2 text-xs font-semibold ${isUrgent ? 'text-white' : 'text-gray-600'}`}>급함</span>
+              </button>
             </div>
             <div className="flex justify-end space-x-4 pt-4 border-t mt-6">
               <button onClick={clearForm} className="bg-gray-200 px-5 py-2 rounded-md">취소</button>
