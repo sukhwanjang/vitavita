@@ -593,7 +593,13 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
     item.program.includes(searchQuery) ||
     item.creator?.includes(searchQuery)
   );
-  const completed = requests.filter(r => !r.is_deleted && r.completed);
+  const completed = requests
+    .filter(r => !r.is_deleted && r.completed)
+    .sort((a, b) => {
+      const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return dateB - dateA; // 최신순 정렬
+    });
   const deleted = requests.filter(r => r.is_deleted);
   const justUpload = requests.filter(r => r.is_just_upload);
 
