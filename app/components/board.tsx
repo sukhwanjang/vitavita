@@ -55,6 +55,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
       .from('request')
       .select('*')
       .order('is_deleted', { ascending: true })
+      .order('completed', { ascending: true })
       .order('is_urgent', { ascending: false })
       .order('pickup_date', { ascending: true })
       .order('updated_at', { ascending: false })
