@@ -206,7 +206,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
   const handleComplete = async (id: number) => {
     await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
-    fetchRequests();
+    await fetchRequests();
+    router.push('/completed');  // 완료 보기 페이지로 이동
   };
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
