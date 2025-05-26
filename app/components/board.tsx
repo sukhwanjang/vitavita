@@ -161,9 +161,15 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
         completed: false,
         is_deleted: false,
         is_just_upload: isJustUpload,
-        creator, // 🔥 여기에 추가!
+        creator,
       }]);
-      if (error) setError(`등록 실패: ${error.message}`);
+      if (error) {
+        alert('등록 실패: ' + error.message);
+        setIsSubmitting(false);
+        return;
+      } else {
+        alert('정상적으로 등록되었습니다.');
+      }
     }
 
     setIsSubmitting(false);
