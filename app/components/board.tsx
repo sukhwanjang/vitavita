@@ -206,8 +206,12 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   };
 
   const handleComplete = async (id: number) => {
-    await supabase.from('request').update({ completed: true, is_urgent: false }).eq('id', id);
-    await fetchRequests();  // 데이터만 새로고침
+    await supabase.from('request').update({
+      completed: true,
+      is_urgent: false,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    await fetchRequests();
   };
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
