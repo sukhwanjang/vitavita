@@ -1,12 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface RequestItem {
   id: number;
@@ -145,8 +140,14 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
 
     if (editMode && editingId !== null) {
       const { error } = await supabase.from('request').update({
-        company, program, pickup_date: pickupDate, note,
-        image_url: imageUrl, is_urgent: isUrgent, is_just_upload: isJustUpload
+        company,
+        program,
+        pickup_date: pickupDate,
+        note,
+        image_url: imageUrl,
+        is_urgent: isUrgent,
+        is_just_upload: isJustUpload,
+        creator,
       }).eq('id', editingId);
 
       if (error) setError(`수정 실패: ${error.message}`);
@@ -167,8 +168,6 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
         alert('등록 실패: ' + error.message);
         setIsSubmitting(false);
         return;
-      } else {
-        alert('정상적으로 등록되었습니다.');
       }
     }
 
@@ -203,11 +202,15 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   };
 
   const handleComplete = async (id: number) => {
-    await supabase.from('request').update({
+    const { error } = await supabase.from('request').update({
       completed: true,
       is_urgent: false,
       updated_at: new Date().toISOString(),
     }).eq('id', id);
+    if (error) {
+      alert('완료 처리 실패: ' + error.message);
+      return;
+    }
     await fetchRequests();
   };
   const handleRecover = async (id: number) => {
@@ -599,10 +602,9 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const completed = requests
     .filter(r => !r.is_deleted && r.completed)
     .sort((a, b) => {
-      // updated_at이 없으면 created_at을 대신 사용
       const dateA = a.updated_at ? new Date(a.updated_at).getTime() : new Date(a.created_at).getTime();
       const dateB = b.updated_at ? new Date(b.updated_at).getTime() : new Date(b.created_at).getTime();
-      return dateB - dateA; // 최신순 정렬
+      return dateB - dateA;
     });
   const deleted = requests.filter(r => r.is_deleted);
   const justUpload = requests.filter(r => r.is_just_upload);
