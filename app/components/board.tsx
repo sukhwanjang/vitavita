@@ -202,6 +202,11 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   };
 
   const handleComplete = async (id: number) => {
+    const item = requests.find(r => r.id === id);
+    if (!item) return;
+
+    if (!window.confirm(`정말 완료하시겠습니까?\n\n${item.program} - ${item.company}`)) return;
+
     const { error } = await supabase.from('request').update({
       completed: true,
       is_urgent: false,
