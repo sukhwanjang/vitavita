@@ -712,7 +712,7 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const handlePwSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pwInput === 'vita0070') {
-      localStorage.setItem('vitapass_ts', String(Date.now() + 1000 * 60 * 60 * 5));
+      localStorage.setItem('vitapass_ts', String(Date.now() + 1000 * 60 * 60 * 24)); // 24시간 유지
       setIsAuthed(true);
       setPwError('');
     } else {
