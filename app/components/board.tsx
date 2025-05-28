@@ -44,6 +44,8 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const [isAuthed, setIsAuthed] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState('');
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completingItem, setCompletingItem] = useState<RequestItem | null>(null);
 
   const fetchRequests = useCallback(async () => {
     const { data, error } = await supabase
@@ -204,20 +206,30 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   const handleComplete = async (id: number) => {
     const item = requests.find(r => r.id === id);
     if (!item) return;
+    
+    setCompletingItem(item);
+    setShowCompleteModal(true);
+  };
 
-    if (!window.confirm(`정말 완료하시겠습니까?\n\n${item.program} - ${item.company}`)) return;
+  const handleConfirmComplete = async () => {
+    if (!completingItem) return;
 
     const { error } = await supabase.from('request').update({
       completed: true,
       is_urgent: false,
       updated_at: new Date().toISOString(),
-    }).eq('id', id);
+    }).eq('id', completingItem.id);
+    
     if (error) {
       alert('완료 처리 실패: ' + error.message);
       return;
     }
+    
+    setShowCompleteModal(false);
+    setCompletingItem(null);
     await fetchRequests();
   };
+
   const handleRecover = async (id: number) => {
     await supabase.from('request').update({ completed: false }).eq('id', id);
     fetchRequests();
@@ -748,6 +760,57 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
       {renderHeader}
+      {/* 완료 확인 모달 */}
+      {showCompleteModal && completingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 w-full max-w-md relative animate-fadein">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">✅</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">작업 완료 확인</h3>
+              <p className="text-gray-600">아래 작업을 완료 처리하시겠습니까?</p>
+            </div>
+            
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 w-20">프로그램:</span>
+                  <span className="font-semibold text-gray-900">{completingItem.program}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 w-20">업체명:</span>
+                  <span className="font-semibold text-gray-900">{completingItem.company}</span>
+                </div>
+                {completingItem.creator && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 w-20">작업자:</span>
+                    <span className="font-semibold text-gray-900">{completingItem.creator}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  setCompletingItem(null);
+                }}
+                className="px-6 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmComplete}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:from-green-600 hover:to-green-700 transition shadow-lg"
+              >
+                완료 처리
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 입력 폼: 팝업(모달)로 구현 */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onPaste={handlePasteImage}>
