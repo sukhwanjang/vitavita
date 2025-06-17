@@ -930,9 +930,9 @@ export default function Board({ only }: { only?: 'completed' | 'deleted' | 'just
             onClick={e => e.stopPropagation()}
           >
             <div className="flex gap-2 mb-2">
-              <button onClick={() => setZoom(z => Math.max(1, Math.round((z - 0.2) * 10) / 10))} className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-lg font-bold hover:bg-gray-300">-</button>
+              <button onClick={() => setZoom(z => Math.max(1, Math.round((z - 0.2) * 10) / 10))} className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-lg font-bold hover:bg-gray-300 z-50">-</button>
               <span className="text-white font-semibold text-base">{(zoom * 100).toFixed(0)}%</span>
-              <button onClick={() => setZoom(z => Math.min(3, Math.round((z + 0.2) * 10) / 10))} className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-lg font-bold hover:bg-gray-300">+</button>
+              <button onClick={() => setZoom(z => Math.min(3, Math.round((z + 0.2) * 10) / 10))} className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-lg font-bold hover:bg-gray-300 z-50">+</button>
             </div>
             <img
               src={modalImage}
