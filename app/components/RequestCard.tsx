@@ -1,0 +1,168 @@
+'use client';
+import { RequestItem } from './types';
+
+interface RequestCardProps {
+  item: RequestItem;
+  onEdit: (item: RequestItem) => void;
+  onComplete: (id: number) => void;
+  onDelete: (id: number) => void;
+  onImageClick: (url: string) => void;
+  onPrintImage: (imageUrl: string, company: string, program: string) => void;
+}
+
+export default function RequestCard({ 
+  item, 
+  onEdit, 
+  onComplete, 
+  onDelete, 
+  onImageClick, 
+  onPrintImage 
+}: RequestCardProps) {
+  const isActive = !item.completed && !item.is_deleted;
+  
+  // 날짜 계산
+  const daysLeft = item.pickup_date
+    ? Math.ceil(
+        (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+        / (1000 * 60 * 60 * 24)
+      )
+    : null;
+
+  // 색상 우선순위: 급함 > 오늘 > 내일이후 > 지남
+  const barColor = item.is_urgent
+    ? 'bg-orange-500'
+    : daysLeft === 0
+      ? 'bg-red-400'
+      : daysLeft > 0
+        ? 'bg-blue-500'
+        : 'bg-black';
+
+  const barText = item.is_urgent
+    ? '급함'
+    : daysLeft === 0
+      ? '오늘까지'
+      : daysLeft > 0
+        ? `D-${daysLeft}`
+        : '지남';
+
+  return (
+    <div
+      className={`flex flex-col justify-between rounded-2xl shadow-lg overflow-hidden border bg-white transition-transform duration-200 hover:scale-[1.02] hover:shadow-2xl ${
+        item.completed
+          ? 'border-gray-200'
+          : item.is_urgent
+          ? 'border-orange-400'
+          : daysLeft === 0
+            ? 'border-red-300'
+            : daysLeft > 0
+              ? 'border-blue-300'
+              : 'border-gray-300'
+      }`}
+    >
+      {/* 상단 상태 뱃지 */}
+      <div className="flex items-center justify-start px-4 pt-4">
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm
+          ${item.is_urgent ? 'bg-orange-100 text-orange-700' : daysLeft === 0 ? 'bg-red-100 text-red-700' : daysLeft > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-800 text-white'}`}
+        >
+          {item.is_urgent && <span className="mr-1">⚡</span>}
+          {daysLeft === 0 && !item.is_urgent && <span className="mr-1">📅</span>}
+          {daysLeft < 0 && !item.is_urgent && <span className="mr-1">⏰</span>}
+          {barText}
+        </span>
+      </div>
+
+      {/* 카드 본문 */}
+      <div className="flex flex-col p-4 space-y-3 bg-white h-full">
+        <div>
+          <p className="text-xl font-extrabold text-gray-900 truncate mb-1">{item.company}</p>
+          <p className="text-sm text-gray-500 truncate">{item.program}</p>
+        </div>
+
+        <div className="flex justify-center items-center w-full min-h-[96px]">
+          {item.image_url ? (
+            <img
+              src={item.image_url}
+              onClick={() => onImageClick(item.image_url!)}
+              className="cursor-pointer w-full h-32 object-contain rounded-lg border bg-gray-50 shadow-sm transition-transform duration-200 hover:scale-105 hover:shadow-lg"
+              alt="작업 이미지"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center w-full h-24 text-gray-300 text-3xl">
+              <span className="material-icons">image_not_supported</span>
+              <span className="text-xs mt-1">이미지 없음</span>
+            </div>
+          )}
+        </div>
+
+        {/* 픽업일 표시 */}
+        <div className={`text-sm font-bold mt-2 ${daysLeft === 0 ? 'text-red-500' : daysLeft < 0 ? 'text-gray-800' : 'text-gray-700'}`}>
+          📅 픽업 {item.pickup_date ? (() => {
+            const daysLeft = Math.ceil(
+              (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+              / (1000 * 60 * 60 * 24)
+            );
+            if (daysLeft === 0) return '오늘';
+            if (daysLeft > 0) return `D-${daysLeft}`;
+            return '지남';
+          })() : '-'}
+        </div>
+
+        {/* 메모 */}
+        {item.note && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 mt-2 text-xs text-gray-800 rounded flex items-start gap-2 shadow-sm">
+            <span className="text-lg">📝</span>
+            <span>{item.note}</span>
+          </div>
+        )}
+
+        {/* 버튼 영역 */}
+        <div className="pt-2 flex flex-wrap gap-2 items-center justify-end mt-2">
+          {isActive && (
+            <>
+              {/* 업로드 시간 추가 */}
+              <span className="text-[10px] text-gray-400 mr-auto">
+                🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}
+              </span>
+
+              {item.image_url && (
+                <button
+                  onClick={() => onPrintImage(item.image_url!, item.company, item.program)}
+                  className="px-3 py-1 bg-purple-400 text-white rounded hover:bg-purple-500 text-xs"
+                >
+                  🖨️ 출력
+                </button>
+              )}
+
+              <button
+                onClick={() => onEdit(item)}
+                className="rounded-lg px-4 py-1 font-semibold shadow bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs transition"
+              >
+                수정
+              </button>
+              
+              <button
+                onClick={() => onComplete(item.id)}
+                className="rounded-lg px-4 py-1 font-semibold shadow bg-green-100 text-green-700 hover:bg-green-200 text-xs transition"
+              >
+                완료
+              </button>
+              
+              <button
+                onClick={() => onDelete(item.id)}
+                className="rounded-lg px-4 py-1 font-semibold shadow bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs transition"
+              >
+                삭제
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+} 
