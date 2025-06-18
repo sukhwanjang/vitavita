@@ -211,7 +211,7 @@ export default function InputFormModal({
         <div className="flex flex-col mt-6">
           <label className="font-semibold text-gray-800 mb-2">작업자 선택</label>
           <div className="grid grid-cols-2 gap-3">
-            {['박혜경', '김한별', '장석환', '정수원'].map((name) => (
+            {['박혜경', '김한별', '장석환', '정수원', '배현아'].map((name) => (
               <button
                 key={name}
                 onClick={() => setCreator(name)}
