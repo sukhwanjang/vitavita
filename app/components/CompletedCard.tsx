@@ -33,6 +33,15 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
             alt="작업 이미지"
           />
         )}
+        
+        {/* 메모 */}
+        {item.note && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 mt-2 text-xs text-gray-800 rounded flex items-start gap-2 shadow-sm">
+            <span className="text-lg">📝</span>
+            <span>{item.note}</span>
+          </div>
+        )}
+        
         <div className="text-xs text-gray-500 mt-2">
           <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
           <div>✅ 완료: {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</div>
