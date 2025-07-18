@@ -75,7 +75,7 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
       onClick={handleBackgroundClick}
     >
-      <div className="relative max-w-3xl w-full flex flex-col items-center" onClick={handleModalClick}>
+      <div className="relative flex flex-col items-center" onClick={handleModalClick}>
         <div className="text-white font-semibold text-base mb-2">
           {(zoom * 100).toFixed(0)}%
         </div>
@@ -86,16 +86,23 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          style={{ 
+            cursor: isDragging ? 'grabbing' : 'grab',
+            width: '80vw',
+            height: '80vh'
+          }}
         >
           <img
             src={imageUrl}
             style={{ 
               transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`, 
               transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-              transformOrigin: 'center center'
+              transformOrigin: 'center center',
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain'
             }}
-            className="max-h-[80vh] block"
+            className="block"
             alt="확대 이미지"
             draggable={false}
           />
