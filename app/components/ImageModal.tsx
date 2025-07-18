@@ -102,15 +102,12 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
       <div className="relative flex flex-col items-center" onClick={handleModalClick}>
         {/* 업체명, 프로그램명 표시 */}
         {(company || program) && (
-          <div className="text-white text-center mb-3">
-            {company && <div className="text-lg font-bold">{company}</div>}
-            {program && <div className="text-base text-gray-200">{program}</div>}
+          <div className="text-white text-center mb-4">
+            {company && <div className="text-2xl font-bold">{company}</div>}
+            {program && <div className="text-xl text-gray-200">{program}</div>}
           </div>
         )}
         
-        <div className="text-white font-semibold text-base mb-2">
-          {(zoom * 100).toFixed(0)}%
-        </div>
         <div 
           className="overflow-hidden rounded-xl shadow-2xl bg-white"
           onWheel={handleWheel}

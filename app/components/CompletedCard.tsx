@@ -42,28 +42,29 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
               <span>{item.note}</span>
             </div>
           )}
-          
-          <div className="text-xs text-gray-500 mt-2">
-            <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
-            <div>✅ 완료: {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</div>
-          </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-2 justify-end p-4 pt-0">
-        <span className="text-green-600 text-xs">✅ 완료됨</span>
-        <button
-          onClick={() => onRecover(item.id)}
-          className="text-xs text-blue-500 underline hover:text-blue-700"
-        >
-          복구
-        </button>
-        <button
-          onClick={handlePermanentDelete}
-          className="text-xs text-red-500 underline hover:text-red-700"
-        >
-          삭제
-        </button>
+      <div className="p-4 pt-0">
+        <div className="text-xs text-gray-500 mb-2">
+          <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
+          <div>✅ 완료: {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</div>
+        </div>
+        <div className="flex items-center gap-2 justify-end">
+          <span className="text-green-600 text-xs">✅ 완료됨</span>
+          <button
+            onClick={() => onRecover(item.id)}
+            className="text-xs text-blue-500 underline hover:text-blue-700"
+          >
+            복구
+          </button>
+          <button
+            onClick={handlePermanentDelete}
+            className="text-xs text-red-500 underline hover:text-red-700"
+          >
+            삭제
+          </button>
+        </div>
       </div>
     </div>
   );
