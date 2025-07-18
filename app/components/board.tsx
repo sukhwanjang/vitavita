@@ -38,7 +38,7 @@ export default function Board({ only }: BoardProps) {
   const [showForm, setShowForm] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string } | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
@@ -143,7 +143,9 @@ export default function Board({ only }: BoardProps) {
       />
 
       <ImageModal
-        imageUrl={modalImage}
+        imageUrl={modalImage?.url || null}
+        company={modalImage?.company}
+        program={modalImage?.program}
         onClose={() => setModalImage(null)}
       />
 
@@ -168,7 +170,7 @@ export default function Board({ only }: BoardProps) {
                   item={item}
                   onRecover={handleRecover}
                   onRefresh={fetchRequests}
-                  onImageClick={setModalImage}
+                  onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program })}
                 />
               ))}
             </div>
@@ -210,7 +212,7 @@ export default function Board({ only }: BoardProps) {
                     onEdit={handleEdit}
                     onComplete={handleComplete}
                     onDelete={handleDelete}
-                    onImageClick={setModalImage}
+                    onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program })}
                     onPrintImage={handlePrintImage}
                   />
                 ))}

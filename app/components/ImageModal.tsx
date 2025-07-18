@@ -1,17 +1,40 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ImageModalProps {
   imageUrl: string | null;
+  company?: string;
+  program?: string;
   onClose: () => void;
 }
 
-export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
+export default function ImageModal({ imageUrl, company, program, onClose }: ImageModalProps) {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+
+  // 모달이 열릴 때 body 스크롤 비활성화, 닫힐 때 복원
+  useEffect(() => {
+    if (imageUrl) {
+      // 현재 스크롤 위치 저장
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        // 모달이 닫힐 때 원래 상태로 복원
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [imageUrl]);
 
   if (!imageUrl) return null;
 
@@ -28,6 +51,7 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   // 스크롤을 통한 확대축소 기능
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const delta = e.deltaY;
     const zoomStep = 0.1;
     
@@ -76,6 +100,14 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
       onClick={handleBackgroundClick}
     >
       <div className="relative flex flex-col items-center" onClick={handleModalClick}>
+        {/* 업체명, 프로그램명 표시 */}
+        {(company || program) && (
+          <div className="text-white text-center mb-3">
+            {company && <div className="text-lg font-bold">{company}</div>}
+            {program && <div className="text-base text-gray-200">{program}</div>}
+          </div>
+        )}
+        
         <div className="text-white font-semibold text-base mb-2">
           {(zoom * 100).toFixed(0)}%
         </div>
