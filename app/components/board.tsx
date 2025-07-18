@@ -168,6 +168,7 @@ export default function Board({ only }: BoardProps) {
                   item={item}
                   onRecover={handleRecover}
                   onRefresh={fetchRequests}
+                  onImageClick={setModalImage}
                 />
               ))}
             </div>

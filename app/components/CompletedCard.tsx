@@ -6,9 +6,10 @@ interface CompletedCardProps {
   item: RequestItem;
   onRecover: (id: number) => void;
   onRefresh: () => void;
+  onImageClick: (url: string) => void;
 }
 
-export default function CompletedCard({ item, onRecover, onRefresh }: CompletedCardProps) {
+export default function CompletedCard({ item, onRecover, onRefresh, onImageClick }: CompletedCardProps) {
   const handlePermanentDelete = async () => {
     if (window.confirm('정말 완전 삭제하시겠습니까?')) {
       await supabase.from('request').delete().eq('id', item.id);
@@ -25,7 +26,12 @@ export default function CompletedCard({ item, onRecover, onRefresh }: CompletedC
           <p className="text-sm text-gray-600 truncate">{item.program}</p>
         </div>
         {item.image_url && (
-          <img src={item.image_url} className="w-full h-32 object-contain rounded-md border bg-gray-50" />
+          <img 
+            src={item.image_url} 
+            onClick={() => onImageClick(item.image_url!)}
+            className="cursor-pointer w-full h-32 object-contain rounded-md border bg-gray-50 transition-transform duration-200 hover:scale-105 hover:shadow-lg" 
+            alt="작업 이미지"
+          />
         )}
         <div className="text-xs text-gray-500 mt-2">
           <div>🕒 업로드: {new Date(item.created_at).toLocaleString('ko-KR')}</div>
