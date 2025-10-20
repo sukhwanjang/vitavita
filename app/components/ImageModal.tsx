@@ -103,8 +103,8 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
         {/* 업체명, 프로그램명 표시 */}
         {(company || program) && (
           <div className="text-white text-center mb-4">
-            {company && <div className="text-2xl font-bold">{company}</div>}
-            {program && <div className="text-xl text-gray-200">{program}</div>}
+            {company && <div className="text-3xl font-bold">{company}</div>}
+            {program && <div className="text-2xl text-gray-200">{program}</div>}
           </div>
         )}
         
