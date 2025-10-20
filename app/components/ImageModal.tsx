@@ -103,7 +103,7 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
         {/* 업체명, 프로그램명 표시 */}
         {(company || program) && (
           <div className="text-white text-center mb-4">
-            {company && <div className="text-3xl font-bold">{company}</div>}
+            {company && <div className="text-4xl font-bold">{company}</div>}
             {program && <div className="text-2xl text-gray-200">{program}</div>}
           </div>
         )}
@@ -142,9 +142,6 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
         >
           ×
         </button>
-        <div className="text-white text-sm mt-2 opacity-70">
-          스크롤로 확대/축소 • 드래그로 이동
-        </div>
       </div>
     </div>
   );
