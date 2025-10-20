@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ImageModalProps {
   imageUrl: string | null;
@@ -8,17 +8,22 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
+interface CheckMark {
+  x: number;
+  y: number;
+}
+
 export default function ImageModal({ imageUrl, company, program, onClose }: ImageModalProps) {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const [checkMarks, setCheckMarks] = useState<CheckMark[]>([]);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  // 모달이 열릴 때 body 스크롤 비활성화, 닫힐 때 복원
   useEffect(() => {
     if (imageUrl) {
-      // 현재 스크롤 위치 저장
       const scrollY = window.scrollY;
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
@@ -26,7 +31,6 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
       document.body.style.width = '100%';
 
       return () => {
-        // 모달이 닫힐 때 원래 상태로 복원
         document.body.style.overflow = '';
         document.body.style.position = '';
         document.body.style.top = '';
@@ -38,17 +42,17 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
 
   if (!imageUrl) return null;
 
-  const handleBackgroundClick = () => {
+  const handleClose = () => {
     onClose();
     setZoom(1);
     setPosition({ x: 0, y: 0 });
+    setCheckMarks([]); // 모달이 닫힐 때 체크 표시 초기화
   };
 
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
-  // 스크롤을 통한 확대축소 기능
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -56,22 +60,41 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
     const zoomStep = 0.1;
     
     if (delta > 0) {
-      // 스크롤 다운 - 축소
       setZoom(prevZoom => Math.max(0.5, Math.round((prevZoom - zoomStep) * 10) / 10));
     } else {
-      // 스크롤 업 - 확대
       setZoom(prevZoom => Math.min(5, Math.round((prevZoom + zoomStep) * 10) / 10));
     }
   };
 
-  // 드래그 시작
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    setLastPosition(position);
+    // 마우스 휠 클릭 (체크 표시 추가)
+    if (e.button === 1) {
+      e.preventDefault();
+      
+      if (imageContainerRef.current) {
+        const rect = imageContainerRef.current.getBoundingClientRect();
+        const containerW = rect.width;
+        const containerH = rect.height;
+
+        const clickXInContainer = e.clientX - rect.left;
+        const clickYInContainer = e.clientY - rect.top;
+
+        const markX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
+        const markY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
+        
+        setCheckMarks(prev => [...prev, { x: markX, y: markY }]);
+      }
+      return;
+    }
+
+    // 마우스 왼쪽 클릭 (드래그 시작)
+    if(e.button === 0) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      setLastPosition(position);
+    }
   };
 
-  // 드래그 중
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     
@@ -84,12 +107,10 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
     });
   };
 
-  // 드래그 종료
   const handleMouseUp = () => {
     setIsDragging(false);
   };
 
-  // 마우스가 컨테이너를 벗어났을 때도 드래그 종료
   const handleMouseLeave = () => {
     setIsDragging(false);
   };
@@ -97,19 +118,19 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
-      onClick={handleBackgroundClick}
+      onClick={handleClose}
     >
       <div className="relative flex flex-col items-center" onClick={handleModalClick}>
-        {/* 업체명, 프로그램명 표시 */}
         {(company || program) && (
           <div className="text-white text-center mb-4">
             {company && <div className="text-4xl font-bold">{company}</div>}
-            {program && <div className="text-2xl text-gray-200">{program}</div>}
+            {program && <div className="text-3xl text-gray-200">{program}</div>}
           </div>
         )}
         
         <div 
-          className="overflow-hidden rounded-xl shadow-2xl bg-white"
+          ref={imageContainerRef}
+          className="relative overflow-hidden rounded-xl shadow-2xl bg-white"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -120,25 +141,48 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
             width: '80vw',
             height: '80vh'
           }}
+          onContextMenu={(e) => e.preventDefault()} // 우클릭 메뉴 방지
         >
-          <img
-            src={imageUrl}
-            style={{ 
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
               transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`, 
               transition: isDragging ? 'none' : 'transform 0.2s ease-out',
               transformOrigin: 'center center',
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain'
             }}
-            className="block"
-            alt="확대 이미지"
-            draggable={false}
-          />
+          >
+            <img
+              src={imageUrl}
+              style={{ 
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+              className="block"
+              alt="확대 이미지"
+              draggable={false}
+            />
+            {checkMarks.map((mark, index) => (
+              <div
+                key={index}
+                className="absolute text-4xl"
+                style={{
+                  left: `${mark.x}px`,
+                  top: `${mark.y}px`,
+                  transform: 'translate(-50%, -50%)',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                ✔️
+              </div>
+            ))}
+          </div>
         </div>
         <button
           className="absolute top-2 right-2 text-white text-3xl font-bold bg-black bg-opacity-40 rounded-full px-3 py-1 hover:bg-opacity-70 transition"
-          onClick={handleBackgroundClick}
+          onClick={handleClose}
         >
           ×
         </button>
