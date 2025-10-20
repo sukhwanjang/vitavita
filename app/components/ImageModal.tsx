@@ -66,27 +66,37 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // 마우스 휠 클릭 (체크 표시 추가)
-    if (e.button === 1) {
-      e.preventDefault();
-      
-      if (imageContainerRef.current) {
-        const rect = imageContainerRef.current.getBoundingClientRect();
-        const containerW = rect.width;
-        const containerH = rect.height;
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (!imageContainerRef.current) return;
 
-        const clickXInContainer = e.clientX - rect.left;
-        const clickYInContainer = e.clientY - rect.top;
+    // 1. 클릭된 좌표 계산
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const containerW = rect.width;
+    const containerH = rect.height;
+    const clickXInContainer = e.clientX - rect.left;
+    const clickYInContainer = e.clientY - rect.top;
 
-        const markX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
-        const markY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
-        
-        setCheckMarks(prev => [...prev, { x: markX, y: markY }]);
-      }
-      return;
+    const newMarkX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
+    const newMarkY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
+
+    // 2. 근처에 이미 체크 표시가 있는지 확인
+    const CLICK_TOLERANCE = 20; // 20px 반경을 '근처'로 간주
+    const nearbyMarkIndex = checkMarks.findIndex(mark => {
+      const distance = Math.sqrt(Math.pow(mark.x - newMarkX, 2) + Math.pow(mark.y - newMarkY, 2));
+      return distance < CLICK_TOLERANCE;
+    });
+
+    // 3. 상태 업데이트: 있으면 제거, 없으면 추가
+    if (nearbyMarkIndex > -1) {
+      // 근처에 마크가 있으면 해당 마크를 제외하고 배열을 새로 만듦
+      setCheckMarks(prev => prev.filter((_, index) => index !== nearbyMarkIndex));
+    } else {
+      // 근처에 마크가 없으면 새로운 마크를 추가
+      setCheckMarks(prev => [...prev, { x: newMarkX, y: newMarkY }]);
     }
+  };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
     // 마우스 왼쪽 클릭 (드래그 시작)
     if(e.button === 0) {
       setIsDragging(true);
@@ -136,6 +146,7 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
+          onDoubleClick={handleDoubleClick}
           style={{ 
             cursor: isDragging ? 'grabbing' : 'grab',
             width: '80vw',
