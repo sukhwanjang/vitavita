@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { FilterType } from './types';
+import { FilterType, CheckMark } from './types'; // CheckMark 타입 임포트
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
 import { handlePrintTodayWork, handlePrintImage } from './utils/printUtils';
@@ -38,10 +38,11 @@ export default function Board({ only }: BoardProps) {
   const [showForm, setShowForm] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string } | null>(null);
+  const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
+  const [allCheckMarks, setAllCheckMarks] = useState<Record<number, CheckMark[]>>({});
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
   if (authChecked && !isAuthed) {
@@ -146,6 +147,15 @@ export default function Board({ only }: BoardProps) {
         imageUrl={modalImage?.url || null}
         company={modalImage?.company}
         program={modalImage?.program}
+        checkMarks={modalImage ? allCheckMarks[modalImage.id] || [] : []}
+        onCheckMarksChange={(newMarks) => {
+          if (modalImage) {
+            setAllCheckMarks(prev => ({
+              ...prev,
+              [modalImage.id]: newMarks,
+            }));
+          }
+        }}
         onClose={() => setModalImage(null)}
       />
 
@@ -170,7 +180,7 @@ export default function Board({ only }: BoardProps) {
                   item={item}
                   onRecover={handleRecover}
                   onRefresh={fetchRequests}
-                  onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program })}
+                  onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
                 />
               ))}
             </div>
@@ -212,7 +222,7 @@ export default function Board({ only }: BoardProps) {
                     onEdit={handleEdit}
                     onComplete={handleComplete}
                     onDelete={handleDelete}
-                    onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program })}
+                    onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
                     onPrintImage={handlePrintImage}
                   />
                 ))}

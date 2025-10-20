@@ -14,4 +14,9 @@ export interface RequestItem {
   creator: string;
 }
 
-export type FilterType = 'completed' | 'deleted' | 'justupload'; 
+export type FilterType = 'completed' | 'deleted' | 'justupload';
+
+export interface CheckMark {
+  x: number;
+  y: number;
+} 

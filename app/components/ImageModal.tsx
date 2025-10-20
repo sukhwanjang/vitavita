@@ -1,25 +1,29 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { CheckMark } from './types'; // CheckMark 타입 임포트
 
 interface ImageModalProps {
   imageUrl: string | null;
   company?: string;
   program?: string;
+  checkMarks: CheckMark[];
+  onCheckMarksChange: (newMarks: CheckMark[]) => void;
   onClose: () => void;
 }
 
-interface CheckMark {
-  x: number;
-  y: number;
-}
-
-export default function ImageModal({ imageUrl, company, program, onClose }: ImageModalProps) {
+export default function ImageModal({ 
+  imageUrl, 
+  company, 
+  program, 
+  checkMarks, 
+  onCheckMarksChange, 
+  onClose 
+}: ImageModalProps) {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
-  const [checkMarks, setCheckMarks] = useState<CheckMark[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,7 +50,6 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
     onClose();
     setZoom(1);
     setPosition({ x: 0, y: 0 });
-    setCheckMarks([]); // 모달이 닫힐 때 체크 표시 초기화
   };
 
   const handleModalClick = (e: React.MouseEvent) => {
@@ -89,10 +92,10 @@ export default function ImageModal({ imageUrl, company, program, onClose }: Imag
     // 3. 상태 업데이트: 있으면 제거, 없으면 추가
     if (nearbyMarkIndex > -1) {
       // 근처에 마크가 있으면 해당 마크를 제외하고 배열을 새로 만듦
-      setCheckMarks(prev => prev.filter((_, index) => index !== nearbyMarkIndex));
+      onCheckMarksChange(checkMarks.filter((_, index) => index !== nearbyMarkIndex));
     } else {
       // 근처에 마크가 없으면 새로운 마크를 추가
-      setCheckMarks(prev => [...prev, { x: newMarkX, y: newMarkY }]);
+      onCheckMarksChange([...checkMarks, { x: newMarkX, y: newMarkY }]);
     }
   };
 
