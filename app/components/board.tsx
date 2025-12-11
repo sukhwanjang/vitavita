@@ -44,8 +44,7 @@ export default function Board({ only }: BoardProps) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
-  const [displayCount, setDisplayCount] = useState(30);  // 완료 목록 표시 개수 (30개씩)
-  const [isLoadingMore, setIsLoadingMore] = useState(false);  // 추가 로딩 중 상태
+  const [displayCount, setDisplayCount] = useState(28);  // 완료 목록 표시 개수 (28개씩)
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
@@ -130,17 +129,12 @@ export default function Board({ only }: BoardProps) {
   const hasMoreCompleted = allFilteredCompleted.length > displayCount;
   const remainingCount = allFilteredCompleted.length - displayCount;
 
-  // 무한 스크롤: 30개씩 더 로드
+  // 무한 스크롤: 28개씩 더 로드
   const loadMore = useCallback(() => {
-    if (hasMoreCompleted && !isLoadingMore) {
-      setIsLoadingMore(true);
-      // 약간의 딜레이를 주어 로딩 표시가 보이게 함
-      setTimeout(() => {
-        setDisplayCount(prev => prev + 30);
-        setIsLoadingMore(false);
-      }, 300);
+    if (hasMoreCompleted) {
+      setDisplayCount(prev => prev + 28);
     }
-  }, [hasMoreCompleted, isLoadingMore]);
+  }, [hasMoreCompleted]);
 
   // IntersectionObserver로 무한 스크롤 구현
   useEffect(() => {
@@ -148,7 +142,7 @@ export default function Board({ only }: BoardProps) {
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreCompleted && !isLoadingMore) {
+        if (entries[0].isIntersecting && hasMoreCompleted) {
           loadMore();
         }
       },
@@ -160,7 +154,7 @@ export default function Board({ only }: BoardProps) {
     }
 
     return () => observer.disconnect();
-  }, [only, hasMoreCompleted, isLoadingMore, loadMore]);
+  }, [only, hasMoreCompleted, loadMore]);
 
   const justUploadCount = justUpload.length;
 
@@ -236,24 +230,7 @@ export default function Board({ only }: BoardProps) {
             </div>
 
             {/* 무한 스크롤 트리거 */}
-            <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
-              {isLoadingMore && (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <div className="w-5 h-5 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
-                  <span>로딩 중...</span>
-                </div>
-              )}
-              {hasMoreCompleted && !isLoadingMore && (
-                <span className="text-sm text-gray-400">
-                  스크롤하여 더 보기 ({remainingCount}개 남음)
-                </span>
-              )}
-              {!hasMoreCompleted && filteredCompleted.length > 0 && (
-                <span className="text-sm text-gray-400">
-                  모든 항목을 불러왔습니다 ✅
-                </span>
-              )}
-            </div>
+            {hasMoreCompleted && <div ref={loadMoreRef} className="h-10" />}
           </div>
         ) : only === 'deleted' ? (
           <div>
