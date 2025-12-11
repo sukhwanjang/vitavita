@@ -12,7 +12,8 @@ export interface RequestItem {
   created_at: string;
   updated_at?: string;
   creator: string;
-  check_marks?: { x: number; y: number }[];  // 추가
+  check_marks?: { x: number; y: number }[];
+  is_work_done?: boolean;  // 작업완료 여부
 }
 
 export type FilterType = 'completed' | 'deleted' | 'justupload';

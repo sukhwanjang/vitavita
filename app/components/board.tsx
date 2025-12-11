@@ -27,7 +27,8 @@ export default function Board({ only }: BoardProps) {
     handleComplete: originalHandleComplete, 
     handleRecover, 
     handleDelete,
-    updateCheckMarks,  // 추가
+    updateCheckMarks,
+    handleWorkDone,
     inProgress,
     completed,
     deleted,
@@ -226,6 +227,7 @@ export default function Board({ only }: BoardProps) {
                     onDelete={handleDelete}
                     onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
                     onPrintImage={handlePrintImage}
+                    onWorkDone={handleWorkDone}
                   />
                 ))}
               </div>

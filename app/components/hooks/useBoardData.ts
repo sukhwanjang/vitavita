@@ -86,6 +86,29 @@ export function useBoardData() {
     return true;
   };
 
+  // 작업완료 토글 함수
+  const handleWorkDone = async (id: number) => {
+    const item = requests.find(r => r.id === id);
+    if (!item) return;
+
+    const newWorkDone = !item.is_work_done;
+    
+    const { error } = await supabase
+      .from('request')
+      .update({ is_work_done: newWorkDone })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('작업완료 처리 실패:', error.message);
+      return;
+    }
+    
+    // 로컬 상태 즉시 업데이트
+    setRequests(prev => 
+      prev.map(r => r.id === id ? { ...r, is_work_done: newWorkDone } : r)
+    );
+  };
+
   // 데이터 필터링
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed && r.is_just_upload !== true);
   const completed = requests
@@ -106,6 +129,7 @@ export function useBoardData() {
     handleRecover,
     handleDelete,
     updateCheckMarks,
+    handleWorkDone,
     inProgress,
     completed,
     deleted,

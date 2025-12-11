@@ -8,6 +8,7 @@ interface RequestCardProps {
   onDelete: (id: number) => void;
   onImageClick: (url: string) => void;
   onPrintImage: (imageUrl: string, company: string, program: string) => void;
+  onWorkDone: (id: number) => void;
 }
 
 export default function RequestCard({ 
@@ -16,7 +17,8 @@ export default function RequestCard({
   onComplete, 
   onDelete, 
   onImageClick, 
-  onPrintImage 
+  onPrintImage,
+  onWorkDone
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
   
@@ -47,16 +49,18 @@ export default function RequestCard({
 
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl shadow-lg overflow-hidden border bg-white transition-transform duration-200 hover:scale-[1.02] hover:shadow-2xl ${
-        item.completed
-          ? 'border-gray-200'
-          : item.is_urgent
-          ? 'border-orange-400'
-          : daysLeft === 0
-            ? 'border-red-300'
-            : daysLeft > 0
-              ? 'border-blue-300'
-              : 'border-gray-300'
+      className={`flex flex-col justify-between rounded-2xl shadow-lg overflow-hidden border transition-transform duration-200 hover:scale-[1.02] hover:shadow-2xl ${
+        item.is_work_done
+          ? 'bg-green-50 border-green-300'
+          : item.completed
+            ? 'bg-white border-gray-200'
+            : item.is_urgent
+              ? 'bg-white border-orange-400'
+              : daysLeft === 0
+                ? 'bg-white border-red-300'
+                : daysLeft > 0
+                  ? 'bg-white border-blue-300'
+                  : 'bg-white border-gray-300'
       }`}
     >
       {/* 상단 상태 뱃지 */}
@@ -72,7 +76,7 @@ export default function RequestCard({
       </div>
 
       {/* 카드 본문 */}
-      <div className="flex flex-col p-4 space-y-3 bg-white h-full">
+      <div className={`flex flex-col p-4 space-y-3 h-full ${item.is_work_done ? 'bg-green-50' : 'bg-white'}`}>
         <div>
           <p className="text-xl font-extrabold text-gray-900 truncate mb-1">{item.company}</p>
           <p className="text-sm text-gray-500 truncate">{item.program}</p>
@@ -138,6 +142,17 @@ export default function RequestCard({
                   🖨️ 출력
                 </button>
               )}
+
+              <button
+                onClick={() => onWorkDone(item.id)}
+                className={`rounded-lg px-4 py-1 font-semibold shadow text-xs transition ${
+                  item.is_work_done 
+                    ? 'bg-green-500 text-white hover:bg-green-600' 
+                    : 'bg-green-50 text-green-700 border border-green-300 hover:bg-green-100'
+                }`}
+              >
+                {item.is_work_done ? '작업완료 취소' : '작업완료'}
+              </button>
 
               <button
                 onClick={() => onEdit(item)}
