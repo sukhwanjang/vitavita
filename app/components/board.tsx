@@ -48,7 +48,53 @@ export default function Board({ only }: BoardProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
 
-  // 인증이 완료되지 않았으면 PasswordGate 표시
+  // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
+  const allFilteredCompleted = completed.filter((item) =>
+    item.company.includes(searchQuery) ||
+    item.program.includes(searchQuery) ||
+    item.creator?.includes(searchQuery)
+  );
+
+  // ⭐ useCallback을 early return 전에 배치
+  const loadMore = useCallback(() => {
+    setDisplayCount(prev => {
+      const currentTotal = allFilteredCompleted.length;
+      const currentDisplay = prev;
+      
+      // 더 로드할 항목이 있고, 현재 로딩 중이 아닐 때만
+      if (currentTotal > currentDisplay) {
+        setIsLoadingMore(true);
+        setTimeout(() => {
+          setIsLoadingMore(false);
+        }, 200);
+        return currentDisplay + 28;
+      }
+      return currentDisplay;
+    });
+  }, [allFilteredCompleted.length]);
+
+  // ⭐ useEffect를 early return 전에 배치
+  useEffect(() => {
+    if (only !== 'completed' || !loadMoreRef.current) return;
+    
+    const currentRef = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [only, loadMore]);
+
+  // ⭐ 이제 모든 hooks 호출 후에 early return
   if (authChecked && !isAuthed) {
     return <PasswordGate onAuthenticated={handleAuthentication} />;
   }
@@ -109,15 +155,8 @@ export default function Board({ only }: BoardProps) {
     fetchRequests();
   };
 
-  // 검색 필터링
+  // 검색 필터링 (이미 위에서 allFilteredCompleted 계산했으므로 중복 제거)
   const filteredInProgress = inProgress.filter((item) =>
-    item.company.includes(searchQuery) ||
-    item.program.includes(searchQuery) ||
-    item.creator?.includes(searchQuery)
-  );
-
-  // 검색 필터링된 완료 목록 (전체)
-  const allFilteredCompleted = completed.filter((item) =>
     item.company.includes(searchQuery) ||
     item.program.includes(searchQuery) ||
     item.creator?.includes(searchQuery)
@@ -129,47 +168,6 @@ export default function Board({ only }: BoardProps) {
   // 더 표시할 항목이 있는지 확인
   const hasMoreCompleted = allFilteredCompleted.length > displayCount;
   const remainingCount = allFilteredCompleted.length - displayCount;
-
-  // 무한 스크롤: 28개씩 더 로드
-  const loadMore = useCallback(() => {
-    setDisplayCount(prev => {
-      const currentTotal = allFilteredCompleted.length;
-      const currentDisplay = prev;
-      
-      // 더 로드할 항목이 있고, 현재 로딩 중이 아닐 때만
-      if (currentTotal > currentDisplay) {
-        setIsLoadingMore(true);
-        setTimeout(() => {
-          setIsLoadingMore(false);
-        }, 200);
-        return currentDisplay + 28;
-      }
-      return currentDisplay;
-    });
-  }, [allFilteredCompleted.length]);  // hasMoreCompleted 대신 length만 의존
-
-  // IntersectionObserver로 무한 스크롤 구현
-  useEffect(() => {
-    if (only !== 'completed' || !loadMoreRef.current) return;
-    
-    const currentRef = loadMoreRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(currentRef);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [only, loadMore]);  // isLoadingMore, hasMoreCompleted 제거
-
-  const justUploadCount = justUpload.length;
 
   // 현재 모달에 표시할 아이템의 체크마크 가져오기
   const currentItem = modalImage ? requests.find(r => r.id === modalImage.id) : null;
@@ -185,7 +183,7 @@ export default function Board({ only }: BoardProps) {
         onShowForm={handleShowForm}
         showForm={showForm}
         editMode={editMode}
-        justUploadCount={justUploadCount}
+        justUploadCount={justUpload.length}
       />
 
       {/* 모달들 */}
