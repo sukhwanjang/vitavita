@@ -69,7 +69,9 @@ export default function ImageModal({
     }
   };
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  // 72번 라인 - 함수명 변경 (선택사항, 더 명확하게)
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();  // 브라우저 기본 우클릭 메뉴 방지 (추가)
     if (!imageContainerRef.current) return;
 
     // 1. 클릭된 좌표 계산
@@ -149,13 +151,12 @@ export default function ImageModal({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          onDoubleClick={handleDoubleClick}
+          onContextMenu={handleRightClick}  // 변경: 우클릭 이벤트로 체크마크 생성/삭제
           style={{ 
             cursor: isDragging ? 'grabbing' : 'grab',
             width: '80vw',
             height: '80vh'
           }}
-          onContextMenu={(e) => e.preventDefault()} // 우클릭 메뉴 방지
         >
           <div
             style={{
