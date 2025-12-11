@@ -44,7 +44,7 @@ export default function Board({ only }: BoardProps) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
-  // 삭제: const [allCheckMarks, setAllCheckMarks] = useState<Record<number, CheckMark[]>>({});
+  const [showAllCompleted, setShowAllCompleted] = useState(false);  // 전체 완료 목록 표시 여부
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
   if (authChecked && !isAuthed) {
@@ -114,11 +114,32 @@ export default function Board({ only }: BoardProps) {
     item.creator?.includes(searchQuery)
   );
 
-  const filteredCompleted = completed.filter((item) =>
+  // 검색 필터링된 완료 목록
+  const searchFilteredCompleted = completed.filter((item) =>
     item.company.includes(searchQuery) ||
     item.program.includes(searchQuery) ||
     item.creator?.includes(searchQuery)
   );
+
+  // 최근 7일 기준 날짜 계산
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  // 최근 7일 완료 목록
+  const recentCompleted = searchFilteredCompleted.filter((item) => {
+    const itemDate = new Date(item.updated_at || item.created_at);
+    return itemDate >= sevenDaysAgo;
+  });
+
+  // 7일 이전 완료 목록
+  const olderCompleted = searchFilteredCompleted.filter((item) => {
+    const itemDate = new Date(item.updated_at || item.created_at);
+    return itemDate < sevenDaysAgo;
+  });
+
+  // 표시할 완료 목록 (더보기 여부에 따라)
+  const filteredCompleted = showAllCompleted ? searchFilteredCompleted : recentCompleted;
 
   const justUploadCount = justUpload.length;
 
@@ -175,7 +196,18 @@ export default function Board({ only }: BoardProps) {
       <div className="max-w-screen-2xl mx-auto">
         {only === 'completed' ? (
           <div>
-            <h2 className="font-semibold text-base text-green-700 mb-2">✅ 완료</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-base text-green-700">
+                ✅ 완료 {!showAllCompleted && `(최근 7일 - ${recentCompleted.length}개)`}
+                {showAllCompleted && `(전체 ${searchFilteredCompleted.length}개)`}
+              </h2>
+              {!showAllCompleted && olderCompleted.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  7일 이전 작업물 {olderCompleted.length}개 숨김
+                </span>
+              )}
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {filteredCompleted.map(item => (
                 <CompletedCard
@@ -187,6 +219,26 @@ export default function Board({ only }: BoardProps) {
                 />
               ))}
             </div>
+
+            {/* 더보기 / 접기 버튼 */}
+            {olderCompleted.length > 0 && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => setShowAllCompleted(!showAllCompleted)}
+                  className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2"
+                >
+                  {showAllCompleted ? (
+                    <>
+                      최근 7일만 보기
+                    </>
+                  ) : (
+                    <>
+                      이전 작업물 더보기 ({olderCompleted.length}개)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : only === 'deleted' ? (
           <div>
