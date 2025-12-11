@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { FilterType, CheckMark } from './types'; // CheckMark 타입 임포트
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
 import { handlePrintTodayWork, handlePrintImage } from './utils/printUtils';
@@ -44,7 +44,9 @@ export default function Board({ only }: BoardProps) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
-  const [showAllCompleted, setShowAllCompleted] = useState(false);  // 전체 완료 목록 표시 여부
+  const [displayCount, setDisplayCount] = useState(30);  // 완료 목록 표시 개수 (30개씩)
+  const [isLoadingMore, setIsLoadingMore] = useState(false);  // 추가 로딩 중 상태
+  const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
   if (authChecked && !isAuthed) {
@@ -114,32 +116,51 @@ export default function Board({ only }: BoardProps) {
     item.creator?.includes(searchQuery)
   );
 
-  // 검색 필터링된 완료 목록
-  const searchFilteredCompleted = completed.filter((item) =>
+  // 검색 필터링된 완료 목록 (전체)
+  const allFilteredCompleted = completed.filter((item) =>
     item.company.includes(searchQuery) ||
     item.program.includes(searchQuery) ||
     item.creator?.includes(searchQuery)
   );
 
-  // 최근 7일 기준 날짜 계산
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  // 표시할 완료 목록 (displayCount 개수만큼)
+  const filteredCompleted = allFilteredCompleted.slice(0, displayCount);
+  
+  // 더 표시할 항목이 있는지 확인
+  const hasMoreCompleted = allFilteredCompleted.length > displayCount;
+  const remainingCount = allFilteredCompleted.length - displayCount;
 
-  // 최근 7일 완료 목록
-  const recentCompleted = searchFilteredCompleted.filter((item) => {
-    const itemDate = new Date(item.updated_at || item.created_at);
-    return itemDate >= sevenDaysAgo;
-  });
+  // 무한 스크롤: 30개씩 더 로드
+  const loadMore = useCallback(() => {
+    if (hasMoreCompleted && !isLoadingMore) {
+      setIsLoadingMore(true);
+      // 약간의 딜레이를 주어 로딩 표시가 보이게 함
+      setTimeout(() => {
+        setDisplayCount(prev => prev + 30);
+        setIsLoadingMore(false);
+      }, 300);
+    }
+  }, [hasMoreCompleted, isLoadingMore]);
 
-  // 7일 이전 완료 목록
-  const olderCompleted = searchFilteredCompleted.filter((item) => {
-    const itemDate = new Date(item.updated_at || item.created_at);
-    return itemDate < sevenDaysAgo;
-  });
+  // IntersectionObserver로 무한 스크롤 구현
+  useEffect(() => {
+    if (only !== 'completed') return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreCompleted && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-  // 표시할 완료 목록 (더보기 여부에 따라)
-  const filteredCompleted = showAllCompleted ? searchFilteredCompleted : recentCompleted;
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [only, hasMoreCompleted, isLoadingMore, loadMore]);
 
   const justUploadCount = justUpload.length;
 
@@ -198,14 +219,8 @@ export default function Board({ only }: BoardProps) {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-base text-green-700">
-                ✅ 완료 {!showAllCompleted && `(최근 7일 - ${recentCompleted.length}개)`}
-                {showAllCompleted && `(전체 ${searchFilteredCompleted.length}개)`}
+                ✅ 완료
               </h2>
-              {!showAllCompleted && olderCompleted.length > 0 && (
-                <span className="text-sm text-gray-500">
-                  7일 이전 작업물 {olderCompleted.length}개 숨김
-                </span>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -220,25 +235,25 @@ export default function Board({ only }: BoardProps) {
               ))}
             </div>
 
-            {/* 더보기 / 접기 버튼 */}
-            {olderCompleted.length > 0 && (
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={() => setShowAllCompleted(!showAllCompleted)}
-                  className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2"
-                >
-                  {showAllCompleted ? (
-                    <>
-                      최근 7일만 보기
-                    </>
-                  ) : (
-                    <>
-                      이전 작업물 더보기 ({olderCompleted.length}개)
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+            {/* 무한 스크롤 트리거 */}
+            <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
+              {isLoadingMore && (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
+                  <span>로딩 중...</span>
+                </div>
+              )}
+              {hasMoreCompleted && !isLoadingMore && (
+                <span className="text-sm text-gray-400">
+                  스크롤하여 더 보기 ({remainingCount}개 남음)
+                </span>
+              )}
+              {!hasMoreCompleted && filteredCompleted.length > 0 && (
+                <span className="text-sm text-gray-400">
+                  모든 항목을 불러왔습니다 ✅
+                </span>
+              )}
+            </div>
           </div>
         ) : only === 'deleted' ? (
           <div>
