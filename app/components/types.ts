@@ -12,6 +12,7 @@ export interface RequestItem {
   created_at: string;
   updated_at?: string;
   creator: string;
+  check_marks?: { x: number; y: number }[];  // 추가
 }
 
 export type FilterType = 'completed' | 'deleted' | 'justupload';

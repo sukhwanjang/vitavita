@@ -27,6 +27,7 @@ export default function Board({ only }: BoardProps) {
     handleComplete: originalHandleComplete, 
     handleRecover, 
     handleDelete,
+    updateCheckMarks,  // 추가
     inProgress,
     completed,
     deleted,
@@ -42,7 +43,7 @@ export default function Board({ only }: BoardProps) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
-  const [allCheckMarks, setAllCheckMarks] = useState<Record<number, CheckMark[]>>({});
+  // 삭제: const [allCheckMarks, setAllCheckMarks] = useState<Record<number, CheckMark[]>>({});
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
   if (authChecked && !isAuthed) {
@@ -120,6 +121,10 @@ export default function Board({ only }: BoardProps) {
 
   const justUploadCount = justUpload.length;
 
+  // 현재 모달에 표시할 아이템의 체크마크 가져오기
+  const currentItem = modalImage ? requests.find(r => r.id === modalImage.id) : null;
+  const currentCheckMarks = currentItem?.check_marks || [];
+
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
       {/* 헤더 */}
@@ -147,13 +152,10 @@ export default function Board({ only }: BoardProps) {
         imageUrl={modalImage?.url || null}
         company={modalImage?.company}
         program={modalImage?.program}
-        checkMarks={modalImage ? allCheckMarks[modalImage.id] || [] : []}
+        checkMarks={currentCheckMarks}  // DB에서 가져온 데이터 사용
         onCheckMarksChange={(newMarks) => {
           if (modalImage) {
-            setAllCheckMarks(prev => ({
-              ...prev,
-              [modalImage.id]: newMarks,
-            }));
+            updateCheckMarks(modalImage.id, newMarks);  // Supabase에 저장
           }
         }}
         onClose={() => setModalImage(null)}

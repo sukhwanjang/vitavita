@@ -66,6 +66,26 @@ export function useBoardData() {
     fetchRequests();
   };
 
+  // 체크마크 업데이트 함수 추가
+  const updateCheckMarks = async (id: number, checkMarks: { x: number; y: number }[]) => {
+    const { error } = await supabase
+      .from('request')
+      .update({ check_marks: checkMarks })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('체크마크 저장 실패:', error.message);
+      return false;
+    }
+    
+    // 로컬 상태 즉시 업데이트
+    setRequests(prev => 
+      prev.map(r => r.id === id ? { ...r, check_marks: checkMarks } : r)
+    );
+    
+    return true;
+  };
+
   // 데이터 필터링
   const inProgress = requests.filter(r => !r.is_deleted && !r.completed && r.is_just_upload !== true);
   const completed = requests
@@ -85,6 +105,7 @@ export function useBoardData() {
     handleComplete,
     handleRecover,
     handleDelete,
+    updateCheckMarks,
     inProgress,
     completed,
     deleted,
