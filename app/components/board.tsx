@@ -45,6 +45,7 @@ export default function Board({ only }: BoardProps) {
   const [completingItem, setCompletingItem] = useState<any>(null);
   const [formInitialData, setFormInitialData] = useState<any>(null);
   const [displayCount, setDisplayCount] = useState(28);  // 완료 목록 표시 개수 (28개씩)
+  const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
 
   // 인증이 완료되지 않았으면 PasswordGate 표시
@@ -131,10 +132,14 @@ export default function Board({ only }: BoardProps) {
 
   // 무한 스크롤: 28개씩 더 로드
   const loadMore = useCallback(() => {
-    if (hasMoreCompleted) {
-      setDisplayCount(prev => prev + 28);
+    if (hasMoreCompleted && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setTimeout(() => {
+        setDisplayCount(prev => prev + 28);
+        setIsLoadingMore(false);
+      }, 200);
     }
-  }, [hasMoreCompleted]);
+  }, [hasMoreCompleted, isLoadingMore]);
 
   // IntersectionObserver로 무한 스크롤 구현
   useEffect(() => {
@@ -142,7 +147,7 @@ export default function Board({ only }: BoardProps) {
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreCompleted) {
+        if (entries[0].isIntersecting && hasMoreCompleted && !isLoadingMore) {
           loadMore();
         }
       },
@@ -154,7 +159,7 @@ export default function Board({ only }: BoardProps) {
     }
 
     return () => observer.disconnect();
-  }, [only, hasMoreCompleted, loadMore]);
+  }, [only, hasMoreCompleted, isLoadingMore, loadMore]);
 
   const justUploadCount = justUpload.length;
 
@@ -230,7 +235,11 @@ export default function Board({ only }: BoardProps) {
             </div>
 
             {/* 무한 스크롤 트리거 */}
-            {hasMoreCompleted && <div ref={loadMoreRef} className="h-10" />}
+            <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
+              {isLoadingMore && (
+                <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+              )}
+            </div>
           </div>
         ) : only === 'deleted' ? (
           <div>
