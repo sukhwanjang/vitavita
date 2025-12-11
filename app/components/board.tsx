@@ -132,34 +132,42 @@ export default function Board({ only }: BoardProps) {
 
   // 무한 스크롤: 28개씩 더 로드
   const loadMore = useCallback(() => {
-    if (hasMoreCompleted && !isLoadingMore) {
-      setIsLoadingMore(true);
-      setTimeout(() => {
-        setDisplayCount(prev => prev + 28);
-        setIsLoadingMore(false);
-      }, 200);
-    }
-  }, [hasMoreCompleted, isLoadingMore]);
+    setDisplayCount(prev => {
+      const currentTotal = allFilteredCompleted.length;
+      const currentDisplay = prev;
+      
+      // 더 로드할 항목이 있고, 현재 로딩 중이 아닐 때만
+      if (currentTotal > currentDisplay) {
+        setIsLoadingMore(true);
+        setTimeout(() => {
+          setIsLoadingMore(false);
+        }, 200);
+        return currentDisplay + 28;
+      }
+      return currentDisplay;
+    });
+  }, [allFilteredCompleted.length]);  // hasMoreCompleted 대신 length만 의존
 
   // IntersectionObserver로 무한 스크롤 구현
   useEffect(() => {
-    if (only !== 'completed') return;
+    if (only !== 'completed' || !loadMoreRef.current) return;
     
+    const currentRef = loadMoreRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreCompleted && !isLoadingMore) {
+        if (entries[0].isIntersecting) {
           loadMore();
         }
       },
       { threshold: 0.1 }
     );
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
+    observer.observe(currentRef);
 
-    return () => observer.disconnect();
-  }, [only, hasMoreCompleted, isLoadingMore, loadMore]);
+    return () => {
+      observer.disconnect();
+    };
+  }, [only, loadMore]);  // isLoadingMore, hasMoreCompleted 제거
 
   const justUploadCount = justUpload.length;
 
