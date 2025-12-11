@@ -36,7 +36,7 @@ export function useBoardData() {
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 15000);
+    const interval = setInterval(fetchRequests, 10000); // 새로고침 빈도 10초
     return () => clearInterval(interval);
   }, [fetchRequests]);
 
