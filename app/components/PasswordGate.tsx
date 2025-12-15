@@ -19,7 +19,7 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
   const handlePwSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pwInput === 'vita0070') {
-      localStorage.setItem('vitapass_ts', String(Date.now() + 1000 * 60 * 60 * 24)); // 24시간 유지
+      localStorage.setItem('vitapass_ts', String(Date.now() + 1000 * 60 * 60 * 24 * 7)); // 일주일 유지
       onAuthenticated(true);
       setPwError('');
     } else {
