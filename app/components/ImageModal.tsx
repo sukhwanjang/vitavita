@@ -81,14 +81,23 @@ export default function ImageModal({
     const clickXInContainer = e.clientX - rect.left;
     const clickYInContainer = e.clientY - rect.top;
 
-    const newMarkX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
-    const newMarkY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
+    // 줌과 드래그를 고려한 실제 위치 계산
+    const actualX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
+    const actualY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
 
-    // 2. 근처에 이미 체크 표시가 있는지 확인
-    const CLICK_TOLERANCE = 20; // 20px 반경을 '근처'로 간주
+    // ✅ 백분율로 변환하여 저장
+    const newMarkX = (actualX / containerW) * 100;
+    const newMarkY = (actualY / containerH) * 100;
+
+    // 근처 마크 찾기 (픽셀 단위로 비교)
     const nearbyMarkIndex = checkMarks.findIndex(mark => {
-      const distance = Math.sqrt(Math.pow(mark.x - newMarkX, 2) + Math.pow(mark.y - newMarkY, 2));
-      return distance < CLICK_TOLERANCE;
+      const markPxX = (mark.x / 100) * containerW;
+      const markPxY = (mark.y / 100) * containerH;
+      const distance = Math.sqrt(
+        Math.pow(actualX - markPxX, 2) + 
+        Math.pow(actualY - markPxY, 2)
+      );
+      return distance < 20; // 20px 반경
     });
 
     // 3. 상태 업데이트: 있으면 제거, 없으면 추가
@@ -183,14 +192,14 @@ export default function ImageModal({
                 key={index}
                 className="absolute flex items-center justify-center w-12 h-12 bg-green-500 rounded-full border-2 border-black shadow-lg" // 크기 증가
                 style={{
-                  left: `${mark.x}px`,
-                  top: `${mark.y}px`,
+                  left: `${mark.x}%`,   // ✅ px → % 변경
+                  top: `${mark.y}%`,    // ✅ px → % 변경
                   transform: 'translate(-50%, -50%)',
                   pointerEvents: 'none',
                   userSelect: 'none',
                 }}
               >
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"> // 크기 증가
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
                 </svg>
               </div>
