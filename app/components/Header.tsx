@@ -48,7 +48,7 @@ export default function Header({
           />
           
           {/* 검색창 */}
-          <div className="ml-4 flex items-center bg-gray-100 rounded-full px-3 py-1 shadow-inner border border-gray-200 focus-within:ring-2 focus-within:ring-blue-300">
+          <div className="ml-4 flex items-center bg-gray-100 rounded-full px-3 py-1 shadow-inner border border-gray-200 focus-within:ring-2 focus-within:ring-blue-300 z-10 relative">
             <input
               type="text"
               value={searchQuery}
