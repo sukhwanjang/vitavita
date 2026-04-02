@@ -44,7 +44,7 @@ export default function Header({
             src="/logo.png" 
             alt="Vitamin Sign Logo" 
             className="h-12 object-contain cursor-pointer" 
-            onClick={() => router.push('/')} 
+            onClick={() => { router.push('/'); onSearchChange(''); }}
           />
           
           {/* 검색창 */}
