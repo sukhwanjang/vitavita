@@ -1,5 +1,7 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import { RequestItem } from './types';
+import { getRenderedRect } from './utils/imageUtils';
 
 interface RequestCardProps {
   item: RequestItem;
@@ -9,18 +11,37 @@ interface RequestCardProps {
   onImageClick: (url: string) => void;
   onPrintImage: (imageUrl: string, company: string, program: string) => void;
   onWorkDone: (id: number) => void;
+  onCompanyClick: (company: string) => void;
 }
 
-export default function RequestCard({ 
-  item, 
-  onEdit, 
-  onComplete, 
-  onDelete, 
-  onImageClick, 
+export default function RequestCard({
+  item,
+  onEdit,
+  onComplete,
+  onDelete,
+  onImageClick,
   onPrintImage,
-  onWorkDone
+  onWorkDone,
+  onCompanyClick,
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
+
+  const imgContainerRef = useRef<HTMLDivElement>(null);
+  const [naturalDims, setNaturalDims] = useState<{ w: number; h: number } | null>(null);
+  const [containerDims, setContainerDims] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    if (!imgContainerRef.current) return;
+    const el = imgContainerRef.current;
+    setContainerDims({ w: el.clientWidth, h: el.clientHeight });
+
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      setContainerDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   
   // 날짜 계산
   const daysLeft = item.pickup_date
@@ -78,18 +99,50 @@ export default function RequestCard({
       {/* 카드 본문 */}
       <div className={`flex flex-col p-4 space-y-3 h-full ${item.is_work_done ? 'bg-green-50' : 'bg-white'}`}>
         <div>
-          <p className="text-xl font-extrabold text-gray-900 truncate mb-1">{item.company}</p>
+          <p
+            className="text-xl font-extrabold text-gray-900 truncate mb-1 cursor-pointer hover:text-blue-600 hover:underline"
+            onClick={() => onCompanyClick(item.company)}
+          >{item.company}</p>
           <p className="text-sm text-gray-500 truncate">{item.program}</p>
         </div>
 
         <div className="flex justify-center items-center w-full min-h-[96px]">
           {item.image_url ? (
-            <img
-              src={item.image_url}
-              onClick={() => onImageClick(item.image_url!)}
-              className="cursor-pointer w-full h-32 object-contain rounded-lg border bg-gray-50 shadow-sm transition-transform duration-200 hover:scale-105 hover:shadow-lg"
-              alt="작업 이미지"
-            />
+            <div ref={imgContainerRef} className="relative w-full h-32">
+              <img
+                src={item.image_url}
+                onClick={() => onImageClick(item.image_url!)}
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
+                }}
+                className="cursor-pointer w-full h-32 object-contain rounded-lg border bg-gray-50 shadow-sm transition-transform duration-200 hover:scale-105 hover:shadow-lg"
+                alt="작업 이미지"
+              />
+              {/* 썸네일 체크마크 오버레이 */}
+              {naturalDims && containerDims && item.check_marks?.map((mark, i) => {
+                const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
+                const posX = imgRect.x + (mark.x / 100) * imgRect.w;
+                const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                return (
+                  <div
+                    key={i}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: posX,
+                      top: posY,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <div className="w-5 h-5 bg-green-500 rounded-full border border-black shadow flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center w-full h-24 text-gray-300 text-3xl">
               <span className="material-icons">image_not_supported</span>

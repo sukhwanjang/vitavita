@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { CheckMark } from './types'; // CheckMark 타입 임포트
+import { CheckMark } from './types';
+import { getRenderedRect } from './utils/imageUtils';
 
 interface ImageModalProps {
   imageUrl: string | null;
@@ -24,6 +25,8 @@ export default function ImageModal({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const [naturalDims, setNaturalDims] = useState<{ w: number; h: number } | null>(null);
+  const [containerDims, setContainerDims] = useState<{ w: number; h: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +45,20 @@ export default function ImageModal({
         window.scrollTo(0, scrollY);
       };
     }
+  }, [imageUrl]);
+
+  // 컨테이너 크기 추적 (화면 리사이즈 대응)
+  useEffect(() => {
+    if (!imageContainerRef.current || !imageUrl) return;
+    const el = imageContainerRef.current;
+    setContainerDims({ w: el.clientWidth, h: el.clientHeight });
+
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      setContainerDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [imageUrl]);
 
   if (!imageUrl) return null;
@@ -69,43 +86,45 @@ export default function ImageModal({
     }
   };
 
-  // 72번 라인 - 함수명 변경 (선택사항, 더 명확하게)
   const handleRightClick = (e: React.MouseEvent) => {
-    e.preventDefault();  // 브라우저 기본 우클릭 메뉴 방지 (추가)
-    if (!imageContainerRef.current) return;
+    e.preventDefault();
+    if (!imageContainerRef.current || !naturalDims) return;
 
-    // 1. 클릭된 좌표 계산
     const rect = imageContainerRef.current.getBoundingClientRect();
     const containerW = rect.width;
     const containerH = rect.height;
     const clickXInContainer = e.clientX - rect.left;
     const clickYInContainer = e.clientY - rect.top;
 
-    // 줌과 드래그를 고려한 실제 위치 계산
-    const actualX = (clickXInContainer - position.x - containerW / 2) / zoom + containerW / 2;
-    const actualY = (clickYInContainer - position.y - containerH / 2) / zoom + containerH / 2;
+    // 줌·패닝을 역산하여 원본 컨테이너 공간의 좌표로 변환
+    // CSS transform: scale(zoom) translate(position) → 올바른 역변환: (click - origin) / zoom + origin - position
+    const actualX = (clickXInContainer - containerW / 2) / zoom + containerW / 2 - position.x;
+    const actualY = (clickYInContainer - containerH / 2) / zoom + containerH / 2 - position.y;
 
-    // ✅ 백분율로 변환하여 저장
-    const newMarkX = (actualX / containerW) * 100;
-    const newMarkY = (actualY / containerH) * 100;
+    // object-contain 렌더링 영역 계산
+    const imgRect = getRenderedRect(containerW, containerH, naturalDims.w, naturalDims.h);
 
-    // 근처 마크 찾기 (픽셀 단위로 비교)
+    // 이미지 영역 내 % 좌표로 변환 (화면 크기와 무관하게 동일 위치)
+    const newMarkX = ((actualX - imgRect.x) / imgRect.w) * 100;
+    const newMarkY = ((actualY - imgRect.y) / imgRect.h) * 100;
+
+    // 이미지 영역 바깥 클릭은 무시
+    if (newMarkX < 0 || newMarkX > 100 || newMarkY < 0 || newMarkY > 100) return;
+
+    // 근처 마크 찾기 (이미지 픽셀 공간에서 비교)
     const nearbyMarkIndex = checkMarks.findIndex(mark => {
-      const markPxX = (mark.x / 100) * containerW;
-      const markPxY = (mark.y / 100) * containerH;
+      const markPxX = imgRect.x + (mark.x / 100) * imgRect.w;
+      const markPxY = imgRect.y + (mark.y / 100) * imgRect.h;
       const distance = Math.sqrt(
-        Math.pow(actualX - markPxX, 2) + 
+        Math.pow(actualX - markPxX, 2) +
         Math.pow(actualY - markPxY, 2)
       );
-      return distance < 20; // 20px 반경
+      return distance < 20;
     });
 
-    // 3. 상태 업데이트: 있으면 제거, 없으면 추가
     if (nearbyMarkIndex > -1) {
-      // 근처에 마크가 있으면 해당 마크를 제외하고 배열을 새로 만듦
       onCheckMarksChange(checkMarks.filter((_, index) => index !== nearbyMarkIndex));
     } else {
-      // 근처에 마크가 없으면 새로운 마크를 추가
       onCheckMarksChange([...checkMarks, { x: newMarkX, y: newMarkY }]);
     }
   };
@@ -178,7 +197,7 @@ export default function ImageModal({
           >
             <img
               src={imageUrl}
-              style={{ 
+              style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain'
@@ -186,24 +205,34 @@ export default function ImageModal({
               className="block"
               alt="확대 이미지"
               draggable={false}
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
+              }}
             />
-            {checkMarks.map((mark, index) => (
-              <div
-                key={index}
-                className="absolute flex items-center justify-center w-12 h-12 bg-green-500 rounded-full border-2 border-black shadow-lg" // 크기 증가
-                style={{
-                  left: `${mark.x}%`,   // ✅ px → % 변경
-                  top: `${mark.y}%`,    // ✅ px → % 변경
-                  transform: 'translate(-50%, -50%)',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}
-              >
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-            ))}
+            {/* 이미지 기준 % → 컨테이너 기준 % 변환 후 렌더링 */}
+            {naturalDims && containerDims && checkMarks.map((mark, index) => {
+              const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
+              const containerX = (imgRect.x + (mark.x / 100) * imgRect.w) / containerDims.w * 100;
+              const containerY = (imgRect.y + (mark.y / 100) * imgRect.h) / containerDims.h * 100;
+              return (
+                <div
+                  key={index}
+                  className="absolute flex items-center justify-center w-12 h-12 bg-green-500 rounded-full border-2 border-black shadow-lg"
+                  style={{
+                    left: `${containerX}%`,
+                    top: `${containerY}%`,
+                    transform: 'translate(-50%, -50%)',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}
+                >
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              );
+            })}
           </div>
         </div>
         <button

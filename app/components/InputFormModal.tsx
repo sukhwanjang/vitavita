@@ -37,7 +37,9 @@ export default function InputFormModal({
   const [isUrgent, setIsUrgent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [creator, setCreator] = useState('');
+  const [creator, setCreator] = useState<string>(() =>
+    typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
+  );
   const [isJustUpload, setIsJustUpload] = useState(false);
 
   // 초기 데이터 설정
@@ -147,7 +149,8 @@ export default function InputFormModal({
     setImage(null);
     setImagePreview(null);
     setIsUrgent(false);
-    setCreator('');
+    // 작업자명은 localStorage에 저장된 값 유지
+    setCreator(localStorage.getItem('vitavita_creator') ?? '');
     setIsJustUpload(false);
     onClose();
   };
@@ -214,7 +217,10 @@ export default function InputFormModal({
             {['박혜경', '김한별', '장석환', '정수원', '이현동'].map((name) => (
               <button
                 key={name}
-                onClick={() => setCreator(name)}
+                onClick={() => {
+                  setCreator(name);
+                  localStorage.setItem('vitavita_creator', name);
+                }}
                 className={`rounded-full px-4 py-2 font-bold border-2 transition text-base shadow-sm
                   ${creator === name
                     ? 'bg-blue-500 text-white border-blue-600 scale-105'

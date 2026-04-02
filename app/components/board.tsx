@@ -236,6 +236,7 @@ export default function Board({ only }: BoardProps) {
                   onRecover={handleRecover}
                   onRefresh={fetchRequests}
                   onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
+                  onCompanyClick={(company) => setSearchQuery(company)}
                 />
               ))}
             </div>
@@ -287,6 +288,7 @@ export default function Board({ only }: BoardProps) {
                     onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
                     onPrintImage={handlePrintImage}
                     onWorkDone={handleWorkDone}
+                    onCompanyClick={(company) => setSearchQuery(company)}
                   />
                 ))}
               </div>
