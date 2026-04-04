@@ -160,7 +160,7 @@ export default function ImageModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
       onClick={handleClose}
     >
       <div className="relative flex flex-col items-center" onClick={handleModalClick}>

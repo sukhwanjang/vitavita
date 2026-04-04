@@ -1,11 +1,14 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import { RequestItem } from './types';
+import { getRenderedRect } from './utils/imageUtils';
 
 interface CompleteConfirmModalProps {
   item: RequestItem | null;
   onConfirm: () => void;
   onCancel: () => void;
   onSkip?: () => void;
+  onImageClick?: () => void;
   queueCurrent?: number;
   queueTotal?: number;
 }
@@ -15,9 +18,31 @@ export default function CompleteConfirmModal({
   onConfirm,
   onCancel,
   onSkip,
+  onImageClick,
   queueCurrent = 1,
   queueTotal = 1,
 }: CompleteConfirmModalProps) {
+  const imgContainerRef = useRef<HTMLDivElement>(null);
+  const [naturalDims, setNaturalDims] = useState<{ w: number; h: number } | null>(null);
+  const [containerDims, setContainerDims] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    if (!imgContainerRef.current || !item?.image_url) return;
+    const el = imgContainerRef.current;
+    setContainerDims({ w: el.clientWidth, h: el.clientHeight });
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      setContainerDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [item?.image_url]);
+
+  // item이 바뀌면 naturalDims 초기화 (다음 이미지 로드 대기)
+  useEffect(() => {
+    setNaturalDims(null);
+  }, [item?.id]);
+
   if (!item) return null;
 
   const isChained = queueTotal > 1;
@@ -63,15 +88,57 @@ export default function CompleteConfirmModal({
           </div>
         </div>
 
-        {/* 원고 이미지 미리보기 */}
+        {/* 원고 이미지 미리보기 + 체크마크 오버레이 */}
         {item.image_url && (
           <div className="mb-6">
-            <p className="text-xs text-gray-400 mb-2">원고 이미지</p>
-            <img
-              src={item.image_url}
-              alt="원고 이미지"
-              className="w-full max-h-64 object-contain rounded-xl border bg-gray-50 shadow-sm"
-            />
+            <p className="text-xs text-gray-400 mb-1">
+              원고 이미지
+              {onImageClick && (
+                <span className="ml-2 text-blue-400 cursor-pointer hover:underline" onClick={onImageClick}>
+                  클릭하여 크게 보기 / 체크마크 편집
+                </span>
+              )}
+            </p>
+            <div
+              ref={imgContainerRef}
+              className="relative w-full h-64 cursor-pointer"
+              onClick={onImageClick}
+            >
+              <img
+                src={item.image_url}
+                alt="원고 이미지"
+                className="w-full h-64 object-contain rounded-xl border bg-gray-50 shadow-sm"
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
+                }}
+              />
+              {/* 체크마크 오버레이 */}
+              {naturalDims && containerDims && item.check_marks?.map((mark, i) => {
+                const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
+                const posX = imgRect.x + (mark.x / 100) * imgRect.w;
+                const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                return (
+                  <div
+                    key={i}
+                    className="absolute pointer-events-none"
+                    style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
+                  >
+                    <div className="w-6 h-6 bg-green-500 rounded-full border border-black shadow flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* 클릭 유도 오버레이 */}
+              <div className="absolute inset-0 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
+                <span className="bg-white/80 text-gray-700 text-sm font-semibold px-3 py-1 rounded-full shadow">
+                  🔍 크게 보기
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

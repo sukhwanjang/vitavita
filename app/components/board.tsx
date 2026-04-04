@@ -234,6 +234,11 @@ export default function Board({ only }: BoardProps) {
   const currentItem = modalImage ? requests.find(r => r.id === modalImage.id) : null;
   const currentCheckMarks = currentItem?.check_marks || [];
 
+  // 완료 모달에 실시간 체크마크 반영 (updateCheckMarks 후 requests가 갱신되므로 여기서 조회)
+  const completingItemLive = completingItem
+    ? (requests.find(r => r.id === completingItem.id) ?? completingItem)
+    : null;
+
   return (
     <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
       {/* 헤더 */}
@@ -274,10 +279,20 @@ export default function Board({ only }: BoardProps) {
       />
 
       <CompleteConfirmModal
-        item={completingItem}
+        item={completingItemLive}
         onConfirm={handleConfirmComplete}
         onCancel={handleCancelComplete}
         onSkip={handleSkipComplete}
+        onImageClick={
+          completingItemLive?.image_url
+            ? () => setModalImage({
+                url: completingItemLive.image_url!,
+                company: completingItemLive.company,
+                program: completingItemLive.program,
+                id: completingItemLive.id,
+              })
+            : undefined
+        }
         queueCurrent={queueTotal - pendingQueue.length}
         queueTotal={queueTotal}
       />
