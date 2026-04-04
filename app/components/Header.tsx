@@ -9,6 +9,9 @@ interface HeaderProps {
   showForm: boolean;
   editMode: boolean;
   justUploadCount: number;
+  hideOverdue: boolean;
+  onToggleHideOverdue: () => void;
+  overdueHiddenCount: number;
 }
 
 export default function Header({ 
@@ -18,7 +21,10 @@ export default function Header({
   onShowForm, 
   showForm, 
   editMode,
-  justUploadCount 
+  justUploadCount,
+  hideOverdue,
+  onToggleHideOverdue,
+  overdueHiddenCount,
 }: HeaderProps) {
   const router = useRouter();
 
@@ -101,10 +107,17 @@ export default function Header({
           </button>
           
           <button
-            onClick={() => router.push('/justupload')}
-            className="bg-yellow-200 text-yellow-900 border border-yellow-400 font-bold px-5 py-2 rounded-xl shadow hover:bg-yellow-300 hover:scale-105 transition text-base"
+            onClick={onToggleHideOverdue}
+            className={`font-bold px-5 py-2 rounded-xl shadow hover:scale-105 transition text-base border ${
+              hideOverdue
+                ? 'bg-gray-800 text-white border-gray-900'
+                : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+            }`}
           >
-            바쁘니까 일단 올려둠
+            <span className="inline-block align-middle mr-1">⏰</span>
+            {hideOverdue
+              ? `지남 숨김 (${overdueHiddenCount}개)`
+              : '지남 표시 중'}
           </button>
         </div>
       </div>

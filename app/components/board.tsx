@@ -37,6 +37,7 @@ export default function Board({ only }: BoardProps) {
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
+  const [hideOverdue, setHideOverdue] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -156,11 +157,34 @@ export default function Board({ only }: BoardProps) {
   };
 
   // 검색 필터링 (이미 위에서 allFilteredCompleted 계산했으므로 중복 제거)
-  const filteredInProgress = inProgress.filter((item) =>
-    item.company.includes(searchQuery) ||
-    item.program.includes(searchQuery) ||
-    item.creator?.includes(searchQuery)
-  );
+  const filteredInProgress = inProgress.filter((item) => {
+    const matchesSearch =
+      item.company.includes(searchQuery) ||
+      item.program.includes(searchQuery) ||
+      item.creator?.includes(searchQuery);
+    if (!matchesSearch) return false;
+
+    if (hideOverdue && item.pickup_date) {
+      const daysLeft = Math.ceil(
+        (new Date(item.pickup_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0))
+        / (1000 * 60 * 60 * 24)
+      );
+      if (daysLeft < 0) return false;
+    }
+    return true;
+  });
+
+  // 숨겨진 지남 항목 수
+  const overdueHiddenCount = hideOverdue
+    ? inProgress.filter((item) => {
+        if (!item.pickup_date) return false;
+        const daysLeft = Math.ceil(
+          (new Date(item.pickup_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0))
+          / (1000 * 60 * 60 * 24)
+        );
+        return daysLeft < 0;
+      }).length
+    : 0;
 
   // 표시할 완료 목록 (displayCount 개수만큼)
   const filteredCompleted = allFilteredCompleted.slice(0, displayCount);
@@ -184,6 +208,9 @@ export default function Board({ only }: BoardProps) {
         showForm={showForm}
         editMode={editMode}
         justUploadCount={justUpload.length}
+        hideOverdue={hideOverdue}
+        onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
+        overdueHiddenCount={overdueHiddenCount}
       />
 
       {/* 모달들 */}
