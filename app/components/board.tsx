@@ -124,12 +124,11 @@ export default function Board({ only }: BoardProps) {
     const item = requests.find(r => r.id === id);
     if (!item) return;
 
-    // 같은 업체+프로그램+작업자이면서 아직 완료/삭제되지 않은 다른 글 탐색
+    // 같은 업체+프로그램이면서 아직 완료/삭제되지 않은 다른 글 탐색
     const matched = requests.filter(r =>
       r.id !== id &&
       r.company === item.company &&
       r.program === item.program &&
-      r.creator === item.creator &&
       !r.completed &&
       !r.is_deleted
     );
