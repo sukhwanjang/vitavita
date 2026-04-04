@@ -165,7 +165,7 @@ export default function InputFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onPaste={handlePasteImage}>
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 w-full max-w-xl relative animate-fadein">
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 w-full max-w-xl relative animate-fadein max-h-[90vh] overflow-y-auto">
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl font-bold transition"
           onClick={clearForm}
