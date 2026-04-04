@@ -12,6 +12,8 @@ interface RequestCardProps {
   onPrintImage: (imageUrl: string, company: string, program: string) => void;
   onWorkDone: (id: number) => void;
   onCompanyClick: (company: string) => void;
+  onStatusClick: (key: string) => void;
+  activeStatusFilter: string | null;
 }
 
 export default function RequestCard({
@@ -23,6 +25,8 @@ export default function RequestCard({
   onPrintImage,
   onWorkDone,
   onCompanyClick,
+  onStatusClick,
+  activeStatusFilter,
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
 
@@ -50,6 +54,15 @@ export default function RequestCard({
         / (1000 * 60 * 60 * 24)
       )
     : null;
+
+  // 이 카드의 상태 필터 키 (board.tsx의 statusFilter와 매핑)
+  const statusKey = item.is_urgent
+    ? 'urgent'
+    : daysLeft === 0
+      ? 'today'
+      : daysLeft !== null && daysLeft > 0
+        ? `d-${daysLeft}`
+        : 'overdue';
 
   // 색상 우선순위: 급함 > 오늘 > 내일이후 > 지남
   const barColor = item.is_urgent
@@ -86,13 +99,18 @@ export default function RequestCard({
     >
       {/* 상단 상태 뱃지 */}
       <div className="flex items-center justify-start px-4 pt-4">
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm
-          ${item.is_urgent ? 'bg-orange-100 text-orange-700' : daysLeft === 0 ? 'bg-red-100 text-red-700' : daysLeft > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-800 text-white'}`}
+        <span
+          onClick={() => onStatusClick(statusKey)}
+          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-all select-none
+            ${item.is_urgent ? 'bg-orange-100 text-orange-700' : daysLeft === 0 ? 'bg-red-100 text-red-700' : daysLeft > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-800 text-white'}
+            ${activeStatusFilter === statusKey ? 'ring-2 ring-offset-1 ring-gray-500 scale-105' : 'hover:scale-105 hover:opacity-80'}`}
+          title={activeStatusFilter === statusKey ? '클릭하여 필터 해제' : '클릭하여 이 상태만 보기'}
         >
           {item.is_urgent && <span className="mr-1">⚡</span>}
           {daysLeft === 0 && !item.is_urgent && <span className="mr-1">📅</span>}
           {daysLeft < 0 && !item.is_urgent && <span className="mr-1">⏰</span>}
           {barText}
+          {activeStatusFilter === statusKey && <span className="ml-1">✕</span>}
         </span>
       </div>
 

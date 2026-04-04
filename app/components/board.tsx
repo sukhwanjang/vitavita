@@ -38,6 +38,7 @@ export default function Board({ only }: BoardProps) {
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
   const [hideOverdue, setHideOverdue] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -200,13 +201,29 @@ export default function Board({ only }: BoardProps) {
       item.creator?.includes(searchQuery);
     if (!matchesSearch) return false;
 
-    if (hideOverdue && item.pickup_date) {
-      const daysLeft = Math.ceil(
-        (new Date(item.pickup_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0))
-        / (1000 * 60 * 60 * 24)
-      );
-      if (daysLeft < 0) return false;
+    // 날짜 계산 (hideOverdue & statusFilter 공통)
+    const daysLeft = item.pickup_date
+      ? Math.ceil(
+          (new Date(item.pickup_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0))
+          / (1000 * 60 * 60 * 24)
+        )
+      : null;
+
+    // 지남 숨김 조건
+    if (hideOverdue && daysLeft !== null && daysLeft < 0) return false;
+
+    // 상태 뱃지 필터 조건
+    if (statusFilter !== null) {
+      const itemKey = item.is_urgent
+        ? 'urgent'
+        : daysLeft === 0
+          ? 'today'
+          : daysLeft !== null && daysLeft > 0
+            ? `d-${daysLeft}`
+            : 'overdue';
+      if (itemKey !== statusFilter) return false;
     }
+
     return true;
   });
 
@@ -354,6 +371,24 @@ export default function Board({ only }: BoardProps) {
           </div>
         ) : (
           <section className="relative z-10 space-y-10 pb-32">
+            {/* 상태 필터 활성화 배너 */}
+            {statusFilter !== null && (
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-sm text-blue-700 font-semibold">
+                <span>🔍 상태 필터 적용 중: <span className="bg-blue-100 px-2 py-0.5 rounded-full">{
+                  statusFilter === 'urgent' ? '⚡ 급함'
+                  : statusFilter === 'today' ? '📅 오늘까지'
+                  : statusFilter === 'overdue' ? '⏰ 지남'
+                  : statusFilter.startsWith('d-') ? `D-${statusFilter.slice(2)}`
+                  : statusFilter
+                }</span></span>
+                <button
+                  onClick={() => setStatusFilter(null)}
+                  className="ml-auto text-blue-400 hover:text-blue-700 font-bold"
+                >
+                  ✕ 필터 해제
+                </button>
+              </div>
+            )}
             <div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {filteredInProgress.map(item => (
@@ -367,6 +402,8 @@ export default function Board({ only }: BoardProps) {
                     onPrintImage={handlePrintImage}
                     onWorkDone={handleWorkDone}
                     onCompanyClick={(company) => setSearchQuery(company)}
+                    onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
+                    activeStatusFilter={statusFilter}
                   />
                 ))}
               </div>
