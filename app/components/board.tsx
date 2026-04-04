@@ -44,6 +44,8 @@ export default function Board({ only }: BoardProps) {
   const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completingItem, setCompletingItem] = useState<any>(null);
+  const [pendingQueue, setPendingQueue] = useState<any[]>([]);   // 남은 연속 완료 대상
+  const [queueTotal, setQueueTotal] = useState(1);               // 체인 총 개수
   const [formInitialData, setFormInitialData] = useState<any>(null);
   const [displayCount, setDisplayCount] = useState(28);  // 완료 목록 표시 개수 (28개씩)
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
@@ -121,16 +123,51 @@ export default function Board({ only }: BoardProps) {
   const handleComplete = (id: number) => {
     const item = requests.find(r => r.id === id);
     if (!item) return;
-    
+
+    // 같은 업체+프로그램+작업자이면서 아직 완료/삭제되지 않은 다른 글 탐색
+    const matched = requests.filter(r =>
+      r.id !== id &&
+      r.company === item.company &&
+      r.program === item.program &&
+      r.creator === item.creator &&
+      !r.completed &&
+      !r.is_deleted
+    );
+
     setCompletingItem(item);
+    setPendingQueue(matched);
+    setQueueTotal(1 + matched.length);
     setShowCompleteModal(true);
+  };
+
+  // 다음 큐 항목으로 이동하는 공통 함수
+  const advanceQueue = () => {
+    if (pendingQueue.length > 0) {
+      setCompletingItem(pendingQueue[0]);
+      setPendingQueue(prev => prev.slice(1));
+    } else {
+      setShowCompleteModal(false);
+      setCompletingItem(null);
+      setPendingQueue([]);
+      setQueueTotal(1);
+    }
   };
 
   const handleConfirmComplete = async () => {
     if (!completingItem) return;
     await originalHandleComplete(completingItem.id);
+    advanceQueue();
+  };
+
+  const handleSkipComplete = () => {
+    advanceQueue();
+  };
+
+  const handleCancelComplete = () => {
     setShowCompleteModal(false);
     setCompletingItem(null);
+    setPendingQueue([]);
+    setQueueTotal(1);
   };
 
   // 폼 관련 핸들러
@@ -239,10 +276,10 @@ export default function Board({ only }: BoardProps) {
       <CompleteConfirmModal
         item={completingItem}
         onConfirm={handleConfirmComplete}
-        onCancel={() => {
-          setShowCompleteModal(false);
-          setCompletingItem(null);
-        }}
+        onCancel={handleCancelComplete}
+        onSkip={handleSkipComplete}
+        queueCurrent={queueTotal - pendingQueue.length}
+        queueTotal={queueTotal}
       />
 
       {/* 메인 컨텐츠 */}
