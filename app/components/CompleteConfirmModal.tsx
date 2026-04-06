@@ -91,14 +91,6 @@ export default function CompleteConfirmModal({
         {/* 원고 이미지 미리보기 + 체크마크 오버레이 */}
         {item.image_url && (
           <div className="mb-6">
-            <p className="text-xs text-gray-400 mb-1">
-              원고 이미지
-              {onImageClick && (
-                <span className="ml-2 text-blue-400 cursor-pointer hover:underline" onClick={onImageClick}>
-                  클릭하여 크게 보기 / 체크마크 편집
-                </span>
-              )}
-            </p>
             <div
               ref={imgContainerRef}
               className="relative w-full h-64 cursor-pointer"
