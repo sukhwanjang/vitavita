@@ -58,7 +58,7 @@ export default function CompleteConfirmModal({
           {isChained && (
             <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full mt-1">
               <span>{queueCurrent} / {queueTotal}</span>
-              <span className="text-blue-400 font-normal">— 동일 업체·프로그램·작업자</span>
+              <span className="text-blue-400 font-normal">— 동일 업체·프로그램</span>
             </div>
           )}
         </div>
