@@ -214,7 +214,7 @@ export default function InputFormModal({
         <div className="flex flex-col mt-6">
           <label className="font-semibold text-gray-800 mb-2">작업자 선택</label>
           <div className="grid grid-cols-2 gap-3">
-            {['박혜경', '박혜영', '김한별', '장석환', '정수원', '이현동'].map((name) => (
+            {['박혜경', '김한별', '장석환', '정수원', '이현동', '심민영'].map((name) => (
               <button
                 key={name}
                 onClick={() => {
