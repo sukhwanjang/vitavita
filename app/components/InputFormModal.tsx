@@ -15,7 +15,6 @@ interface InputFormModalProps {
     isUrgent: boolean;
     creator: string;
     isJustUpload: boolean;
-    filePath?: string | null;
   };
   onClose: () => void;
   onSuccess: () => void;
@@ -42,10 +41,6 @@ export default function InputFormModal({
     typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
   );
   const [isJustUpload, setIsJustUpload] = useState(false);
-  const [filePath, setFilePath] = useState('');
-
-  // 탐색기 "경로로 복사"(Ctrl+Shift+C)로 붙여넣으면 따옴표가 붙어 오므로 제거
-  const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
 
   // 초기 데이터 설정
   useEffect(() => {
@@ -58,7 +53,6 @@ export default function InputFormModal({
       setIsUrgent(initialData.isUrgent);
       setCreator(initialData.creator);
       setIsJustUpload(initialData.isJustUpload);
-      setFilePath(initialData.filePath ?? '');
     }
   }, [initialData]);
 
@@ -109,13 +103,6 @@ export default function InputFormModal({
       imageUrl = uploaded;
     }
 
-    // 파일 경로: 값이 있거나, 수정 중 기존 값을 지우는 경우에만 전송
-    const pathValue = cleanPath(filePath);
-    const pathPayload =
-      pathValue !== '' || (editMode && initialData?.filePath)
-        ? { file_path: pathValue || null }
-        : {};
-
     if (editMode && editingId !== null) {
       const { error } = await supabase.from('request').update({
         company,
@@ -126,7 +113,6 @@ export default function InputFormModal({
         is_urgent: isUrgent,
         is_just_upload: isJustUpload,
         creator,
-        ...pathPayload,
       }).eq('id', editingId);
 
       if (error) {
@@ -146,7 +132,6 @@ export default function InputFormModal({
         is_deleted: false,
         is_just_upload: isJustUpload,
         creator,
-        ...pathPayload,
       }]);
       if (error) {
         alert('등록 실패: ' + error.message);
@@ -171,7 +156,6 @@ export default function InputFormModal({
     // 작업자명은 localStorage에 저장된 값 유지
     setCreator(localStorage.getItem('vitavita_creator') ?? '');
     setIsJustUpload(false);
-    setFilePath('');
     onClose();
   };
 
@@ -252,20 +236,6 @@ export default function InputFormModal({
             ))}
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        </div>
-
-        <div className="flex flex-col mt-6">
-          <label className="font-semibold text-gray-800 mb-1">파일 위치 <span className="text-gray-400 font-normal text-sm">(선택)</span></label>
-          <input
-            type="text"
-            value={filePath}
-            onChange={e => setFilePath(e.target.value.replace(/^"+|"+$/g, ''))}
-            placeholder="\\NAS\출력\업체명\프로그램\파일.eps"
-            className="rounded-xl border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 transition text-sm font-mono"
-          />
-          <p className="text-xs text-gray-400 mt-1">
-            탐색기에서 파일 선택 → <b>Ctrl+Shift+C</b>(경로로 복사) → 여기에 붙여넣기
-          </p>
         </div>
 
         <div className="flex flex-col mt-6">

@@ -14,6 +14,7 @@ import RequestCard from './RequestCard';
 import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
 import JustUploadCard from './JustUploadCard';
+import FileSidebar from './FileSidebar';
 
 interface BoardProps {
   only?: FilterType;
@@ -153,7 +154,6 @@ export default function Board({ only }: BoardProps) {
       isUrgent: item.is_urgent,
       creator: item.creator,
       isJustUpload: item.is_just_upload || false,
-      filePath: item.file_path ?? null,
     });
     setEditingId(item.id);
     setEditMode(true);
@@ -410,7 +410,10 @@ export default function Board({ only }: BoardProps) {
             </div>
           </div>
         ) : (
-          <section className="relative z-10 space-y-10 pb-32">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* 파일 대기함 사이드바 */}
+            <FileSidebar />
+          <section className="relative z-10 space-y-10 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
             {newItems.length > 0 && (
               <div className="flex items-center gap-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl px-4 py-3 text-sm text-yellow-900 font-semibold shadow-sm">
@@ -467,6 +470,7 @@ export default function Board({ only }: BoardProps) {
               </div>
             </div>
           </section>
+          </div>
         )}
       </div>
     </div>
