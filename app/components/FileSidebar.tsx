@@ -1,9 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useFileDrops } from './hooks/useFileDrops';
-
-// 탐색기 "경로로 복사"(Ctrl+Shift+C)로 붙여넣으면 따옴표가 붙어 오므로 제거
-const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
+import { FileDrop } from './types';
 
 const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
 const folderOf = (path: string) => {
@@ -11,21 +8,14 @@ const folderOf = (path: string) => {
   return path.slice(0, path.length - name.length).replace(/[\\/]+$/, '');
 };
 
-export default function FileSidebar() {
-  const { drops, error, addDrop, removeDrop } = useFileDrops();
-  const [input, setInput] = useState('');
-  const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
+interface FileSidebarProps {
+  drops: FileDrop[];
+  error: string | null;
+  onRemove: (id: number) => void;
+}
 
-  const handleAdd = async () => {
-    const path = cleanPath(input);
-    if (!path) return;
-    setIsAdding(true);
-    const creator = localStorage.getItem('vitavita_creator');
-    const ok = await addDrop(path, creator);
-    setIsAdding(false);
-    if (ok) setInput('');
-  };
+export default function FileSidebar({ drops, error, onRemove }: FileSidebarProps) {
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const handleCopy = async (id: number, path: string) => {
     try {
@@ -45,7 +35,7 @@ export default function FileSidebar() {
 
   const handleRemove = (id: number) => {
     if (!window.confirm('처리 완료! 목록에서 지울까요?')) return;
-    removeDrop(id);
+    onRemove(id);
   };
 
   return (
@@ -62,32 +52,8 @@ export default function FileSidebar() {
           )}
         </div>
 
-        {/* 경로 등록 */}
-        <div className="p-3 border-b border-gray-100">
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value.replace(/^"+|"+$/g, ''))}
-            onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
-            placeholder="파일 경로 붙여넣기 (Ctrl+V)"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-blue-400 transition"
-          />
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-[10px] text-gray-400 leading-tight">
-              탐색기에서 파일 선택 →<br /><b>Ctrl+Shift+C</b> (경로로 복사)
-            </p>
-            <button
-              onClick={handleAdd}
-              disabled={isAdding || !cleanPath(input)}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow transition"
-            >
-              {isAdding ? '등록 중...' : '올리기'}
-            </button>
-          </div>
-        </div>
-
         {/* 대기 목록 */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[70vh] overflow-y-auto">
           {error ? (
             <p className="p-4 text-xs text-red-400">
               파일 대기함을 불러올 수 없습니다.<br />({error})

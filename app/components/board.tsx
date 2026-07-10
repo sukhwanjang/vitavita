@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
+import { useFileDrops } from './hooks/useFileDrops';
 import { handlePrintTodayWork, handlePrintImage } from './utils/printUtils';
 
 import PasswordGate from './PasswordGate';
@@ -15,6 +16,7 @@ import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
 import JustUploadCard from './JustUploadCard';
 import FileSidebar from './FileSidebar';
+import FileDropModal from './FileDropModal';
 
 interface BoardProps {
   only?: FilterType;
@@ -35,12 +37,14 @@ export default function Board({ only }: BoardProps) {
     deleted,
     justUpload
   } = useBoardData();
+  const { drops, error: fileDropError, addDrop, removeDrop } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
   const [hideOverdue, setHideOverdue] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showFileDrop, setShowFileDrop] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
@@ -303,6 +307,7 @@ export default function Board({ only }: BoardProps) {
         onSearchChange={setSearchQuery}
         onPrintTodayWork={() => handlePrintTodayWork(requests)}
         onShowForm={handleShowForm}
+        onShowFileDrop={() => setShowFileDrop(true)}
         showForm={showForm}
         editMode={editMode}
         justUploadCount={justUpload.length}
@@ -312,6 +317,12 @@ export default function Board({ only }: BoardProps) {
       />
 
       {/* 모달들 */}
+      <FileDropModal
+        show={showFileDrop}
+        onClose={() => setShowFileDrop(false)}
+        onAdd={addDrop}
+      />
+
       <InputFormModal
         showForm={showForm}
         editMode={editMode}
@@ -412,7 +423,7 @@ export default function Board({ only }: BoardProps) {
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
             {/* 파일 대기함 사이드바 */}
-            <FileSidebar />
+            <FileSidebar drops={drops} error={fileDropError} onRemove={removeDrop} />
           <section className="relative z-10 space-y-10 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
             {newItems.length > 0 && (

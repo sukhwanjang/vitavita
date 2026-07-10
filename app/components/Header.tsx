@@ -6,6 +6,7 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onPrintTodayWork: () => void;
   onShowForm: () => void;
+  onShowFileDrop: () => void;
   showForm: boolean;
   editMode: boolean;
   justUploadCount: number;
@@ -17,9 +18,10 @@ interface HeaderProps {
 export default function Header({ 
   searchQuery, 
   onSearchChange, 
-  onPrintTodayWork, 
-  onShowForm, 
-  showForm, 
+  onPrintTodayWork,
+  onShowForm,
+  onShowFileDrop,
+  showForm,
   editMode,
   justUploadCount,
   hideOverdue,
@@ -83,10 +85,17 @@ export default function Header({
             onClick={onShowForm}
             className="bg-black text-white font-bold px-5 py-2 rounded-xl shadow-lg hover:bg-gray-900 hover:scale-105 transition text-base"
           >
-            <span className="inline-block align-middle mr-1">➕</span> 
+            <span className="inline-block align-middle mr-1">➕</span>
             {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
           </button>
-          
+
+          <button
+            onClick={onShowFileDrop}
+            className="bg-blue-50 text-blue-800 border border-blue-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-blue-100 hover:scale-105 transition text-base"
+          >
+            <span className="text-lg">📁</span> 파일 올리기
+          </button>
+
           <button
             onClick={() => router.push('/completed')}
             className="bg-green-50 text-green-800 border border-green-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-green-100 hover:scale-105 transition text-base"
