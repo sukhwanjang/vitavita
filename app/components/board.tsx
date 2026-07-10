@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
@@ -22,7 +23,36 @@ interface BoardProps {
   only?: FilterType;
 }
 
+// 경로에서 파일명만 추출
+const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
+
+// 새 출력요청 알림음 ("띵동" 2음)
+const playNotifySound = () => {
+  try {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new Ctx();
+    const tone = (freq: number, start: number, dur: number) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + start);
+      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+      o.start(ctx.currentTime + start);
+      o.stop(ctx.currentTime + start + dur);
+    };
+    tone(880, 0, 0.35);
+    tone(1174.66, 0.18, 0.45);
+  } catch {
+    // 오디오가 차단된 환경은 조용히 무시
+  }
+};
+
 export default function Board({ only }: BoardProps) {
+  const router = useRouter();
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
   const {
     requests,
@@ -36,7 +66,7 @@ export default function Board({ only }: BoardProps) {
     completed,
     deleted
   } = useBoardData();
-  const { drops, error: fileDropError, addDrop, removeDrop } = useFileDrops();
+  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop, setPrinter } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +105,71 @@ export default function Board({ only }: BoardProps) {
   const openSidebar = () => {
     localStorage.setItem('vitavita_sidebar_open', '1');
     setSidebarOpen(true);
+  };
+
+  // ── 출력대기 새 파일 알림 (모든 페이지에서 동작) ──
+  const [lastSeenDropId, setLastSeenDropId] = useState<number | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
+  const [dropToast, setDropToast] = useState<{ name: string; creator: string | null } | null>(null);
+  const prevMaxDropIdRef = useRef<number | null>(null);
+  const dropToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 마지막 확인 id / 알림음 설정 복원
+  useEffect(() => {
+    const stored = localStorage.getItem('vitavita_last_seen_drop_id');
+    setLastSeenDropId(stored !== null ? Number(stored) : -1);
+    setSoundOn(localStorage.getItem('vitavita_sound') !== '0');
+  }, []);
+
+  // 첫 방문이면 현재 파일까지 확인한 것으로 조용히 초기화
+  useEffect(() => {
+    if (lastSeenDropId === -1 && drops.length > 0) {
+      const maxId = Math.max(...drops.map(d => d.id));
+      localStorage.setItem('vitavita_last_seen_drop_id', String(maxId));
+      setLastSeenDropId(maxId);
+    }
+  }, [lastSeenDropId, drops]);
+
+  const markDropsSeen = () => {
+    if (drops.length === 0) return;
+    const maxId = Math.max(...drops.map(d => d.id));
+    localStorage.setItem('vitavita_last_seen_drop_id', String(maxId));
+    setLastSeenDropId(maxId);
+  };
+
+  const toggleSound = () => {
+    setSoundOn(prev => {
+      localStorage.setItem('vitavita_sound', prev ? '0' : '1');
+      return !prev;
+    });
+  };
+
+  // 새 출력요청 도착 → 토스트 + 알림음 + 패널 자동 펼침 (누가 올렸든 무조건)
+  useEffect(() => {
+    const maxId = drops.length > 0 ? Math.max(...drops.map(d => d.id)) : 0;
+    if (prevMaxDropIdRef.current === null) {
+      prevMaxDropIdRef.current = maxId;
+      return;
+    }
+    if (maxId > prevMaxDropIdRef.current) {
+      prevMaxDropIdRef.current = maxId;
+      const newest = drops.find(d => d.id === maxId);
+      if (newest) {
+        setDropToast({ name: fileNameOf(newest.path), creator: newest.creator });
+        if (dropToastTimerRef.current) clearTimeout(dropToastTimerRef.current);
+        dropToastTimerRef.current = setTimeout(() => setDropToast(null), 7000);
+        if (soundOn) playNotifySound();
+        openSidebar();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drops, soundOn]);
+
+  // 토스트 "보기": 메인으로 이동 + 패널 펼침
+  const goToDrops = () => {
+    setDropToast(null);
+    openSidebar();
+    if (only) router.push('/');
   };
 
   // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
@@ -138,14 +233,18 @@ export default function Board({ only }: BoardProps) {
     }
   }, [lastSeenId, requests]);
 
-  // 새 작업 수를 브라우저 탭 제목에도 표시
+  // 새 작업 + 새 출력요청 수를 브라우저 탭 제목에 표시
   useEffect(() => {
     const myName = localStorage.getItem('vitavita_creator');
-    const count = lastSeenId !== null && lastSeenId >= 0
+    const workCount = lastSeenId !== null && lastSeenId >= 0
       ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myName).length
       : 0;
-    document.title = count > 0 ? `(${count}) 비타민사인 현황판` : '비타민사인 현황판';
-  }, [requests, lastSeenId]);
+    const dropCount = lastSeenDropId !== null && lastSeenDropId >= 0
+      ? drops.filter(d => d.id > lastSeenDropId).length
+      : 0;
+    const total = workCount + dropCount;
+    document.title = total > 0 ? `(${total}) 비타민사인 현황판` : '비타민사인 현황판';
+  }, [requests, lastSeenId, drops, lastSeenDropId]);
 
   // ⭐ 이제 모든 hooks 호출 후에 early return
   if (authChecked && !isAuthed) {
@@ -158,6 +257,13 @@ export default function Board({ only }: BoardProps) {
     ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myCreatorName)
     : [];
   const newIds = new Set(newItems.map(r => r.id));
+
+  // 새 출력요청 id 목록 (내가 올린 것도 포함 — 무조건 표시)
+  const newDropIds = new Set(
+    lastSeenDropId !== null && lastSeenDropId >= 0
+      ? drops.filter(d => d.id > lastSeenDropId).map(d => d.id)
+      : []
+  );
 
   const markAllSeen = () => {
     if (requests.length === 0) return;
@@ -365,11 +471,42 @@ export default function Board({ only }: BoardProps) {
         overdueHiddenCount={overdueHiddenCount}
       />
 
+      {/* 새 출력요청 토스트 (어느 페이지에 있어도 표시) */}
+      {dropToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[80] animate-fadein">
+          <div className="flex items-center gap-3 bg-blue-600 text-white rounded shadow-xl pl-4 pr-2.5 py-3 min-w-[340px] max-w-[90vw]">
+            <span className="flex items-center justify-center w-9 h-9 rounded-full bg-white/15 shrink-0">
+              <IconBell className="w-4 h-4 animate-pulse" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold">출력요청 도착</p>
+              <p className="text-xs text-white/80 truncate">
+                {dropToast.name}
+                {dropToast.creator ? ` — ${dropToast.creator}` : ''}
+              </p>
+            </div>
+            <button
+              onClick={goToDrops}
+              className="ml-auto shrink-0 h-8 px-3.5 rounded bg-white/20 hover:bg-white/30 text-xs font-semibold transition"
+            >
+              보기
+            </button>
+            <button
+              onClick={() => setDropToast(null)}
+              className="shrink-0 flex items-center justify-center w-7 h-7 rounded hover:bg-white/15 transition"
+              aria-label="알림 닫기"
+            >
+              <IconX className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 모달들 */}
       <FileDropModal
         show={showFileDrop}
         onClose={() => setShowFileDrop(false)}
-        onAdd={addDrop}
+        onAdd={(path, creator, urgent, note) => addDrop(path, creator, { urgent, note })}
       />
 
       <InputFormModal
@@ -474,9 +611,14 @@ export default function Board({ only }: BoardProps) {
               drops={drops}
               error={fileDropError}
               onRemove={removeDrop}
+              onRestore={restoreDrop}
+              onSetPrinter={setPrinter}
               open={sidebarOpen}
               onToggle={toggleSidebar}
-              onOpen={openSidebar}
+              newIds={newDropIds}
+              onMarkAllSeen={markDropsSeen}
+              soundOn={soundOn}
+              onToggleSound={toggleSound}
             />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}

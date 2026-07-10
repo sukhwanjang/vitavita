@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { IconX, IconUpload } from './ui/icons';
+import { IconX, IconUpload, IconZap } from './ui/icons';
 
 // 탐색기 "경로로 복사"(Ctrl+Shift+C)로 붙여넣으면 따옴표가 붙어 오므로 제거
 const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
@@ -8,11 +8,13 @@ const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
 interface FileDropModalProps {
   show: boolean;
   onClose: () => void;
-  onAdd: (path: string, creator: string | null) => Promise<boolean>;
+  onAdd: (path: string, creator: string | null, urgent: boolean, note: string | null) => Promise<boolean>;
 }
 
 export default function FileDropModal({ show, onClose, onAdd }: FileDropModalProps) {
   const [input, setInput] = useState('');
+  const [note, setNote] = useState('');
+  const [isUrgent, setIsUrgent] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
   if (!show) return null;
@@ -22,16 +24,20 @@ export default function FileDropModal({ show, onClose, onAdd }: FileDropModalPro
     if (!path || isAdding) return;
     setIsAdding(true);
     const creator = localStorage.getItem('vitavita_creator');
-    const ok = await onAdd(path, creator);
+    const ok = await onAdd(path, creator, isUrgent, note.trim() || null);
     setIsAdding(false);
     if (ok) {
       setInput('');
+      setNote('');
+      setIsUrgent(false);
       onClose();
     }
   };
 
   const handleClose = () => {
     setInput('');
+    setNote('');
+    setIsUrgent(false);
     onClose();
   };
 
@@ -69,6 +75,31 @@ export default function FileDropModal({ show, onClose, onAdd }: FileDropModalPro
           <p className="text-xs text-slate-400 mt-2">
             탐색기에서 파일 선택 → <b className="text-slate-600">Ctrl+Shift+C</b> (경로로 복사) → 여기에 <b className="text-slate-600">Ctrl+V</b>
           </p>
+
+          {/* 요청 메모 + 급함 */}
+          <div className="flex gap-2 mt-4">
+            <input
+              type="text"
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+              placeholder="요청 메모 (예: 3장, 유포지) — 선택"
+              className="flex-1 rounded border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+            />
+            <button
+              type="button"
+              onClick={() => setIsUrgent(!isUrgent)}
+              title="긴급 출력 (목록 맨 위에 빨간색으로 고정)"
+              className={`shrink-0 inline-flex items-center gap-1.5 h-10 px-3.5 rounded border text-sm font-semibold transition ${
+                isUrgent
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-red-300 hover:text-red-600'
+              }`}
+            >
+              <IconZap className="w-3.5 h-3.5" />
+              급함
+            </button>
+          </div>
         </div>
 
         {/* 모달 푸터 */}

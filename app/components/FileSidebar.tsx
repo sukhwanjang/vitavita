@@ -1,7 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { FileDrop } from './types';
-import { IconInbox, IconCopy, IconCheck, IconChevronLeft, IconChevronRight, IconBell } from './ui/icons';
+import {
+  IconInbox, IconCopy, IconCheck, IconChevronLeft, IconChevronRight,
+  IconZap, IconPrinter, IconX, IconFileText, IconVolume, IconVolumeOff,
+} from './ui/icons';
 
 const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
 const folderOf = (path: string) => {
@@ -29,6 +32,10 @@ const relTime = (iso: string) => {
   });
 };
 
+// 대기 시간(분)
+const waitMinutes = (iso: string) =>
+  Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+
 // 헤더(앱바 64px + 탭 44px + 보더 1px) 아래에 고정
 const HEADER_OFFSET = 109;
 
@@ -36,60 +43,40 @@ interface FileSidebarProps {
   drops: FileDrop[];
   error: string | null;
   onRemove: (id: number) => void;
+  onRestore: (drop: FileDrop) => Promise<boolean>;
+  onSetPrinter: (id: number, printer: string | null) => void;
   open: boolean;
   onToggle: () => void;
-  onOpen: () => void;
+  newIds: Set<number>;
+  onMarkAllSeen: () => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
 }
 
-export default function FileSidebar({ drops, error, onRemove, open, onToggle, onOpen }: FileSidebarProps) {
+export default function FileSidebar({
+  drops,
+  error,
+  onRemove,
+  onRestore,
+  onSetPrinter,
+  open,
+  onToggle,
+  newIds,
+  onMarkAllSeen,
+  soundOn,
+  onToggleSound,
+}: FileSidebarProps) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [lastSeenDropId, setLastSeenDropId] = useState<number | null>(null);
-  const prevMaxIdRef = useRef<number | null>(null);
+  const [undoDrop, setUndoDrop] = useState<FileDrop | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 마지막으로 확인한 파일 id 불러오기 (-1 = 첫 방문)
-  useEffect(() => {
-    const stored = localStorage.getItem('vitavita_last_seen_drop_id');
-    setLastSeenDropId(stored !== null ? Number(stored) : -1);
-  }, []);
-
-  // 첫 방문이면 현재 파일까지 확인한 것으로 조용히 초기화 (전부 NEW로 뜨는 것 방지)
-  useEffect(() => {
-    if (lastSeenDropId === -1 && drops.length > 0) {
-      const maxId = Math.max(...drops.map(d => d.id));
-      localStorage.setItem('vitavita_last_seen_drop_id', String(maxId));
-      setLastSeenDropId(maxId);
-    }
-  }, [lastSeenDropId, drops]);
-
-  // 내가 올린 파일은 나에게 새 파일로 알리지 않는다
-  const myName = typeof window !== 'undefined' ? localStorage.getItem('vitavita_creator') : null;
-  const newIds = new Set(
-    lastSeenDropId !== null && lastSeenDropId >= 0
-      ? drops.filter(d => d.id > lastSeenDropId && d.creator !== myName).map(d => d.id)
-      : []
-  );
   const newCount = newIds.size;
 
-  const markAllSeen = () => {
-    if (drops.length === 0) return;
-    const maxId = Math.max(...drops.map(d => d.id));
-    localStorage.setItem('vitavita_last_seen_drop_id', String(maxId));
-    setLastSeenDropId(maxId);
-  };
-
-  // 다른 사람이 올린 새 파일이 도착하면 접혀 있어도 자동으로 펼친다
-  useEffect(() => {
-    const maxId = drops.length > 0 ? Math.max(...drops.map(d => d.id)) : 0;
-    if (prevMaxIdRef.current === null) {
-      prevMaxIdRef.current = maxId;
-      return;
-    }
-    if (maxId > prevMaxIdRef.current) {
-      const newest = drops.find(d => d.id === maxId);
-      prevMaxIdRef.current = maxId;
-      if (newest && newest.creator !== myName && !open) onOpen();
-    }
-  }, [drops, myName, open, onOpen]);
+  // 긴급 먼저, 그다음 최신순
+  const sortedDrops = [...drops].sort((a, b) =>
+    ((b.is_urgent ? 1 : 0) - (a.is_urgent ? 1 : 0)) ||
+    (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  );
 
   const handleCopy = async (id: number, path: string) => {
     try {
@@ -107,29 +94,48 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
     setTimeout(() => setCopiedId(prev => (prev === id ? null : prev)), 2000);
   };
 
-  const handleRemove = (id: number) => {
-    if (!window.confirm('처리 완료! 목록에서 지울까요?')) return;
-    onRemove(id);
+  // 완료 처리: 바로 지우되 6초 동안 실행 취소 가능
+  const handleRemove = (drop: FileDrop) => {
+    setUndoDrop(drop);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => setUndoDrop(null), 6000);
+    onRemove(drop.id);
   };
 
-  const panelHeader = (
-    <div className="flex items-center gap-2 px-4 h-11 border-b border-slate-200 bg-slate-50 shrink-0">
-      <IconInbox className="w-4 h-4 text-slate-500" />
-      <h2 className="font-semibold text-slate-800 text-[13px]">출력대기</h2>
-      {drops.length > 0 && (
-        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
-          {drops.length}
-        </span>
-      )}
-    </div>
+  const handleUndo = async () => {
+    if (!undoDrop) return;
+    const drop = undoDrop;
+    setUndoDrop(null);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    await onRestore(drop);
+  };
+
+  // 출력 시작/해제 토글
+  const handlePrintToggle = (drop: FileDrop) => {
+    if (drop.printer) {
+      onSetPrinter(drop.id, null);
+    } else {
+      const myName = localStorage.getItem('vitavita_creator') ?? '담당자';
+      onSetPrinter(drop.id, myName);
+    }
+  };
+
+  const soundToggleButton = (
+    <button
+      onClick={onToggleSound}
+      title={soundOn ? '알림음 끄기' : '알림음 켜기'}
+      className="flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition"
+    >
+      {soundOn ? <IconVolume className="w-3.5 h-3.5" /> : <IconVolumeOff className="w-3.5 h-3.5 text-slate-300" />}
+    </button>
   );
 
   const newAlertStrip = newCount > 0 && (
     <div className="flex items-center gap-1.5 px-3 h-9 bg-blue-600 text-white text-xs font-semibold shrink-0">
-      <IconBell className="w-3.5 h-3.5 animate-pulse shrink-0" />
-      <span>새 파일 {newCount}건 도착</span>
+      <span className="flex items-center justify-center w-4 h-4 rounded-full bg-white text-blue-700 text-[9px] font-bold animate-pulse">{newCount}</span>
+      <span>새 출력요청 {newCount}건</span>
       <button
-        onClick={markAllSeen}
+        onClick={onMarkAllSeen}
         className="ml-auto h-6 px-2 rounded bg-white/20 hover:bg-white/30 text-[11px] font-semibold transition"
       >
         모두 확인
@@ -137,33 +143,58 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
     </div>
   );
 
+  const undoBar = undoDrop && (
+    <div className="flex items-center gap-2 px-3 h-10 bg-slate-800 text-white text-xs shrink-0">
+      <span className="truncate">완료 처리됨: {fileNameOf(undoDrop.path)}</span>
+      <button
+        onClick={handleUndo}
+        className="ml-auto shrink-0 font-bold text-blue-300 hover:text-blue-200 transition"
+      >
+        실행 취소
+      </button>
+    </div>
+  );
+
   const listBody = error ? (
     <p className="p-4 text-xs text-red-500">
-      출력대기을 불러올 수 없습니다.<br />({error})
+      출력대기를 불러올 수 없습니다.<br />({error})
     </p>
-  ) : drops.length === 0 ? (
+  ) : sortedDrops.length === 0 ? (
     <div className="flex flex-col items-center gap-2 p-8 text-slate-300">
       <IconInbox className="w-7 h-7" />
       <p className="text-xs text-slate-400">대기 중인 파일이 없습니다</p>
     </div>
   ) : (
-    drops.map(drop => {
+    sortedDrops.map(drop => {
       const isNew = newIds.has(drop.id);
+      const isUrgent = !!drop.is_urgent;
       const ext = extOf(drop.path);
+      const waitMin = waitMinutes(drop.created_at);
+      const longWait = !drop.printer && waitMin >= 30;
       return (
         <div
           key={drop.id}
           className={`relative px-4 py-3 border-b last:border-b-0 transition ${
             isNew
               ? 'bg-blue-50 border-blue-100'
-              : 'bg-white border-slate-100 hover:bg-slate-50/60'
+              : isUrgent
+                ? 'bg-red-50/60 border-red-100'
+                : 'bg-white border-slate-100 hover:bg-slate-50/60'
           }`}
         >
-          {isNew && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600" />}
+          {(isNew || isUrgent) && (
+            <span className={`absolute left-0 top-0 bottom-0 w-[3px] ${isUrgent ? 'bg-red-600' : 'bg-blue-600'}`} />
+          )}
           <div className="flex items-start gap-1.5">
             {isNew && (
               <span className="inline-flex items-center h-4 px-1.5 rounded-sm bg-blue-600 text-white text-[9px] font-bold animate-pulse shrink-0 mt-0.5 select-none">
                 NEW
+              </span>
+            )}
+            {isUrgent && (
+              <span className="inline-flex items-center gap-0.5 h-4 px-1.5 rounded-sm bg-red-600 text-white text-[9px] font-bold shrink-0 mt-0.5 select-none">
+                <IconZap className="w-2.5 h-2.5" />
+                급함
               </span>
             )}
             <p className="text-xs font-semibold text-slate-900 break-all flex-1">{fileNameOf(drop.path)}</p>
@@ -174,10 +205,38 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
             )}
           </div>
           <p className="text-[10px] text-slate-400 break-all mt-1 font-mono" title={drop.path}>{folderOf(drop.path)}</p>
+
+          {/* 요청 메모 */}
+          {drop.note && (
+            <p className="flex items-center gap-1 text-[10px] text-amber-700 mt-1.5">
+              <IconFileText className="w-3 h-3 shrink-0" />
+              <span className="truncate" title={drop.note}>{drop.note}</span>
+            </p>
+          )}
+
+          {/* 출력중 상태 */}
+          {drop.printer && (
+            <p className="mt-1.5">
+              <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-sm bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-semibold">
+                <IconPrinter className="w-3 h-3" />
+                출력중 · {drop.printer}
+                <button
+                  onClick={() => onSetPrinter(drop.id, null)}
+                  title="출력중 표시 해제"
+                  className="ml-0.5 text-amber-600 hover:text-red-600 transition"
+                >
+                  <IconX className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            </p>
+          )}
+
           <div className="flex items-center gap-2 mt-2">
-            <span className={`text-[10px] ${isNew ? 'text-blue-700' : 'text-slate-400'}`}>
-              {drop.creator && <b className={`mr-1 font-semibold ${isNew ? 'text-blue-800' : 'text-slate-500'}`}>{drop.creator}</b>}
-              {relTime(drop.created_at)}
+            <span className={`text-[10px] ${longWait ? 'text-red-600 font-bold' : isNew ? 'text-blue-700' : 'text-slate-400'}`}>
+              {drop.creator && <b className={`mr-1 font-semibold ${longWait ? 'text-red-700' : isNew ? 'text-blue-800' : 'text-slate-500'}`}>{drop.creator}</b>}
+              {longWait
+                ? (waitMin < 60 ? `${waitMin}분째 대기` : `${Math.floor(waitMin / 60)}시간째 대기`)
+                : relTime(drop.created_at)}
             </span>
             <span className="ml-auto flex gap-1">
               <button
@@ -192,14 +251,27 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
                 }`}
               >
                 {copiedId === drop.id ? <IconCheck className="w-3 h-3" /> : <IconCopy className="w-3 h-3" />}
-                {copiedId === drop.id ? '복사됨' : '경로 복사'}
+                {copiedId === drop.id ? '복사됨' : '경로'}
               </button>
               <button
-                onClick={() => handleRemove(drop.id)}
-                title="처리 완료 (목록에서 제거)"
-                className="inline-flex items-center h-6 px-2 rounded text-[11px] font-medium border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition"
+                onClick={() => handlePrintToggle(drop)}
+                title={drop.printer ? '출력중 표시 해제' : '내가 출력 시작 (다른 사람에게 출력중으로 표시)'}
+                className={`inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium border transition ${
+                  drop.printer
+                    ? 'bg-amber-100 border-amber-300 text-amber-800'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800'
+                }`}
               >
-                확인
+                <IconPrinter className="w-3 h-3" />
+                출력
+              </button>
+              <button
+                onClick={() => handleRemove(drop)}
+                title="출력 완료 (목록에서 제거 — 6초 내 실행 취소 가능)"
+                className="inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 transition"
+              >
+                <IconCheck className="w-3 h-3" />
+                완료
               </button>
             </span>
           </div>
@@ -227,16 +299,20 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
                   {drops.length}
                 </span>
               )}
-              <button
-                onClick={onToggle}
-                title="접기"
-                className="ml-auto flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition"
-              >
-                <IconChevronLeft className="w-4 h-4" />
-              </button>
+              <span className="ml-auto flex items-center gap-0.5">
+                {soundToggleButton}
+                <button
+                  onClick={onToggle}
+                  title="접기"
+                  className="flex items-center justify-center w-6 h-6 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition"
+                >
+                  <IconChevronLeft className="w-4 h-4" />
+                </button>
+              </span>
             </div>
             {newAlertStrip}
             <div className="flex-1 overflow-y-auto">{listBody}</div>
+            {undoBar}
           </>
         ) : (
           <button
@@ -264,9 +340,19 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
       {/* 모바일: 본문 흐름 안의 인라인 패널 */}
       <div className="lg:hidden w-full">
         <div className={`bg-white rounded border overflow-hidden ${newCount > 0 ? 'border-blue-300' : 'border-slate-200'}`}>
-          {panelHeader}
+          <div className="flex items-center gap-2 bg-slate-50 px-4 h-11 border-b border-slate-200">
+            <IconInbox className="w-4 h-4 text-slate-500" />
+            <h2 className="font-semibold text-slate-800 text-[13px]">출력대기</h2>
+            {drops.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
+                {drops.length}
+              </span>
+            )}
+            <span className="ml-auto">{soundToggleButton}</span>
+          </div>
           {newAlertStrip}
           <div className="max-h-[50vh] overflow-y-auto">{listBody}</div>
+          {undoBar}
         </div>
       </div>
     </>
