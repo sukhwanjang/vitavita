@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { RequestItem } from './types';
 import { getRenderedRect } from './utils/imageUtils';
+import { IconZap, IconCalendar, IconClock, IconImage, IconFileText, IconPrinter, IconX, IconCheck } from './ui/icons';
 
 interface RequestCardProps {
   item: RequestItem;
@@ -48,7 +49,7 @@ export default function RequestCard({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  
+
   // 날짜 계산
   const daysLeft = item.pickup_date
     ? Math.ceil(
@@ -67,14 +68,6 @@ export default function RequestCard({
         : 'overdue';
 
   // 색상 우선순위: 급함 > 오늘 > 내일이후 > 지남
-  const barColor = item.is_urgent
-    ? 'bg-orange-500'
-    : daysLeft === 0
-      ? 'bg-red-400'
-      : daysLeft > 0
-        ? 'bg-blue-500'
-        : 'bg-black';
-
   const barText = item.is_urgent
     ? '급함'
     : daysLeft === 0
@@ -83,52 +76,82 @@ export default function RequestCard({
         ? `D-${daysLeft}`
         : '지남';
 
+  const statusChipClass = item.is_urgent
+    ? 'bg-orange-50 text-orange-700 border-orange-200'
+    : daysLeft === 0
+      ? 'bg-red-50 text-red-700 border-red-200'
+      : daysLeft > 0
+        ? 'bg-blue-50 text-blue-700 border-blue-200'
+        : 'bg-slate-800 text-white border-slate-800';
+
+  const accentBarClass = item.is_work_done
+    ? 'bg-emerald-500'
+    : item.is_urgent
+      ? 'bg-orange-500'
+      : daysLeft === 0
+        ? 'bg-red-500'
+        : daysLeft > 0
+          ? 'bg-blue-500'
+          : 'bg-slate-700';
+
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl shadow-lg overflow-hidden border transition-transform duration-200 hover:scale-[1.02] hover:shadow-2xl ${
-        item.is_work_done
-          ? 'bg-green-50 border-green-300'
-          : item.completed
-            ? 'bg-white border-gray-200'
-            : item.is_urgent
-              ? 'bg-white border-orange-400'
-              : daysLeft === 0
-                ? 'bg-white border-red-300'
-                : daysLeft > 0
-                  ? 'bg-white border-blue-300'
-                  : 'bg-white border-gray-300'
+      className={`relative flex flex-col rounded-lg overflow-hidden border bg-white shadow-sm transition hover:shadow-md ${
+        item.is_work_done ? 'border-emerald-300' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
-      {/* 상단 상태 뱃지 */}
-      <div className="flex items-center justify-start gap-2 px-4 pt-4">
+      {/* 좌측 상태 액센트 바 */}
+      <span className={`absolute left-0 top-0 bottom-0 w-1 ${accentBarClass}`} />
+
+      {/* 상단: 상태 뱃지 + 등록 시각 */}
+      <div className="flex items-center gap-1.5 pl-5 pr-4 pt-3.5">
         {isNew && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-300 text-yellow-900 shadow-sm animate-pulse select-none">
+          <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-bold bg-blue-600 text-white select-none">
             NEW
           </span>
         )}
-        <span
+        <button
           onClick={() => onStatusClick(statusKey)}
-          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-all select-none
-            ${item.is_urgent ? 'bg-orange-100 text-orange-700' : daysLeft === 0 ? 'bg-red-100 text-red-700' : daysLeft > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-800 text-white'}
-            ${activeStatusFilter === statusKey ? 'ring-2 ring-offset-1 ring-gray-500 scale-105' : 'hover:scale-105 hover:opacity-80'}`}
+          className={`inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold border cursor-pointer transition select-none ${statusChipClass} ${
+            activeStatusFilter === statusKey ? 'ring-2 ring-blue-500/40' : 'hover:opacity-80'
+          }`}
           title={activeStatusFilter === statusKey ? '클릭하여 필터 해제' : '클릭하여 이 상태만 보기'}
         >
-          {item.is_urgent && <span className="mr-1">⚡</span>}
-          {daysLeft === 0 && !item.is_urgent && <span className="mr-1">📅</span>}
-          {daysLeft < 0 && !item.is_urgent && <span className="mr-1">⏰</span>}
+          {item.is_urgent && <IconZap className="w-3 h-3" />}
+          {daysLeft === 0 && !item.is_urgent && <IconCalendar className="w-3 h-3" />}
+          {daysLeft < 0 && !item.is_urgent && <IconClock className="w-3 h-3" />}
           {barText}
-          {activeStatusFilter === statusKey && <span className="ml-1">✕</span>}
-        </span>
+          {activeStatusFilter === statusKey && <IconX className="w-3 h-3" />}
+        </button>
+        {item.is_work_done && (
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
+            <IconCheck className="w-3 h-3" />
+            작업완료
+          </span>
+        )}
+        {isActive && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
+            <IconClock className="w-3 h-3" />
+            {new Date(item.created_at).toLocaleString('ko-KR', {
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            })}
+          </span>
+        )}
       </div>
 
       {/* 카드 본문 */}
-      <div className={`flex flex-col p-4 space-y-3 h-full ${item.is_work_done ? 'bg-green-50' : 'bg-white'}`}>
+      <div className="flex flex-col flex-1 pl-5 pr-4 py-3.5 space-y-3">
         <div>
           <p
-            className="text-xl font-extrabold text-gray-900 truncate mb-1 cursor-pointer hover:text-blue-600 hover:underline"
+            className="text-base font-bold text-slate-900 truncate cursor-pointer hover:text-blue-700 transition"
             onClick={() => onCompanyClick(item.company)}
+            title="클릭하면 이 업체로 검색"
           >{item.company}</p>
-          <p className="text-sm text-gray-500 truncate">{item.program}</p>
+          <p className="text-[13px] text-slate-500 truncate mt-0.5">{item.program}</p>
         </div>
 
         <div className="flex justify-center items-center w-full min-h-[96px]">
@@ -141,7 +164,7 @@ export default function RequestCard({
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
                 }}
-                className="cursor-pointer w-full h-32 object-contain rounded-lg border bg-gray-50 shadow-sm transition-transform duration-200 hover:scale-105 hover:shadow-lg"
+                className="cursor-pointer w-full h-32 object-contain rounded-md border border-slate-200 bg-slate-50 transition hover:border-blue-300"
                 alt="작업 이미지"
               />
               {/* 썸네일 체크마크 오버레이 */}
@@ -159,7 +182,7 @@ export default function RequestCard({
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    <div className="w-5 h-5 bg-green-500 rounded-full border border-black shadow flex items-center justify-center">
+                    <div className="w-5 h-5 bg-emerald-500 rounded-full border border-white shadow flex items-center justify-center">
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                       </svg>
@@ -169,93 +192,87 @@ export default function RequestCard({
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center w-full h-24 text-gray-300 text-3xl">
-              <span className="material-icons">image_not_supported</span>
-              <span className="text-xs mt-1">이미지 없음</span>
+            <div className="flex flex-col items-center justify-center w-full h-24 rounded-md border border-dashed border-slate-200 bg-slate-50/50 text-slate-300">
+              <IconImage className="w-6 h-6" />
+              <span className="text-[11px] mt-1.5 text-slate-400">이미지 없음</span>
             </div>
           )}
         </div>
 
         {/* 픽업일 표시 */}
-        <div className={`text-sm font-bold mt-2 ${daysLeft === 0 ? 'text-red-500' : daysLeft < 0 ? 'text-gray-800' : 'text-gray-700'}`}>
-          📅 픽업 {item.pickup_date ? (() => {
-            const daysLeft = Math.ceil(
-              (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
-              / (1000 * 60 * 60 * 24)
-            );
-            if (daysLeft === 0) return '오늘';
-            if (daysLeft > 0) return `D-${daysLeft}`;
-            return '지남';
-          })() : '-'}
+        <div className="flex items-center gap-1.5 text-[13px]">
+          <IconCalendar className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-slate-500">픽업</span>
+          <span className={`font-semibold ${daysLeft === 0 ? 'text-red-600' : daysLeft < 0 ? 'text-slate-800' : 'text-slate-700'}`}>
+            {item.pickup_date ? (() => {
+              const daysLeft = Math.ceil(
+                (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+                / (1000 * 60 * 60 * 24)
+              );
+              if (daysLeft === 0) return '오늘';
+              if (daysLeft > 0) return `D-${daysLeft}`;
+              return '지남';
+            })() : '-'}
+          </span>
         </div>
 
         {/* 메모 */}
         {item.note && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 mt-2 text-xs text-gray-800 rounded flex items-start gap-2 shadow-sm">
-            <span className="text-lg">📝</span>
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-slate-700">
+            <IconFileText className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
             <span>{item.note}</span>
           </div>
         )}
 
         {/* 버튼 영역 */}
-        <div className="pt-2 flex flex-wrap gap-2 items-center justify-end mt-2">
-          {isActive && (
-            <>
-              {/* 업로드 시간 추가 */}
-              <span className="text-[10px] text-gray-400 mr-auto">
-                🕒 {new Date(item.created_at).toLocaleString('ko-KR', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                })}
-              </span>
+        {isActive && (
+          <div className="flex flex-wrap gap-1.5 items-center justify-end pt-2 mt-auto border-t border-slate-100">
+            {item.image_url && (
+              <button
+                onClick={() => onPrintImage(item.image_url!, item.company, item.program)}
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition mr-auto"
+                title="원고 출력"
+              >
+                <IconPrinter className="w-3.5 h-3.5" />
+                출력
+              </button>
+            )}
 
-              {item.image_url && (
-                <button
-                  onClick={() => onPrintImage(item.image_url!, item.company, item.program)}
-                  className="px-3 py-1 bg-purple-400 text-white rounded hover:bg-purple-500 text-xs"
-                >
-                  🖨️ 출력
-                </button>
-              )}
+            <button
+              onClick={() => onWorkDone(item.id)}
+              className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold border transition ${
+                item.is_work_done
+                  ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                  : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+              }`}
+            >
+              <IconCheck className="w-3.5 h-3.5" />
+              {item.is_work_done ? '작업완료 취소' : '작업완료'}
+            </button>
 
-              <button
-                onClick={() => onWorkDone(item.id)}
-                className={`rounded-lg px-4 py-1 font-semibold shadow text-xs transition ${
-                  item.is_work_done 
-                    ? 'bg-green-500 text-white hover:bg-green-600' 
-                    : 'bg-green-50 text-green-700 border border-green-300 hover:bg-green-100'
-                }`}
-              >
-                {item.is_work_done ? '작업완료 취소' : '작업완료'}
-              </button>
+            <button
+              onClick={() => onEdit(item)}
+              className="inline-flex items-center h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            >
+              수정
+            </button>
 
-              <button
-                onClick={() => onEdit(item)}
-                className="rounded-lg px-4 py-1 font-semibold shadow bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs transition"
-              >
-                수정
-              </button>
-              
-              <button
-                onClick={() => onComplete(item.id)}
-                className="rounded-lg px-4 py-1 font-semibold shadow bg-green-100 text-green-700 hover:bg-green-200 text-xs transition"
-              >
-                완료
-              </button>
-              
-              <button
-                onClick={() => onDelete(item.id)}
-                className="rounded-lg px-4 py-1 font-semibold shadow bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs transition"
-              >
-                삭제
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              onClick={() => onComplete(item.id)}
+              className="inline-flex items-center h-7 px-3 rounded-md bg-blue-600 text-[11px] font-semibold text-white hover:bg-blue-700 transition"
+            >
+              완료
+            </button>
+
+            <button
+              onClick={() => onDelete(item.id)}
+              className="inline-flex items-center h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+            >
+              삭제
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
-} 
+}

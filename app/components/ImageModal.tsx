@@ -160,14 +160,14 @@ export default function ImageModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-70 transition-opacity duration-300 animate-fadein"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/80 transition-opacity duration-300 animate-fadein"
       onClick={handleClose}
     >
       <div className="relative flex flex-col items-center" onClick={handleModalClick}>
         {(company || program) && (
           <div className="text-white text-center mb-4">
-            {company && <div className="text-4xl font-bold">{company}</div>}
-            {program && <div className="text-3xl text-gray-200">{program}</div>}
+            {company && <div className="text-2xl font-bold tracking-tight">{company}</div>}
+            {program && <div className="text-lg text-slate-300 mt-0.5">{program}</div>}
           </div>
         )}
         

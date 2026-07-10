@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { RequestItem } from './types';
 import { getRenderedRect } from './utils/imageUtils';
+import { IconCheckCircle, IconZoomIn } from './ui/icons';
 
 interface CompleteConfirmModalProps {
   item: RequestItem | null;
@@ -48,58 +49,59 @@ export default function CompleteConfirmModal({
   const isChained = queueTotal > 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">✅</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
+      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
+        {/* 모달 헤더 */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
+          <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 shrink-0">
+            <IconCheckCircle className="w-5 h-5" />
+          </span>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">작업 완료 확인</h3>
+            {isChained && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                <b className="text-blue-600 font-semibold">{queueCurrent} / {queueTotal}</b> — 동일 업체·프로그램 연속 처리
+              </p>
+            )}
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-1">작업 완료 확인</h3>
-          {isChained && (
-            <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full mt-1">
-              <span>{queueCurrent} / {queueTotal}</span>
-              <span className="text-blue-400 font-normal">— 동일 업체·프로그램</span>
-            </div>
-          )}
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-4 mb-4">
-          <div className="flex flex-col gap-2">
+        <div className="px-6 py-5">
+          {/* 작업 정보 */}
+          <dl className="bg-slate-50 border border-slate-100 rounded-lg px-4 py-3.5 mb-4 space-y-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-gray-500 w-20 shrink-0">업체명:</span>
-              <span className="font-semibold text-gray-900">{item.company}</span>
+              <dt className="text-slate-400 w-16 shrink-0">업체명</dt>
+              <dd className="font-semibold text-slate-900">{item.company}</dd>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500 w-20 shrink-0">프로그램:</span>
-              <span className="font-semibold text-gray-900">{item.program}</span>
+              <dt className="text-slate-400 w-16 shrink-0">프로그램</dt>
+              <dd className="font-semibold text-slate-900">{item.program}</dd>
             </div>
             {item.creator && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-20 shrink-0">작업자:</span>
-                <span className="font-semibold text-gray-900">{item.creator}</span>
+                <dt className="text-slate-400 w-16 shrink-0">작업자</dt>
+                <dd className="font-semibold text-slate-900">{item.creator}</dd>
               </div>
             )}
             {item.pickup_date && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-20 shrink-0">픽업일:</span>
-                <span className="font-semibold text-gray-900">{item.pickup_date}</span>
+                <dt className="text-slate-400 w-16 shrink-0">픽업일</dt>
+                <dd className="font-semibold text-slate-900">{item.pickup_date}</dd>
               </div>
             )}
-          </div>
-        </div>
+          </dl>
 
-        {/* 원고 이미지 미리보기 + 체크마크 오버레이 */}
-        {item.image_url && (
-          <div className="mb-6">
+          {/* 원고 이미지 미리보기 + 체크마크 오버레이 */}
+          {item.image_url && (
             <div
               ref={imgContainerRef}
-              className="relative w-full h-64 cursor-pointer"
+              className="group relative w-full h-64 cursor-pointer"
               onClick={onImageClick}
             >
               <img
                 src={item.image_url}
                 alt="원고 이미지"
-                className="w-full h-64 object-contain rounded-xl border bg-gray-50 shadow-sm"
+                className="w-full h-64 object-contain rounded-lg border border-slate-200 bg-slate-50"
                 onLoad={(e) => {
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
@@ -116,7 +118,7 @@ export default function CompleteConfirmModal({
                     className="absolute pointer-events-none"
                     style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
                   >
-                    <div className="w-6 h-6 bg-green-500 rounded-full border border-black shadow flex items-center justify-center">
+                    <div className="w-6 h-6 bg-emerald-500 rounded-full border border-white shadow flex items-center justify-center">
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                       </svg>
@@ -125,33 +127,35 @@ export default function CompleteConfirmModal({
                 );
               })}
               {/* 클릭 유도 오버레이 */}
-              <div className="absolute inset-0 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
-                <span className="bg-white/80 text-gray-700 text-sm font-semibold px-3 py-1 rounded-full shadow">
-                  🔍 크게 보기
+              <div className="absolute inset-0 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10">
+                <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-md shadow border border-slate-200">
+                  <IconZoomIn className="w-3.5 h-3.5" />
+                  크게 보기
                 </span>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="flex justify-end gap-3">
+        {/* 모달 푸터 */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-xl">
           <button
             onClick={onCancel}
-            className="px-6 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+            className="h-10 px-5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
             닫기
           </button>
           {isChained && onSkip && (
             <button
               onClick={onSkip}
-              className="px-6 py-2 rounded-xl bg-yellow-100 text-yellow-800 font-semibold hover:bg-yellow-200 transition"
+              className="h-10 px-5 rounded-lg border border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
             >
               건너뜀
             </button>
           )}
           <button
             onClick={onConfirm}
-            className="px-6 py-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:from-green-600 hover:to-green-700 transition shadow-lg"
+            className="h-10 px-6 rounded-lg bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition"
           >
             완료 처리
           </button>
@@ -159,4 +163,4 @@ export default function CompleteConfirmModal({
       </div>
     </div>
   );
-} 
+}
