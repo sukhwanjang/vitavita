@@ -333,13 +333,20 @@ export default function Board({ only }: BoardProps) {
     ? (requests.find(r => r.id === completingItem.id) ?? completingItem)
     : null;
 
-  // 등록 폼 업체명 자동완성용 — 최근 등록 순 중복 제거 목록
+  // 등록 폼 자동완성용 — 최근 등록 순 정렬
+  const recentSorted = [...requests].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  // 업체명: 중복 제거 목록
   const companySuggestions = Array.from(new Set(
-    [...requests]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .map(r => r.company)
-      .filter(Boolean)
+    recentSorted.map(r => r.company).filter(Boolean)
   ));
+  // 프로그램명: 업체별 매칭을 위해 (업체, 프로그램) 쌍으로 전달
+  const programSuggestions = Array.from(new Map(
+    recentSorted
+      .filter(r => r.program)
+      .map(r => [`${r.company}|${r.program}`, { company: r.company, program: r.program }] as const)
+  ).values());
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] text-slate-900">
@@ -370,6 +377,7 @@ export default function Board({ only }: BoardProps) {
         editingId={editingId}
         initialData={formInitialData}
         companySuggestions={companySuggestions}
+        programSuggestions={programSuggestions}
         onClose={handleFormClose}
         onSuccess={handleFormSuccess}
       />

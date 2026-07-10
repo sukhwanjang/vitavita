@@ -50,6 +50,7 @@ interface InputFormModalProps {
     creator: string;
   };
   companySuggestions?: string[];
+  programSuggestions?: { company: string; program: string }[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -60,6 +61,7 @@ export default function InputFormModal({
   editingId,
   initialData,
   companySuggestions = [],
+  programSuggestions = [],
   onClose,
   onSuccess
 }: InputFormModalProps) {
@@ -76,6 +78,7 @@ export default function InputFormModal({
     typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
   );
   const [companyFocused, setCompanyFocused] = useState(false);
+  const [programFocused, setProgramFocused] = useState(false);
   const companyInputRef = useRef<HTMLInputElement>(null);
 
   // 초기 데이터 설정
@@ -216,6 +219,17 @@ export default function InputFormModal({
     : [];
   const recentCompanies = companySuggestions.slice(0, 4);
 
+  // 프로그램명 자동완성 — 선택한 업체의 프로그램 우선, 없으면 전체 이력에서
+  const companyPrograms = Array.from(new Set(
+    programSuggestions.filter(p => p.company === company).map(p => p.program)
+  ));
+  const allPrograms = Array.from(new Set(programSuggestions.map(p => p.program)));
+  const programCandidates = program
+    ? (companyPrograms.some(x => x.includes(program)) ? companyPrograms : allPrograms)
+        .filter(x => x.includes(program) && x !== program)
+        .slice(0, 6)
+    : companyPrograms.slice(0, 6); // 입력 전에는 해당 업체의 최근 프로그램을 바로 보여줌
+
   const inputClass = "rounded border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
   const summaryReady = company && pickupDate;
 
@@ -287,15 +301,37 @@ export default function InputFormModal({
                 )}
               </div>
 
-              {/* 프로그램명 */}
-              <div className="flex flex-col">
+              {/* 프로그램명 + 자동완성 */}
+              <div className="flex flex-col relative">
                 <label className="text-[13px] font-medium text-slate-600 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={program}
                   onChange={e => setProgram(e.target.value)}
+                  onFocus={() => setProgramFocused(true)}
+                  onBlur={() => setTimeout(() => setProgramFocused(false), 150)}
+                  placeholder={company && companyPrograms.length > 0 ? `${company}의 최근 프로그램 자동완성` : '프로그램명 입력'}
                   className={inputClass}
                 />
+                {/* 자동완성 드롭다운 */}
+                {programFocused && programCandidates.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-20 overflow-hidden">
+                    {!program && (
+                      <p className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 border-b border-slate-100 select-none">
+                        {company}의 최근 프로그램
+                      </p>
+                    )}
+                    {programCandidates.map(p => (
+                      <button
+                        key={p}
+                        onMouseDown={(e) => { e.preventDefault(); setProgram(p); setProgramFocused(false); }}
+                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition border-b border-slate-50 last:border-b-0"
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 픽업일: 퀵 칩 + 달력 + D-day 미리보기 */}
