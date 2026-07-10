@@ -333,6 +333,14 @@ export default function Board({ only }: BoardProps) {
     ? (requests.find(r => r.id === completingItem.id) ?? completingItem)
     : null;
 
+  // 등록 폼 업체명 자동완성용 — 최근 등록 순 중복 제거 목록
+  const companySuggestions = Array.from(new Set(
+    [...requests]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map(r => r.company)
+      .filter(Boolean)
+  ));
+
   return (
     <div className="min-h-screen bg-[#f4f6f9] text-slate-900">
       {/* 헤더 */}
@@ -361,6 +369,7 @@ export default function Board({ only }: BoardProps) {
         editMode={editMode}
         editingId={editingId}
         initialData={formInitialData}
+        companySuggestions={companySuggestions}
         onClose={handleFormClose}
         onSuccess={handleFormSuccess}
       />

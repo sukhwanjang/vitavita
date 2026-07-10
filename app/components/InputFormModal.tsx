@@ -1,7 +1,40 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { IconX, IconImage, IconZap } from './ui/icons';
+import { IconX, IconImage, IconZap, IconCalendar } from './ui/icons';
+
+// 한국 시간 기준 오늘 + offset일의 YYYY-MM-DD
+const kstDate = (offsetDays: number) => {
+  const now = new Date();
+  const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  korea.setUTCDate(korea.getUTCDate() + offsetDays);
+  return korea.toISOString().slice(0, 10);
+};
+
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+const fmtDay = (iso: string) => {
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getMonth() + 1}/${d.getDate()} (${DAY_NAMES[d.getDay()]})`;
+};
+const daysLeftOf = (iso: string) =>
+  Math.ceil(
+    (new Date(iso + 'T00:00:00').getTime() - new Date(new Date().setHours(0, 0, 0, 0)).getTime())
+    / (1000 * 60 * 60 * 24)
+  );
+const ddayLabel = (iso: string) => {
+  const d = daysLeftOf(iso);
+  if (d === 0) return '오늘';
+  if (d === 1) return '내일';
+  if (d < 0) return '지남';
+  return `D-${d}`;
+};
+
+const QUICK_DATES = [
+  { label: '오늘', offset: 0 },
+  { label: '내일', offset: 1 },
+  { label: '모레', offset: 2 },
+  { label: '+3일', offset: 3 },
+];
 
 interface InputFormModalProps {
   showForm: boolean;
@@ -16,6 +49,7 @@ interface InputFormModalProps {
     isUrgent: boolean;
     creator: string;
   };
+  companySuggestions?: string[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -25,6 +59,7 @@ export default function InputFormModal({
   editMode,
   editingId,
   initialData,
+  companySuggestions = [],
   onClose,
   onSuccess
 }: InputFormModalProps) {
@@ -40,6 +75,8 @@ export default function InputFormModal({
   const [creator, setCreator] = useState<string>(() =>
     typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
   );
+  const [companyFocused, setCompanyFocused] = useState(false);
+  const companyInputRef = useRef<HTMLInputElement>(null);
 
   // 초기 데이터 설정
   useEffect(() => {
@@ -154,21 +191,39 @@ export default function InputFormModal({
     onClose();
   };
 
-  const setTodayDate = () => {
-    const now = new Date();
-    const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    setPickupDate(korea.toISOString().slice(0, 10));
-  };
+  // 키보드 단축키: ESC 닫기, Ctrl+Enter 등록
+  useEffect(() => {
+    if (!showForm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        clearForm();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   if (!showForm) return null;
 
+  // 업체명 자동완성 후보 (입력값 포함 & 완전 일치 제외)
+  const filteredSuggestions = company
+    ? companySuggestions.filter(c => c.includes(company) && c !== company).slice(0, 6)
+    : [];
+  const recentCompanies = companySuggestions.slice(0, 4);
+
   const inputClass = "rounded border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
+  const summaryReady = company && pickupDate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" onPaste={handlePasteImage}>
-      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-xl relative animate-fadein max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-4xl relative animate-fadein max-h-[92vh] flex flex-col">
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-md z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <div>
             <h3 className="text-base font-bold text-slate-900">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
             <p className="text-xs text-slate-400 mt-0.5">{editMode ? '작업 내용을 수정합니다.' : '새 작업을 현황판에 등록합니다.'}</p>
@@ -182,143 +237,230 @@ export default function InputFormModal({
           </button>
         </div>
 
-        <div className="px-6 py-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col">
-              <label className="text-[13px] font-medium text-slate-600 mb-1.5">업체명 <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={company}
-                onChange={e => setCompany(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-[13px] font-medium text-slate-600 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={program}
-                onChange={e => setProgram(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-[13px] font-medium text-slate-600 mb-1.5">픽업일 <span className="text-red-500">*</span></label>
-              <div className="flex gap-1.5">
+        {/* 본문: 좌 입력 폼 / 우 원고 이미지 */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-slate-100">
+            {/* 좌측: 작업 정보 */}
+            <div className="px-6 py-5 space-y-5">
+              {/* 업체명 + 자동완성 */}
+              <div className="flex flex-col relative">
+                <label className="text-[13px] font-medium text-slate-600 mb-1.5">업체명 <span className="text-red-500">*</span></label>
+                <input
+                  ref={companyInputRef}
+                  type="text"
+                  value={company}
+                  onChange={e => setCompany(e.target.value)}
+                  onFocus={() => setCompanyFocused(true)}
+                  onBlur={() => setTimeout(() => setCompanyFocused(false), 150)}
+                  placeholder="업체명 입력 (기존 업체 자동완성)"
+                  autoFocus
+                  className={inputClass}
+                />
+                {/* 자동완성 드롭다운 */}
+                {companyFocused && filteredSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-20 overflow-hidden">
+                    {filteredSuggestions.map(c => (
+                      <button
+                        key={c}
+                        onMouseDown={(e) => { e.preventDefault(); setCompany(c); setCompanyFocused(false); }}
+                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition border-b border-slate-50 last:border-b-0"
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* 최근 업체 칩 */}
+                {!company && recentCompanies.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[11px] text-slate-400 self-center">최근:</span>
+                    {recentCompanies.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setCompany(c)}
+                        className="inline-flex items-center h-6 px-2 rounded bg-slate-50 border border-slate-200 text-[11px] font-medium text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition"
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 프로그램명 */}
+              <div className="flex flex-col">
+                <label className="text-[13px] font-medium text-slate-600 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={program}
+                  onChange={e => setProgram(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+
+              {/* 픽업일: 퀵 칩 + 달력 + D-day 미리보기 */}
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <label className="text-[13px] font-medium text-slate-600">픽업일 <span className="text-red-500">*</span></label>
+                  {pickupDate && (
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                      daysLeftOf(pickupDate) === 0 ? 'text-blue-600'
+                      : daysLeftOf(pickupDate) === 1 ? 'text-amber-600'
+                      : daysLeftOf(pickupDate) < 0 ? 'text-red-600'
+                      : 'text-slate-500'
+                    }`}>
+                      <IconCalendar className="w-3 h-3" />
+                      {fmtDay(pickupDate)} · {ddayLabel(pickupDate)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1.5 mb-2">
+                  {QUICK_DATES.map(q => {
+                    const dateStr = kstDate(q.offset);
+                    const active = pickupDate === dateStr;
+                    return (
+                      <button
+                        key={q.label}
+                        type="button"
+                        onClick={() => setPickupDate(dateStr)}
+                        className={`flex-1 h-8 rounded text-xs font-semibold border transition ${
+                          active
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <input
                   type="date"
                   value={pickupDate}
                   onChange={e => setPickupDate(e.target.value)}
-                  className={`${inputClass} flex-1 min-w-0`}
+                  className={inputClass}
                 />
-                <button
-                  type="button"
-                  className="shrink-0 h-10 px-3 rounded border border-slate-300 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-                  onClick={setTodayDate}
-                >
-                  오늘
-                </button>
               </div>
-            </div>
-          </div>
 
-          <div className="flex flex-col mt-5">
-            <label className="text-[13px] font-medium text-slate-600 mb-1.5">작업자 선택</label>
-            <div className="grid grid-cols-3 gap-2">
-              {['박혜경', '김한별', '장석환', '정수원', '이현동', '심민영'].map((name) => (
-                <button
-                  key={name}
-                  onClick={() => {
-                    setCreator(name);
-                    localStorage.setItem('vitavita_creator', name);
-                  }}
-                  className={`h-9 rounded text-sm font-medium border transition ${
-                    creator === name
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
-                  }`}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-            {error && <p className="text-red-600 text-[13px] mt-2">{error}</p>}
-          </div>
+              {/* 작업자 선택 */}
+              <div className="flex flex-col">
+                <label className="text-[13px] font-medium text-slate-600 mb-1.5">작업자 선택</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['박혜경', '김한별', '장석환', '정수원', '이현동', '심민영'].map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        setCreator(name);
+                        localStorage.setItem('vitavita_creator', name);
+                      }}
+                      className={`h-9 rounded text-sm font-medium border transition ${
+                        creator === name
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div className="flex flex-col mt-5">
-            <label className="text-[13px] font-medium text-slate-600 mb-1.5">메모</label>
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              className="rounded border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
-              rows={3}
-            />
-          </div>
+              {/* 메모 */}
+              <div className="flex flex-col">
+                <label className="text-[13px] font-medium text-slate-600 mb-1.5">메모</label>
+                <textarea
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  className="rounded border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                  rows={2}
+                />
+              </div>
 
-          {/* 원고이미지 업로드 영역 - 붙여넣기만 지원 */}
-          <div className="flex flex-col mt-5">
-            <label className="text-[13px] font-medium text-slate-600 mb-1.5">원고 이미지</label>
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded p-5 bg-slate-50/60 transition hover:border-blue-400 min-h-[120px]">
-              {imagePreview ? (
-                <div className="relative w-full flex flex-col items-center">
-                  <img src={imagePreview} className="max-h-52 object-contain border border-slate-200 rounded mb-2 bg-white" />
+              {/* 우선순위 세그먼트 */}
+              <div className="flex flex-col">
+                <label className="text-[13px] font-medium text-slate-600 mb-1.5">우선순위</label>
+                <div className="inline-flex w-full rounded border border-slate-200 overflow-hidden">
                   <button
-                    onClick={() => { setImage(null); setImagePreview(null); }}
-                    className="text-xs font-medium text-red-500 hover:text-red-700 transition"
+                    type="button"
+                    onClick={() => setIsUrgent(false)}
+                    className={`flex-1 h-9 text-sm font-semibold transition ${
+                      !isUrgent ? 'bg-slate-800 text-white' : 'bg-white text-slate-400 hover:text-slate-600'
+                    }`}
                   >
-                    이미지 제거
+                    일반
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsUrgent(true)}
+                    className={`flex-1 h-9 inline-flex items-center justify-center gap-1 text-sm font-semibold transition border-l border-slate-200 ${
+                      isUrgent ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-600'
+                    }`}
+                  >
+                    <IconZap className="w-3.5 h-3.5" />
+                    급함
                   </button>
                 </div>
-              ) : (
-                <div className="text-slate-400 text-sm text-center flex flex-col items-center gap-1.5">
-                  <IconImage className="w-7 h-7 text-slate-300" />
-                  <span>여기에 이미지를 <b className="text-slate-500">Ctrl+V</b>로 붙여넣으세요</span>
-                  <span className="text-xs text-slate-300">(파일 선택 없이 캡처만 지원)</span>
-                </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* 급함 토글 */}
-          <div className="flex items-center mt-5 gap-3">
-            {/* 급함 토글 스위치 */}
-            <button
-              type="button"
-              onClick={() => setIsUrgent(!isUrgent)}
-              className={`inline-flex items-center gap-2 h-9 px-3.5 rounded border text-sm font-medium transition ${
-                isUrgent
-                  ? 'bg-orange-50 text-orange-700 border-orange-300'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <IconZap className={`w-4 h-4 ${isUrgent ? 'text-orange-500' : 'text-slate-300'}`} />
-              급함
-              <span
-                className={`relative inline-flex items-center w-8 h-[18px] rounded-full transition-colors ${isUrgent ? 'bg-orange-500' : 'bg-slate-200'}`}
-              >
-                <span
-                  className={`inline-block w-3.5 h-3.5 transform bg-white rounded-full shadow transition-transform ${isUrgent ? 'translate-x-[15px]' : 'translate-x-[2px]'}`}
-                />
-              </span>
-            </button>
+              {error && <p className="text-red-600 text-[13px]">{error}</p>}
+            </div>
+
+            {/* 우측: 원고 이미지 */}
+            <div className="px-6 py-5 flex flex-col">
+              <label className="text-[13px] font-medium text-slate-600 mb-1.5">원고 이미지</label>
+              <div className={`flex-1 min-h-[320px] flex flex-col items-center justify-center border-2 border-dashed rounded p-4 transition ${
+                imagePreview ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50/60 hover:border-blue-400'
+              }`}>
+                {imagePreview ? (
+                  <div className="relative w-full h-full flex flex-col items-center justify-center">
+                    <img src={imagePreview} className="max-h-[380px] max-w-full object-contain border border-slate-200 rounded bg-white" />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => { setImage(null); setImagePreview(null); }}
+                        className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+                      >
+                        <IconX className="w-3 h-3" />
+                        이미지 제거
+                      </button>
+                      <span className="text-[11px] text-slate-400 self-center">다시 붙여넣으면 교체됩니다</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-slate-400 text-sm text-center flex flex-col items-center gap-2">
+                    <IconImage className="w-10 h-10 text-slate-300" />
+                    <span>여기에 이미지를 <b className="text-slate-600">Ctrl+V</b>로 붙여넣으세요</span>
+                    <span className="text-xs text-slate-300">(파일 선택 없이 캡처만 지원)</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md">
-          <button
-            onClick={clearForm}
-            className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="h-10 px-6 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition disabled:bg-slate-300"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}
-          </button>
+        <div className="flex items-center gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md shrink-0">
+          <span className="hidden md:inline text-[11px] text-slate-400">
+            <b className="text-slate-500">Ctrl+Enter</b> 등록 · <b className="text-slate-500">ESC</b> 닫기
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={clearForm}
+              className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="h-10 px-6 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition disabled:bg-slate-300"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? '처리 중...'
+                : editMode
+                  ? summaryReady ? `수정 — ${company} · ${ddayLabel(pickupDate)} 픽업` : '수정'
+                  : summaryReady ? `등록 — ${company} · ${ddayLabel(pickupDate)} 픽업` : '등록'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
