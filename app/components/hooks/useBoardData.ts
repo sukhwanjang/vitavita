@@ -7,7 +7,7 @@ export function useBoardData() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = useCallback(async () => {
-    // 진행중/원고만 올림/삭제 항목은 전부, 완료 항목은 최근 500개만 가져온다 (완료가 쌓여도 느려지지 않게)
+    // 진행중/삭제 항목은 전부, 완료 항목은 최근 500개만 가져온다 (완료가 쌓여도 느려지지 않게)
     const [active, done] = await Promise.all([
       supabase
         .from('request')
@@ -137,7 +137,7 @@ export function useBoardData() {
   };
 
   // 데이터 필터링
-  const inProgress = requests.filter(r => !r.is_deleted && !r.completed && r.is_just_upload !== true);
+  const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests
     .filter(r => !r.is_deleted && r.completed)
     .sort((a, b) => {
@@ -146,7 +146,6 @@ export function useBoardData() {
       return dateB - dateA;
     });
   const deleted = requests.filter(r => r.is_deleted);
-  const justUpload = requests.filter(r => r.is_just_upload);
 
   return {
     requests,
@@ -159,7 +158,6 @@ export function useBoardData() {
     handleWorkDone,
     inProgress,
     completed,
-    deleted,
-    justUpload
+    deleted
   };
 } 

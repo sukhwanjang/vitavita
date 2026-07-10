@@ -15,7 +15,6 @@ interface InputFormModalProps {
     imageUrl: string | null;
     isUrgent: boolean;
     creator: string;
-    isJustUpload: boolean;
   };
   onClose: () => void;
   onSuccess: () => void;
@@ -41,7 +40,6 @@ export default function InputFormModal({
   const [creator, setCreator] = useState<string>(() =>
     typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
   );
-  const [isJustUpload, setIsJustUpload] = useState(false);
 
   // 초기 데이터 설정
   useEffect(() => {
@@ -53,7 +51,6 @@ export default function InputFormModal({
       setImagePreview(initialData.imageUrl);
       setIsUrgent(initialData.isUrgent);
       setCreator(initialData.creator);
-      setIsJustUpload(initialData.isJustUpload);
     }
   }, [initialData]);
 
@@ -112,7 +109,6 @@ export default function InputFormModal({
         note,
         image_url: imageUrl,
         is_urgent: isUrgent,
-        is_just_upload: isJustUpload,
         creator,
       }).eq('id', editingId);
 
@@ -131,7 +127,6 @@ export default function InputFormModal({
         is_urgent: isUrgent,
         completed: false,
         is_deleted: false,
-        is_just_upload: isJustUpload,
         creator,
       }]);
       if (error) {
@@ -156,7 +151,6 @@ export default function InputFormModal({
     setIsUrgent(false);
     // 작업자명은 localStorage에 저장된 값 유지
     setCreator(localStorage.getItem('vitavita_creator') ?? '');
-    setIsJustUpload(false);
     onClose();
   };
 
@@ -285,7 +279,7 @@ export default function InputFormModal({
             </div>
           </div>
 
-          {/* 급함 토글 + 바빠서 원고만 올림 버튼 */}
+          {/* 급함 토글 */}
           <div className="flex items-center mt-5 gap-3">
             {/* 급함 토글 스위치 */}
             <button
@@ -306,19 +300,6 @@ export default function InputFormModal({
                   className={`inline-block w-3.5 h-3.5 transform bg-white rounded-full shadow transition-transform ${isUrgent ? 'translate-x-[15px]' : 'translate-x-[2px]'}`}
                 />
               </span>
-            </button>
-
-            {/* 바빠서 원고만 올림 버튼 */}
-            <button
-              type="button"
-              onClick={() => setIsJustUpload(!isJustUpload)}
-              className={`inline-flex items-center h-9 px-3.5 rounded border text-sm font-medium transition ${
-                isJustUpload
-                  ? 'bg-amber-50 text-amber-700 border-amber-300'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              바빠서 원고만 올림
             </button>
           </div>
         </div>

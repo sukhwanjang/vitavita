@@ -8,7 +8,6 @@ export interface RequestItem {
   completed: boolean;
   is_urgent: boolean;
   is_deleted: boolean;
-  is_just_upload?: boolean;
   created_at: string;
   updated_at?: string;
   creator: string;
@@ -24,7 +23,7 @@ export interface FileDrop {
   created_at: string;
 }
 
-export type FilterType = 'completed' | 'deleted' | 'justupload';
+export type FilterType = 'completed' | 'deleted';
 
 export interface CheckMark {
   x: number;

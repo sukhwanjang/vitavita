@@ -17,7 +17,6 @@ interface HeaderProps {
   onShowFileDrop: () => void;
   showForm: boolean;
   editMode: boolean;
-  justUploadCount: number;
   hideOverdue: boolean;
   onToggleHideOverdue: () => void;
   overdueHiddenCount: number;
@@ -27,7 +26,6 @@ const NAV_TABS = [
   { href: '/', label: '진행 현황' },
   { href: '/completed', label: '완료' },
   { href: '/deleted', label: '삭제' },
-  { href: '/justupload', label: '원고 대기' },
 ];
 
 export default function Header({
@@ -38,7 +36,6 @@ export default function Header({
   onShowFileDrop,
   showForm,
   editMode,
-  justUploadCount,
   hideOverdue,
   onToggleHideOverdue,
   overdueHiddenCount,
@@ -131,11 +128,6 @@ export default function Header({
                   }`}
                 >
                   {tab.label}
-                  {tab.href === '/justupload' && justUploadCount > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-                      {justUploadCount}
-                    </span>
-                  )}
                 </button>
               );
             })}

@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
@@ -15,17 +14,15 @@ import CompleteConfirmModal from './CompleteConfirmModal';
 import RequestCard from './RequestCard';
 import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
-import JustUploadCard from './JustUploadCard';
 import FileSidebar from './FileSidebar';
 import FileDropModal from './FileDropModal';
-import { IconBell, IconFilter, IconX, IconZap, IconCalendar, IconClock, IconCheckCircle, IconTrash, IconInbox } from './ui/icons';
+import { IconBell, IconFilter, IconX, IconZap, IconCalendar, IconClock, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
   only?: FilterType;
 }
 
 export default function Board({ only }: BoardProps) {
-  const router = useRouter();
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
   const {
     requests,
@@ -37,8 +34,7 @@ export default function Board({ only }: BoardProps) {
     handleWorkDone,
     inProgress,
     completed,
-    deleted,
-    justUpload
+    deleted
   } = useBoardData();
   const { drops, error: fileDropError, addDrop, removeDrop } = useFileDrops();
 
@@ -180,7 +176,6 @@ export default function Board({ only }: BoardProps) {
       imageUrl: item.image_url,
       isUrgent: item.is_urgent,
       creator: item.creator,
-      isJustUpload: item.is_just_upload || false,
     });
     setEditingId(item.id);
     setEditMode(true);
@@ -349,7 +344,6 @@ export default function Board({ only }: BoardProps) {
         onShowFileDrop={() => setShowFileDrop(true)}
         showForm={showForm}
         editMode={editMode}
-        justUploadCount={justUpload.length}
         hideOverdue={hideOverdue}
         onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
         overdueHiddenCount={overdueHiddenCount}
@@ -406,21 +400,6 @@ export default function Board({ only }: BoardProps) {
       {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 파일 대기함 폭만큼 밀어줌) */}
       <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
-        {/* 원고 대기 알림 바 */}
-        {only !== 'justupload' && justUpload.length > 0 && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded px-4 h-10 mb-5 text-[13px] text-amber-800">
-            <IconBell className="w-4 h-4 shrink-0" />
-            <span>
-              미리 올려둔 원고 파일이 <b className="font-semibold">{justUpload.length}건</b> 대기 중입니다.
-            </span>
-            <button
-              className="ml-2 font-semibold underline underline-offset-2 hover:text-amber-950"
-              onClick={() => router.push('/justupload')}
-            >
-              바로가기
-            </button>
-          </div>
-        )}
         {only === 'completed' ? (
           <div>
             <div className="flex items-center gap-2 mb-5">
@@ -463,25 +442,6 @@ export default function Board({ only }: BoardProps) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {deleted.map(item => (
                 <DeletedCard
-                  key={item.id}
-                  item={item}
-                  onRefresh={fetchRequests}
-                />
-              ))}
-            </div>
-          </div>
-        ) : only === 'justupload' ? (
-          <div>
-            <div className="flex items-center gap-2 mb-5">
-              <IconInbox className="w-5 h-5 text-amber-600" />
-              <h2 className="text-lg font-bold text-slate-900">원고 대기</h2>
-              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                {justUpload.length}건
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {justUpload.map(item => (
-                <JustUploadCard
                   key={item.id}
                   item={item}
                   onRefresh={fetchRequests}
