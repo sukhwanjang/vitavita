@@ -14,9 +14,9 @@ import CompleteConfirmModal from './CompleteConfirmModal';
 import RequestCard from './RequestCard';
 import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
-import JustUploadCard from './JustUploadCard';
 import FileSidebar from './FileSidebar';
 import FileDropModal from './FileDropModal';
+import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
   only?: FilterType;
@@ -24,18 +24,17 @@ interface BoardProps {
 
 export default function Board({ only }: BoardProps) {
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
-  const { 
-    requests, 
-    fetchRequests, 
-    handleComplete: originalHandleComplete, 
-    handleRecover, 
+  const {
+    requests,
+    fetchRequests,
+    handleComplete: originalHandleComplete,
+    handleRecover,
     handleDelete,
     updateCheckMarks,
     handleWorkDone,
     inProgress,
     completed,
-    deleted,
-    justUpload
+    deleted
   } = useBoardData();
   const { drops, error: fileDropError, addDrop, removeDrop } = useFileDrops();
 
@@ -57,6 +56,26 @@ export default function Board({ only }: BoardProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
   const [lastSeenId, setLastSeenId] = useState<number | null>(null);  // 새 작업 알림 기준 (이 id 이후 등록분이 "새 작업")
+  const [sidebarOpen, setSidebarOpen] = useState(true);  // 파일 대기함 열림/닫힘
+
+  // 파일 대기함 열림 상태 복원
+  useEffect(() => {
+    const stored = localStorage.getItem('vitavita_sidebar_open');
+    if (stored !== null) setSidebarOpen(stored === '1');
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => {
+      localStorage.setItem('vitavita_sidebar_open', prev ? '0' : '1');
+      return !prev;
+    });
+  };
+
+  // 새 파일 도착 시 파일 대기함 자동 펼침
+  const openSidebar = () => {
+    localStorage.setItem('vitavita_sidebar_open', '1');
+    setSidebarOpen(true);
+  };
 
   // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
   const allFilteredCompleted = completed.filter((item) =>
@@ -70,7 +89,7 @@ export default function Board({ only }: BoardProps) {
     setDisplayCount(prev => {
       const currentTotal = allFilteredCompleted.length;
       const currentDisplay = prev;
-      
+
       // 더 로드할 항목이 있고, 현재 로딩 중이 아닐 때만
       if (currentTotal > currentDisplay) {
         setIsLoadingMore(true);
@@ -86,7 +105,7 @@ export default function Board({ only }: BoardProps) {
   // ⭐ useEffect를 early return 전에 배치
   useEffect(() => {
     if (only !== 'completed' || !loadMoreRef.current) return;
-    
+
     const currentRef = loadMoreRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -157,7 +176,6 @@ export default function Board({ only }: BoardProps) {
       imageUrl: item.image_url,
       isUrgent: item.is_urgent,
       creator: item.creator,
-      isJustUpload: item.is_just_upload || false,
     });
     setEditingId(item.id);
     setEditMode(true);
@@ -283,9 +301,26 @@ export default function Board({ only }: BoardProps) {
       }).length
     : 0;
 
+  // 현황 요약 통계 (진행 중 목록 기준)
+  const daysLeftOf = (item: any) =>
+    item.pickup_date
+      ? Math.ceil(
+          (new Date(item.pickup_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0))
+          / (1000 * 60 * 60 * 24)
+        )
+      : null;
+  const urgentCount = inProgress.filter(i => i.is_urgent).length;
+  const todayCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0).length;
+  const todayDoneCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0 && i.is_work_done).length;
+  const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
+  const overdueCount = inProgress.filter(i => {
+    const d = daysLeftOf(i);
+    return !i.is_urgent && d !== null && d < 0;
+  }).length;
+
   // 표시할 완료 목록 (displayCount 개수만큼)
   const filteredCompleted = allFilteredCompleted.slice(0, displayCount);
-  
+
   // 더 표시할 항목이 있는지 확인
   const hasMoreCompleted = allFilteredCompleted.length > displayCount;
   const remainingCount = allFilteredCompleted.length - displayCount;
@@ -299,8 +334,23 @@ export default function Board({ only }: BoardProps) {
     ? (requests.find(r => r.id === completingItem.id) ?? completingItem)
     : null;
 
+  // 등록 폼 자동완성용 — 최근 등록 순 정렬
+  const recentSorted = [...requests].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  // 업체명: 중복 제거 목록
+  const companySuggestions = Array.from(new Set(
+    recentSorted.map(r => r.company).filter(Boolean)
+  ));
+  // 프로그램명: 업체별 매칭을 위해 (업체, 프로그램) 쌍으로 전달
+  const programSuggestions = Array.from(new Map(
+    recentSorted
+      .filter(r => r.program)
+      .map(r => [`${r.company}|${r.program}`, { company: r.company, program: r.program }] as const)
+  ).values());
+
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6 font-sans text-gray-800">
+    <div className="min-h-screen bg-[#f4f6f9] text-slate-900">
       {/* 헤더 */}
       <Header
         searchQuery={searchQuery}
@@ -310,7 +360,6 @@ export default function Board({ only }: BoardProps) {
         onShowFileDrop={() => setShowFileDrop(true)}
         showForm={showForm}
         editMode={editMode}
-        justUploadCount={justUpload.length}
         hideOverdue={hideOverdue}
         onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
         overdueHiddenCount={overdueHiddenCount}
@@ -328,6 +377,8 @@ export default function Board({ only }: BoardProps) {
         editMode={editMode}
         editingId={editingId}
         initialData={formInitialData}
+        companySuggestions={companySuggestions}
+        programSuggestions={programSuggestions}
         onClose={handleFormClose}
         onSuccess={handleFormSuccess}
       />
@@ -364,17 +415,20 @@ export default function Board({ only }: BoardProps) {
         queueTotal={queueTotal}
       />
 
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-screen-2xl mx-auto">
+      {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 파일 대기함 폭만큼 밀어줌) */}
+      <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
         {only === 'completed' ? (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-base text-green-700">
-                ✅ 완료
-              </h2>
+            <div className="flex items-center gap-2 mb-5">
+              <IconCheckCircle className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-lg font-bold text-slate-900">완료된 작업</h2>
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                {allFilteredCompleted.length}건
+              </span>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {filteredCompleted.map(item => (
                 <CompletedCard
                   key={item.id}
@@ -390,14 +444,20 @@ export default function Board({ only }: BoardProps) {
             {/* 무한 스크롤 트리거 */}
             <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
               {isLoadingMore && (
-                <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
               )}
             </div>
           </div>
         ) : only === 'deleted' ? (
           <div>
-            <h2 className="font-semibold text-base text-gray-500 mb-2">🗑 삭제됨</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="flex items-center gap-2 mb-5">
+              <IconTrash className="w-5 h-5 text-slate-400" />
+              <h2 className="text-lg font-bold text-slate-900">삭제된 작업</h2>
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                {deleted.length}건
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {deleted.map(item => (
                 <DeletedCard
                   key={item.id}
@@ -407,61 +467,105 @@ export default function Board({ only }: BoardProps) {
               ))}
             </div>
           </div>
-        ) : only === 'justupload' ? (
-          <div>
-            <h2 className="font-semibold text-base text-yellow-700 mb-2">📤 바빠서 원고만 올림</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {justUpload.map(item => (
-                <JustUploadCard
-                  key={item.id}
-                  item={item}
-                  onRefresh={fetchRequests}
-                />
-              ))}
-            </div>
-          </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* 파일 대기함 사이드바 */}
-            <FileSidebar drops={drops} error={fileDropError} onRemove={removeDrop} />
-          <section className="relative z-10 space-y-10 pb-32 flex-1 min-w-0">
+            {/* 파일 대기함 사이드바 (데스크톱: 좌측 고정, 모바일: 인라인) */}
+            <FileSidebar
+              drops={drops}
+              error={fileDropError}
+              onRemove={removeDrop}
+              open={sidebarOpen}
+              onToggle={toggleSidebar}
+              onOpen={openSidebar}
+            />
+          <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
             {newItems.length > 0 && (
-              <div className="flex items-center gap-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl px-4 py-3 text-sm text-yellow-900 font-semibold shadow-sm">
-                <span className="text-xl">🔔</span>
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded px-4 py-3 text-sm text-blue-900">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 shrink-0">
+                  <IconBell className="w-4 h-4" />
+                </span>
                 <span>
-                  새 작업 <b className="text-base">{newItems.length}건</b>이 등록되었습니다 —{' '}
+                  새 작업 <b className="font-bold">{newItems.length}건</b>이 등록되었습니다 —{' '}
                   {newItems.slice(0, 3).map(r => r.company).join(', ')}
                   {newItems.length > 3 ? ` 외 ${newItems.length - 3}건` : ''}
                 </span>
                 <button
                   onClick={markAllSeen}
-                  className="ml-auto shrink-0 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 px-4 py-1.5 rounded-lg font-bold transition"
+                  className="ml-auto shrink-0 h-8 px-3.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
                 >
                   모두 확인
                 </button>
               </div>
             )}
+
+            {/* 현황 요약 패널 — 색은 숫자에만, 0건은 음소거 */}
+            <div className="bg-white border border-slate-200 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
+              {[
+                { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900', progress: null as { done: number; total: number } | null },
+                { key: 'urgent', label: '급함', count: urgentCount, color: 'text-red-600', progress: null },
+                { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600', progress: { done: todayDoneCount, total: todayCount } },
+                { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600', progress: null },
+                { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800', progress: null },
+              ].map(seg => {
+                const active = seg.key !== null && statusFilter === seg.key;
+                return (
+                  <button
+                    key={seg.label}
+                    onClick={() => {
+                      if (seg.key === null) setStatusFilter(null);
+                      else setStatusFilter(prev => prev === seg.key ? null : seg.key);
+                    }}
+                    className={`relative text-left px-4 py-3 transition border-slate-100 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
+                      active ? 'bg-blue-50/60' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="block text-[11px] font-medium text-slate-400">{seg.label}</span>
+                    <span className={`block mt-0.5 text-[26px] leading-8 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300' : seg.color}`}>
+                      {seg.count}
+                      <span className="ml-0.5 text-sm font-medium text-slate-300">건</span>
+                    </span>
+                    {seg.progress && seg.progress.total > 0 && (
+                      <span className="flex items-center gap-1.5 mt-1.5">
+                        <span className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                          <span
+                            className="block h-full bg-emerald-500 transition-all"
+                            style={{ width: `${(seg.progress.done / seg.progress.total) * 100}%` }}
+                          />
+                        </span>
+                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">작업완료 {seg.progress.done}/{seg.progress.total}</span>
+                      </span>
+                    )}
+                    {active && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-blue-600" />}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* 상태 필터 활성화 배너 */}
             {statusFilter !== null && (
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-sm text-blue-700 font-semibold">
-                <span>🔍 상태 필터 적용 중: <span className="bg-blue-100 px-2 py-0.5 rounded-full">{
-                  statusFilter === 'urgent' ? '⚡ 급함'
-                  : statusFilter === 'today' ? '📅 오늘까지'
-                  : statusFilter === 'overdue' ? '⏰ 지남'
+              <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded px-4 py-2.5 text-sm text-slate-700">
+                <IconFilter className="w-4 h-4 text-blue-600" />
+                <span>상태 필터 적용 중:</span>
+                <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">{
+                  statusFilter === 'urgent' ? '급함'
+                  : statusFilter === 'today' ? '오늘 마감'
+                  : statusFilter === 'd-1' ? '내일 마감'
+                  : statusFilter === 'overdue' ? '기한 지남'
                   : statusFilter.startsWith('d-') ? `D-${statusFilter.slice(2)}`
                   : statusFilter
-                }</span></span>
+                }</span>
                 <button
                   onClick={() => setStatusFilter(null)}
-                  className="ml-auto text-blue-400 hover:text-blue-700 font-bold"
+                  className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700 transition"
                 >
-                  ✕ 필터 해제
+                  <IconX className="w-3.5 h-3.5" />
+                  필터 해제
                 </button>
               </div>
             )}
             <div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {filteredInProgress.map(item => (
                   <RequestCard
                     key={item.id}
@@ -483,6 +587,7 @@ export default function Board({ only }: BoardProps) {
           </section>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { RequestItem } from '../types';
+import { RequestItem, Annotation } from '../types';
 
 export function useBoardData() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = useCallback(async () => {
-    // 진행중/원고만 올림/삭제 항목은 전부, 완료 항목은 최근 500개만 가져온다 (완료가 쌓여도 느려지지 않게)
+    // 진행중/삭제 항목은 전부, 완료 항목은 최근 500개만 가져온다 (완료가 쌓여도 느려지지 않게)
     const [active, done] = await Promise.all([
       supabase
         .from('request')
@@ -93,8 +93,8 @@ export function useBoardData() {
     fetchRequests();
   };
 
-  // 체크마크 업데이트 함수 추가
-  const updateCheckMarks = async (id: number, checkMarks: { x: number; y: number }[]) => {
+  // 체크마크(핀·펜 선) 업데이트 함수
+  const updateCheckMarks = async (id: number, checkMarks: Annotation[]) => {
     const { error } = await supabase
       .from('request')
       .update({ check_marks: checkMarks })
@@ -137,7 +137,7 @@ export function useBoardData() {
   };
 
   // 데이터 필터링
-  const inProgress = requests.filter(r => !r.is_deleted && !r.completed && r.is_just_upload !== true);
+  const inProgress = requests.filter(r => !r.is_deleted && !r.completed);
   const completed = requests
     .filter(r => !r.is_deleted && r.completed)
     .sort((a, b) => {
@@ -146,7 +146,6 @@ export function useBoardData() {
       return dateB - dateA;
     });
   const deleted = requests.filter(r => r.is_deleted);
-  const justUpload = requests.filter(r => r.is_just_upload);
 
   return {
     requests,
@@ -159,7 +158,6 @@ export function useBoardData() {
     handleWorkDone,
     inProgress,
     completed,
-    deleted,
-    justUpload
+    deleted
   };
 } 

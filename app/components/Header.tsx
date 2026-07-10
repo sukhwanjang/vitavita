@@ -1,5 +1,13 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import {
+  IconSearch,
+  IconPlus,
+  IconPrinter,
+  IconUpload,
+  IconEye,
+  IconEyeOff,
+} from './ui/icons';
 
 interface HeaderProps {
   searchQuery: string;
@@ -9,122 +17,137 @@ interface HeaderProps {
   onShowFileDrop: () => void;
   showForm: boolean;
   editMode: boolean;
-  justUploadCount: number;
   hideOverdue: boolean;
   onToggleHideOverdue: () => void;
   overdueHiddenCount: number;
 }
 
-export default function Header({ 
-  searchQuery, 
-  onSearchChange, 
+const NAV_TABS = [
+  { href: '/', label: '진행 현황' },
+  { href: '/completed', label: '완료' },
+  { href: '/deleted', label: '삭제' },
+];
+
+export default function Header({
+  searchQuery,
+  onSearchChange,
   onPrintTodayWork,
   onShowForm,
   onShowFileDrop,
   showForm,
   editMode,
-  justUploadCount,
   hideOverdue,
   onToggleHideOverdue,
   overdueHiddenCount,
 }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
-    <div className="flex flex-col w-full">
-      {/* justUpload 알림 배너 */}
-      {justUploadCount > 0 && (
-        <div className="w-full bg-yellow-300 text-yellow-900 font-bold text-center py-2 rounded-xl mb-2 shadow animate-pulse">
-          바쁘니까 미리 올려둔 파일이 {justUploadCount}개 있습니다! 
-          <button 
-            className="underline ml-2" 
-            onClick={() => router.push('/justupload')}
-          >
-            바로가기
-          </button>
-        </div>
-      )}
-      
-      <div className="flex items-center justify-between max-w-screen-2xl mx-auto mb-4 gap-4">
-        {/* 로고 */}
-        <div className="flex items-center gap-2">
-          <img 
-            src="/logo.png" 
-            alt="Vitamin Sign Logo" 
-            className="h-12 object-contain cursor-pointer" 
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+      {/* 상단 앱바 */}
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6">
+        <div className="flex items-center h-16 gap-4">
+          {/* 브랜드 */}
+          <button
+            className="flex items-center gap-3 shrink-0"
             onClick={() => { router.push('/'); onSearchChange(''); }}
-          />
-          
-          {/* 검색창 */}
-          <div className="ml-4 flex items-center bg-gray-100 rounded-full px-3 py-1 shadow-inner border border-gray-200 focus-within:ring-2 focus-within:ring-blue-300 z-10 relative">
+          >
+            <img src="/logo.png" alt="Vitamin Sign" className="h-9 object-contain" />
+            <span className="hidden xl:flex flex-col items-start leading-tight">
+              <span className="text-[15px] font-bold text-slate-900 tracking-tight">비타민사인</span>
+              <span className="text-[11px] font-medium text-slate-400">작업 현황 관리 시스템</span>
+            </span>
+          </button>
+
+          <div className="hidden md:block h-6 w-px bg-slate-200 shrink-0" />
+
+          {/* 검색 */}
+          <div className="flex items-center flex-1 max-w-md bg-slate-50 border border-slate-200 rounded px-3 h-10 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white transition">
+            <IconSearch className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
-              placeholder="업체명/프로그램명/작업자 검색"
-              className="bg-transparent outline-none px-2 py-1 text-sm w-40 md:w-56"
+              placeholder="업체명, 프로그램명, 작업자 검색"
+              className="bg-transparent outline-none focus:ring-0 focus:border-transparent border-0 px-2.5 text-sm w-full text-slate-900 placeholder:text-slate-400"
             />
-            <span className="ml-1 text-gray-500 p-1">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-              </svg>
-            </span>
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="text-[11px] font-medium text-slate-400 hover:text-slate-600 shrink-0"
+              >
+                지우기
+              </button>
+            )}
+          </div>
+
+          {/* 우측 액션 */}
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            <button
+              onClick={onPrintTodayWork}
+              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            >
+              <IconPrinter className="w-4 h-4" />
+              오늘 작업 출력
+            </button>
+
+            <button
+              onClick={onShowFileDrop}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            >
+              <IconUpload className="w-4 h-4" />
+              파일 올리기
+            </button>
+
+            <button
+              onClick={onShowForm}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition shadow-sm"
+            >
+              <IconPlus className="w-4 h-4" />
+              {showForm ? '입력 닫기' : editMode ? '수정 중...' : '새 작업 등록'}
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* 버튼 그룹 */}
-        <div className="flex gap-3">
-          <button
-            onClick={onPrintTodayWork}
-            className="bg-gradient-to-r from-blue-500 to-blue-400 text-white font-bold px-5 py-2 rounded-xl shadow-lg hover:scale-105 hover:from-blue-600 hover:to-blue-500 transition text-base"
-          >
-            <span className="inline-block align-middle mr-1">🗒️</span> 오늘 작업 출력
-          </button>
-          
-          <button
-            onClick={onShowForm}
-            className="bg-black text-white font-bold px-5 py-2 rounded-xl shadow-lg hover:bg-gray-900 hover:scale-105 transition text-base"
-          >
-            <span className="inline-block align-middle mr-1">➕</span>
-            {showForm ? '입력 닫기' : editMode ? '수정 중...' : '작업 추가'}
-          </button>
+      {/* 하단 탭 네비게이션 */}
+      <div className="border-t border-slate-100">
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 flex items-center">
+          <nav className="flex items-center gap-1 -mb-px">
+            {NAV_TABS.map(tab => {
+              const active = pathname === tab.href;
+              return (
+                <button
+                  key={tab.href}
+                  onClick={() => router.push(tab.href)}
+                  className={`relative inline-flex items-center gap-1.5 h-11 px-4 text-sm font-medium border-b-2 transition ${
+                    active
+                      ? 'border-blue-600 text-blue-700'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
 
-          <button
-            onClick={onShowFileDrop}
-            className="bg-blue-50 text-blue-800 border border-blue-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-blue-100 hover:scale-105 transition text-base"
-          >
-            <span className="text-lg">📁</span> 파일 올리기
-          </button>
-
-          <button
-            onClick={() => router.push('/completed')}
-            className="bg-green-50 text-green-800 border border-green-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-green-100 hover:scale-105 transition text-base"
-          >
-            <span className="text-lg">✅</span> 완료 보기
-          </button>
-          
-          <button
-            onClick={() => router.push('/deleted')}
-            className="bg-gray-50 text-gray-500 border border-gray-200 font-bold px-5 py-2 rounded-xl flex items-center gap-2 shadow hover:bg-gray-100 hover:scale-105 transition text-base"
-          >
-            <span className="text-lg">🗑</span> 삭제 보기
-          </button>
-          
+          {/* 지남 숨김 토글 */}
           <button
             onClick={onToggleHideOverdue}
-            className={`font-bold px-5 py-2 rounded-xl shadow hover:scale-105 transition text-base border ${
+            className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded text-xs font-medium border transition ${
               hideOverdue
-                ? 'bg-gray-800 text-white border-gray-900'
-                : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                ? 'bg-slate-800 text-white border-slate-800'
+                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <span className="inline-block align-middle mr-1">⏰</span>
-            {hideOverdue
-              ? `지남 숨김 (${overdueHiddenCount}개)`
-              : '지남 표시 중'}
+            {hideOverdue ? <IconEyeOff className="w-3.5 h-3.5" /> : <IconEye className="w-3.5 h-3.5" />}
+            {hideOverdue ? `지남 숨김 (${overdueHiddenCount})` : '지남 표시 중'}
           </button>
         </div>
       </div>
-    </div>
+
+    </header>
   );
-} 
+}
