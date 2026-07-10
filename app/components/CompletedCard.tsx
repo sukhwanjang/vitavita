@@ -39,11 +39,11 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded-lg overflow-hidden border border-slate-200 bg-white shadow-sm">
+    <div className="relative flex flex-col justify-between rounded overflow-hidden border border-slate-200 bg-white shadow-sm">
       <span className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
       <div>
         <div className="flex items-center gap-1.5 pl-5 pr-4 pt-3.5">
-          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
             <IconCheckCircle className="w-3 h-3" />
             완료
           </span>
@@ -65,7 +65,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
                 }}
-                className="cursor-pointer w-full h-32 object-contain rounded-md border border-slate-200 bg-slate-50 transition hover:border-blue-300"
+                className="cursor-pointer w-full h-32 object-contain rounded border border-slate-200 bg-slate-50 transition hover:border-blue-300"
                 alt="작업 이미지"
               />
               {naturalDims && containerDims && item.check_marks?.map((mark, i) => {
@@ -95,7 +95,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
 
           {/* 메모 */}
           {item.note && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-slate-700">
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-slate-700">
               <IconFileText className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
               <span>{item.note}</span>
             </div>
@@ -119,14 +119,14 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
         <div className="flex items-center gap-1.5 justify-end pt-2.5 border-t border-slate-100">
           <button
             onClick={() => onRecover(item.id)}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
           >
             <IconRestore className="w-3 h-3" />
             복구
           </button>
           <button
             onClick={handlePermanentDelete}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
           >
             <IconTrash className="w-3 h-3" />
             삭제

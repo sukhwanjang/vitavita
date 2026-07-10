@@ -168,19 +168,19 @@ export default function InputFormModal({
 
   if (!showForm) return null;
 
-  const inputClass = "rounded-lg border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
+  const inputClass = "rounded border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" onPaste={handlePasteImage}>
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl relative animate-fadein max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-xl relative animate-fadein max-h-[90vh] overflow-y-auto">
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-md z-10">
           <div>
             <h3 className="text-base font-bold text-slate-900">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
             <p className="text-xs text-slate-400 mt-0.5">{editMode ? '작업 내용을 수정합니다.' : '새 작업을 현황판에 등록합니다.'}</p>
           </div>
           <button
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
             onClick={clearForm}
             aria-label="닫기"
           >
@@ -219,7 +219,7 @@ export default function InputFormModal({
                 />
                 <button
                   type="button"
-                  className="shrink-0 h-10 px-3 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  className="shrink-0 h-10 px-3 rounded border border-slate-300 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
                   onClick={setTodayDate}
                 >
                   오늘
@@ -238,7 +238,7 @@ export default function InputFormModal({
                     setCreator(name);
                     localStorage.setItem('vitavita_creator', name);
                   }}
-                  className={`h-9 rounded-lg text-sm font-medium border transition ${
+                  className={`h-9 rounded text-sm font-medium border transition ${
                     creator === name
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
@@ -256,7 +256,7 @@ export default function InputFormModal({
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              className="rounded border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
               rows={3}
             />
           </div>
@@ -264,10 +264,10 @@ export default function InputFormModal({
           {/* 원고이미지 업로드 영역 - 붙여넣기만 지원 */}
           <div className="flex flex-col mt-5">
             <label className="text-[13px] font-medium text-slate-600 mb-1.5">원고 이미지</label>
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-lg p-5 bg-slate-50/60 transition hover:border-blue-400 min-h-[120px]">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded p-5 bg-slate-50/60 transition hover:border-blue-400 min-h-[120px]">
               {imagePreview ? (
                 <div className="relative w-full flex flex-col items-center">
-                  <img src={imagePreview} className="max-h-52 object-contain border border-slate-200 rounded-lg mb-2 bg-white" />
+                  <img src={imagePreview} className="max-h-52 object-contain border border-slate-200 rounded mb-2 bg-white" />
                   <button
                     onClick={() => { setImage(null); setImagePreview(null); }}
                     className="text-xs font-medium text-red-500 hover:text-red-700 transition"
@@ -291,7 +291,7 @@ export default function InputFormModal({
             <button
               type="button"
               onClick={() => setIsUrgent(!isUrgent)}
-              className={`inline-flex items-center gap-2 h-9 px-3.5 rounded-lg border text-sm font-medium transition ${
+              className={`inline-flex items-center gap-2 h-9 px-3.5 rounded border text-sm font-medium transition ${
                 isUrgent
                   ? 'bg-orange-50 text-orange-700 border-orange-300'
                   : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
@@ -312,7 +312,7 @@ export default function InputFormModal({
             <button
               type="button"
               onClick={() => setIsJustUpload(!isJustUpload)}
-              className={`inline-flex items-center h-9 px-3.5 rounded-lg border text-sm font-medium transition ${
+              className={`inline-flex items-center h-9 px-3.5 rounded border text-sm font-medium transition ${
                 isJustUpload
                   ? 'bg-amber-50 text-amber-700 border-amber-300'
                   : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
@@ -324,16 +324,16 @@ export default function InputFormModal({
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-xl">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md">
           <button
             onClick={clearForm}
-            className="h-10 px-5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
-            className="h-10 px-6 rounded-lg bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition disabled:bg-slate-300"
+            className="h-10 px-6 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition disabled:bg-slate-300"
             disabled={isSubmitting}
           >
             {isSubmitting ? '처리 중...' : editMode ? '수정' : '등록'}

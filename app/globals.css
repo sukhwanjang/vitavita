@@ -19,11 +19,11 @@ input, textarea {
 }
 
 .card {
-  @apply bg-white rounded-lg shadow-sm border border-slate-200;
+  @apply bg-white rounded shadow-sm border border-slate-200;
 }
 
 .button-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md font-medium;
+  @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-medium;
 }
 
 .section-title {

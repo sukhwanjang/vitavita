@@ -7,7 +7,6 @@ import {
   IconUpload,
   IconEye,
   IconEyeOff,
-  IconBell,
 } from './ui/icons';
 
 interface HeaderProps {
@@ -67,7 +66,7 @@ export default function Header({
           <div className="hidden md:block h-6 w-px bg-slate-200 shrink-0" />
 
           {/* 검색 */}
-          <div className="flex items-center flex-1 max-w-md bg-slate-50 border border-slate-200 rounded-lg px-3 h-10 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white transition">
+          <div className="flex items-center flex-1 max-w-md bg-slate-50 border border-slate-200 rounded px-3 h-10 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white transition">
             <IconSearch className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
@@ -90,7 +89,7 @@ export default function Header({
           <div className="flex items-center gap-2 ml-auto shrink-0">
             <button
               onClick={onPrintTodayWork}
-              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
             >
               <IconPrinter className="w-4 h-4" />
               오늘 작업 출력
@@ -98,7 +97,7 @@ export default function Header({
 
             <button
               onClick={onShowFileDrop}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
             >
               <IconUpload className="w-4 h-4" />
               파일 올리기
@@ -106,7 +105,7 @@ export default function Header({
 
             <button
               onClick={onShowForm}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition shadow-sm"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition shadow-sm"
             >
               <IconPlus className="w-4 h-4" />
               {showForm ? '입력 닫기' : editMode ? '수정 중...' : '새 작업 등록'}
@@ -145,7 +144,7 @@ export default function Header({
           {/* 지남 숨김 토글 */}
           <button
             onClick={onToggleHideOverdue}
-            className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium border transition ${
+            className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded text-xs font-medium border transition ${
               hideOverdue
                 ? 'bg-slate-800 text-white border-slate-800'
                 : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -157,23 +156,6 @@ export default function Header({
         </div>
       </div>
 
-      {/* 원고 대기 알림 바 */}
-      {justUploadCount > 0 && (
-        <div className="bg-amber-50 border-t border-amber-200">
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 h-10 flex items-center gap-2 text-[13px] text-amber-800">
-            <IconBell className="w-4 h-4 shrink-0" />
-            <span>
-              미리 올려둔 원고 파일이 <b className="font-semibold">{justUploadCount}건</b> 대기 중입니다.
-            </span>
-            <button
-              className="ml-2 font-semibold underline underline-offset-2 hover:text-amber-950"
-              onClick={() => router.push('/justupload')}
-            >
-              바로가기
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

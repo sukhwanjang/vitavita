@@ -31,7 +31,7 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f6f9] px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 px-8 py-10">
+        <div className="bg-white rounded-md shadow-sm border border-slate-200 px-8 py-10">
           <div className="flex flex-col items-center mb-8">
             <img src="/logo.png" alt="Vitamin Sign Logo" className="h-14 mb-5" />
             <h1 className="text-lg font-bold text-slate-900">비타민사인 현황판</h1>
@@ -39,7 +39,7 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
           </div>
           <form onSubmit={handlePwSubmit} className="flex flex-col">
             <label className="text-[13px] font-medium text-slate-600 mb-1.5">비밀번호</label>
-            <div className="flex items-center border border-slate-300 rounded-lg px-3 h-11 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition mb-4">
+            <div className="flex items-center border border-slate-300 rounded px-3 h-11 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition mb-4">
               <IconLock className="w-4 h-4 text-slate-400 shrink-0" />
               <input
                 type="password"
@@ -52,7 +52,7 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
             </div>
             <button
               type="submit"
-              className="w-full h-11 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:bg-blue-800 transition text-sm"
+              className="w-full h-11 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 active:bg-blue-800 transition text-sm"
             >
               로그인
             </button>

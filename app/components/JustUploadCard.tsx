@@ -15,11 +15,11 @@ export default function JustUploadCard({ item, onRefresh }: JustUploadCardProps)
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded-lg overflow-hidden border border-slate-200 bg-white shadow-sm">
+    <div className="relative flex flex-col justify-between rounded overflow-hidden border border-slate-200 bg-white shadow-sm">
       <span className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400" />
       <div className="flex flex-col pl-5 pr-4 py-3.5 space-y-3">
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 select-none">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 select-none">
             <IconInbox className="w-3 h-3" />
             원고 대기
           </span>
@@ -29,7 +29,7 @@ export default function JustUploadCard({ item, onRefresh }: JustUploadCardProps)
           <p className="text-[13px] text-slate-500 truncate mt-0.5">{item.program}</p>
         </div>
         {item.image_url && (
-          <img src={item.image_url} className="w-full h-32 object-contain rounded-md border border-slate-200 bg-slate-50" />
+          <img src={item.image_url} className="w-full h-32 object-contain rounded border border-slate-200 bg-slate-50" />
         )}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
           <IconClock className="w-3 h-3" />
@@ -39,7 +39,7 @@ export default function JustUploadCard({ item, onRefresh }: JustUploadCardProps)
         <div className="flex items-center justify-end pt-2.5 border-t border-slate-100">
           <button
             onClick={handleMoveToWork}
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 transition"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded bg-blue-600 text-xs font-semibold text-white hover:bg-blue-700 transition"
           >
             <IconFolder className="w-3.5 h-3.5" />
             작업폴더로 이동

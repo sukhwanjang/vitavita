@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
@@ -24,6 +25,7 @@ interface BoardProps {
 }
 
 export default function Board({ only }: BoardProps) {
+  const router = useRouter();
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
   const {
     requests,
@@ -58,6 +60,20 @@ export default function Board({ only }: BoardProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
   const [lastSeenId, setLastSeenId] = useState<number | null>(null);  // 새 작업 알림 기준 (이 id 이후 등록분이 "새 작업")
+  const [sidebarOpen, setSidebarOpen] = useState(true);  // 파일 대기함 열림/닫힘
+
+  // 파일 대기함 열림 상태 복원
+  useEffect(() => {
+    const stored = localStorage.getItem('vitavita_sidebar_open');
+    if (stored !== null) setSidebarOpen(stored === '1');
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => {
+      localStorage.setItem('vitavita_sidebar_open', prev ? '0' : '1');
+      return !prev;
+    });
+  };
 
   // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
   const allFilteredCompleted = completed.filter((item) =>
@@ -294,6 +310,7 @@ export default function Board({ only }: BoardProps) {
       : null;
   const urgentCount = inProgress.filter(i => i.is_urgent).length;
   const todayCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0).length;
+  const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
   const overdueCount = inProgress.filter(i => {
     const d = daysLeftOf(i);
     return !i.is_urgent && d !== null && d < 0;
@@ -380,8 +397,24 @@ export default function Board({ only }: BoardProps) {
         queueTotal={queueTotal}
       />
 
-      {/* 메인 컨텐츠 */}
+      {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 파일 대기함 폭만큼 밀어줌) */}
+      <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
+        {/* 원고 대기 알림 바 */}
+        {only !== 'justupload' && justUpload.length > 0 && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded px-4 h-10 mb-5 text-[13px] text-amber-800">
+            <IconBell className="w-4 h-4 shrink-0" />
+            <span>
+              미리 올려둔 원고 파일이 <b className="font-semibold">{justUpload.length}건</b> 대기 중입니다.
+            </span>
+            <button
+              className="ml-2 font-semibold underline underline-offset-2 hover:text-amber-950"
+              onClick={() => router.push('/justupload')}
+            >
+              바로가기
+            </button>
+          </div>
+        )}
         {only === 'completed' ? (
           <div>
             <div className="flex items-center gap-2 mb-5">
@@ -452,12 +485,18 @@ export default function Board({ only }: BoardProps) {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* 파일 대기함 사이드바 */}
-            <FileSidebar drops={drops} error={fileDropError} onRemove={removeDrop} />
+            {/* 파일 대기함 사이드바 (데스크톱: 좌측 고정, 모바일: 인라인) */}
+            <FileSidebar
+              drops={drops}
+              error={fileDropError}
+              onRemove={removeDrop}
+              open={sidebarOpen}
+              onToggle={toggleSidebar}
+            />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
             {newItems.length > 0 && (
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-900">
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded px-4 py-3 text-sm text-blue-900">
                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 shrink-0">
                   <IconBell className="w-4 h-4" />
                 </span>
@@ -468,7 +507,7 @@ export default function Board({ only }: BoardProps) {
                 </span>
                 <button
                   onClick={markAllSeen}
-                  className="ml-auto shrink-0 h-8 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
+                  className="ml-auto shrink-0 h-8 px-3.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
                 >
                   모두 확인
                 </button>
@@ -476,11 +515,12 @@ export default function Board({ only }: BoardProps) {
             )}
 
             {/* 현황 요약 타일 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {[
                 { key: null, label: '전체 진행', count: inProgress.length, icon: <IconFilter className="w-4 h-4" />, accent: 'text-slate-500', bar: 'bg-slate-300' },
-                { key: 'urgent', label: '급함', count: urgentCount, icon: <IconZap className="w-4 h-4" />, accent: 'text-orange-600', bar: 'bg-orange-500' },
-                { key: 'today', label: '오늘 마감', count: todayCount, icon: <IconCalendar className="w-4 h-4" />, accent: 'text-red-600', bar: 'bg-red-500' },
+                { key: 'urgent', label: '급함', count: urgentCount, icon: <IconZap className="w-4 h-4" />, accent: 'text-red-600', bar: 'bg-red-500' },
+                { key: 'today', label: '오늘 마감', count: todayCount, icon: <IconCalendar className="w-4 h-4" />, accent: 'text-blue-600', bar: 'bg-blue-500' },
+                { key: 'd-1', label: '내일 마감', count: tomorrowCount, icon: <IconCalendar className="w-4 h-4" />, accent: 'text-amber-600', bar: 'bg-amber-400' },
                 { key: 'overdue', label: '기한 지남', count: overdueCount, icon: <IconClock className="w-4 h-4" />, accent: 'text-slate-700', bar: 'bg-slate-700' },
               ].map(tile => {
                 const active = statusFilter === tile.key || (tile.key === null && statusFilter === null);
@@ -492,7 +532,7 @@ export default function Board({ only }: BoardProps) {
                       if (tile.key === null) setStatusFilter(null);
                       else setStatusFilter(prev => prev === tile.key ? null : tile.key);
                     }}
-                    className={`relative overflow-hidden text-left bg-white border rounded-lg px-4 py-3.5 transition ${
+                    className={`relative overflow-hidden text-left bg-white border rounded px-4 py-3.5 transition ${
                       clickable && statusFilter === tile.key
                         ? 'border-blue-500 ring-2 ring-blue-500/20'
                         : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
@@ -514,12 +554,13 @@ export default function Board({ only }: BoardProps) {
 
             {/* 상태 필터 활성화 배너 */}
             {statusFilter !== null && (
-              <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700">
+              <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded px-4 py-2.5 text-sm text-slate-700">
                 <IconFilter className="w-4 h-4 text-blue-600" />
                 <span>상태 필터 적용 중:</span>
-                <span className="inline-flex items-center h-6 px-2.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">{
+                <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">{
                   statusFilter === 'urgent' ? '급함'
                   : statusFilter === 'today' ? '오늘 마감'
+                  : statusFilter === 'd-1' ? '내일 마감'
                   : statusFilter === 'overdue' ? '기한 지남'
                   : statusFilter.startsWith('d-') ? `D-${statusFilter.slice(2)}`
                   : statusFilter
@@ -556,6 +597,7 @@ export default function Board({ only }: BoardProps) {
           </section>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -160,6 +160,14 @@ export const IconLock = (p: IconProps) => (
   </Svg>
 );
 
+export const IconChevronLeft = (p: IconProps) => (
+  <Svg {...p}><polyline points="15 18 9 12 15 6" /></Svg>
+);
+
+export const IconChevronRight = (p: IconProps) => (
+  <Svg {...p}><polyline points="9 18 15 12 9 6" /></Svg>
+);
+
 export const IconZoomIn = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="11" cy="11" r="8" />

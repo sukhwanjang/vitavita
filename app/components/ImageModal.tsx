@@ -173,7 +173,7 @@ export default function ImageModal({
         
         <div 
           ref={imageContainerRef}
-          className="relative overflow-hidden rounded-xl shadow-2xl bg-white"
+          className="relative overflow-hidden rounded-md shadow-2xl bg-white"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}

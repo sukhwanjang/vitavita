@@ -67,36 +67,42 @@ export default function RequestCard({
         ? `d-${daysLeft}`
         : 'overdue';
 
-  // 색상 우선순위: 급함 > 오늘 > 내일이후 > 지남
+  // 색상 우선순위: 급함(빨강) > 오늘(파랑) > 내일(앰버) > 모레 이후(회색) > 지남(진회색)
   const barText = item.is_urgent
     ? '급함'
     : daysLeft === 0
       ? '오늘까지'
-      : daysLeft > 0
-        ? `D-${daysLeft}`
-        : '지남';
+      : daysLeft === 1
+        ? '내일까지'
+        : daysLeft > 1
+          ? `D-${daysLeft}`
+          : '지남';
 
   const statusChipClass = item.is_urgent
-    ? 'bg-orange-50 text-orange-700 border-orange-200'
+    ? 'bg-red-50 text-red-700 border-red-200'
     : daysLeft === 0
-      ? 'bg-red-50 text-red-700 border-red-200'
-      : daysLeft > 0
-        ? 'bg-blue-50 text-blue-700 border-blue-200'
-        : 'bg-slate-800 text-white border-slate-800';
+      ? 'bg-blue-50 text-blue-700 border-blue-200'
+      : daysLeft === 1
+        ? 'bg-amber-50 text-amber-700 border-amber-300'
+        : daysLeft > 1
+          ? 'bg-slate-50 text-slate-600 border-slate-200'
+          : 'bg-slate-800 text-white border-slate-800';
 
   const accentBarClass = item.is_work_done
     ? 'bg-emerald-500'
     : item.is_urgent
-      ? 'bg-orange-500'
+      ? 'bg-red-500'
       : daysLeft === 0
-        ? 'bg-red-500'
-        : daysLeft > 0
-          ? 'bg-blue-500'
-          : 'bg-slate-700';
+        ? 'bg-blue-500'
+        : daysLeft === 1
+          ? 'bg-amber-400'
+          : daysLeft > 1
+            ? 'bg-slate-300'
+            : 'bg-slate-700';
 
   return (
     <div
-      className={`relative flex flex-col rounded-lg overflow-hidden border bg-white shadow-sm transition hover:shadow-md ${
+      className={`relative flex flex-col rounded overflow-hidden border bg-white shadow-sm transition hover:shadow-md ${
         item.is_work_done ? 'border-emerald-300' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
@@ -106,13 +112,13 @@ export default function RequestCard({
       {/* 상단: 상태 뱃지 + 등록 시각 */}
       <div className="flex items-center gap-1.5 pl-5 pr-4 pt-3.5">
         {isNew && (
-          <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11px] font-bold bg-blue-600 text-white select-none">
+          <span className="inline-flex items-center h-[22px] px-2 rounded text-[11px] font-bold bg-blue-600 text-white select-none">
             NEW
           </span>
         )}
         <button
           onClick={() => onStatusClick(statusKey)}
-          className={`inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold border cursor-pointer transition select-none ${statusChipClass} ${
+          className={`inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold border cursor-pointer transition select-none ${statusChipClass} ${
             activeStatusFilter === statusKey ? 'ring-2 ring-blue-500/40' : 'hover:opacity-80'
           }`}
           title={activeStatusFilter === statusKey ? '클릭하여 필터 해제' : '클릭하여 이 상태만 보기'}
@@ -124,7 +130,7 @@ export default function RequestCard({
           {activeStatusFilter === statusKey && <IconX className="w-3 h-3" />}
         </button>
         {item.is_work_done && (
-          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
             <IconCheck className="w-3 h-3" />
             작업완료
           </span>
@@ -164,7 +170,7 @@ export default function RequestCard({
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
                 }}
-                className="cursor-pointer w-full h-32 object-contain rounded-md border border-slate-200 bg-slate-50 transition hover:border-blue-300"
+                className="cursor-pointer w-full h-32 object-contain rounded border border-slate-200 bg-slate-50 transition hover:border-blue-300"
                 alt="작업 이미지"
               />
               {/* 썸네일 체크마크 오버레이 */}
@@ -192,7 +198,7 @@ export default function RequestCard({
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center w-full h-24 rounded-md border border-dashed border-slate-200 bg-slate-50/50 text-slate-300">
+            <div className="flex flex-col items-center justify-center w-full h-24 rounded border border-dashed border-slate-200 bg-slate-50/50 text-slate-300">
               <IconImage className="w-6 h-6" />
               <span className="text-[11px] mt-1.5 text-slate-400">이미지 없음</span>
             </div>
@@ -203,14 +209,15 @@ export default function RequestCard({
         <div className="flex items-center gap-1.5 text-[13px]">
           <IconCalendar className="w-3.5 h-3.5 text-slate-400" />
           <span className="text-slate-500">픽업</span>
-          <span className={`font-semibold ${daysLeft === 0 ? 'text-red-600' : daysLeft < 0 ? 'text-slate-800' : 'text-slate-700'}`}>
+          <span className={`font-semibold ${daysLeft === 0 ? 'text-blue-600' : daysLeft === 1 ? 'text-amber-600' : daysLeft < 0 ? 'text-slate-800' : 'text-slate-700'}`}>
             {item.pickup_date ? (() => {
               const daysLeft = Math.ceil(
                 (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
                 / (1000 * 60 * 60 * 24)
               );
               if (daysLeft === 0) return '오늘';
-              if (daysLeft > 0) return `D-${daysLeft}`;
+              if (daysLeft === 1) return '내일';
+              if (daysLeft > 1) return `D-${daysLeft}`;
               return '지남';
             })() : '-'}
           </span>
@@ -218,7 +225,7 @@ export default function RequestCard({
 
         {/* 메모 */}
         {item.note && (
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-slate-700">
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-slate-700">
             <IconFileText className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
             <span>{item.note}</span>
           </div>
@@ -230,7 +237,7 @@ export default function RequestCard({
             {item.image_url && (
               <button
                 onClick={() => onPrintImage(item.image_url!, item.company, item.program)}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition mr-auto"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition mr-auto"
                 title="원고 출력"
               >
                 <IconPrinter className="w-3.5 h-3.5" />
@@ -240,7 +247,7 @@ export default function RequestCard({
 
             <button
               onClick={() => onWorkDone(item.id)}
-              className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold border transition ${
+              className={`inline-flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-semibold border transition ${
                 item.is_work_done
                   ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
                   : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
@@ -252,21 +259,21 @@ export default function RequestCard({
 
             <button
               onClick={() => onEdit(item)}
-              className="inline-flex items-center h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+              className="inline-flex items-center h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
             >
               수정
             </button>
 
             <button
               onClick={() => onComplete(item.id)}
-              className="inline-flex items-center h-7 px-3 rounded-md bg-blue-600 text-[11px] font-semibold text-white hover:bg-blue-700 transition"
+              className="inline-flex items-center h-7 px-3 rounded bg-blue-600 text-[11px] font-semibold text-white hover:bg-blue-700 transition"
             >
               완료
             </button>
 
             <button
               onClick={() => onDelete(item.id)}
-              className="inline-flex items-center h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+              className="inline-flex items-center h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
             >
               삭제
             </button>

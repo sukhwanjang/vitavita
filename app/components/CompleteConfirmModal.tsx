@@ -50,7 +50,7 @@ export default function CompleteConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
         {/* 모달 헤더 */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
           <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 shrink-0">
@@ -68,7 +68,7 @@ export default function CompleteConfirmModal({
 
         <div className="px-6 py-5">
           {/* 작업 정보 */}
-          <dl className="bg-slate-50 border border-slate-100 rounded-lg px-4 py-3.5 mb-4 space-y-2 text-sm">
+          <dl className="bg-slate-50 border border-slate-100 rounded px-4 py-3.5 mb-4 space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <dt className="text-slate-400 w-16 shrink-0">업체명</dt>
               <dd className="font-semibold text-slate-900">{item.company}</dd>
@@ -101,7 +101,7 @@ export default function CompleteConfirmModal({
               <img
                 src={item.image_url}
                 alt="원고 이미지"
-                className="w-full h-64 object-contain rounded-lg border border-slate-200 bg-slate-50"
+                className="w-full h-64 object-contain rounded border border-slate-200 bg-slate-50"
                 onLoad={(e) => {
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
@@ -127,8 +127,8 @@ export default function CompleteConfirmModal({
                 );
               })}
               {/* 클릭 유도 오버레이 */}
-              <div className="absolute inset-0 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10">
-                <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-md shadow border border-slate-200">
+              <div className="absolute inset-0 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10">
+                <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 text-xs font-semibold px-3 py-1.5 rounded shadow border border-slate-200">
                   <IconZoomIn className="w-3.5 h-3.5" />
                   크게 보기
                 </span>
@@ -138,24 +138,24 @@ export default function CompleteConfirmModal({
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-xl">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md">
           <button
             onClick={onCancel}
-            className="h-10 px-5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
             닫기
           </button>
           {isChained && onSkip && (
             <button
               onClick={onSkip}
-              className="h-10 px-5 rounded-lg border border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+              className="h-10 px-5 rounded border border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
             >
               건너뜀
             </button>
           )}
           <button
             onClick={onConfirm}
-            className="h-10 px-6 rounded-lg bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition"
+            className="h-10 px-6 rounded bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition"
           >
             완료 처리
           </button>
