@@ -14,6 +14,7 @@ interface RequestCardProps {
   onCompanyClick: (company: string) => void;
   onStatusClick: (key: string) => void;
   activeStatusFilter: string | null;
+  isNew?: boolean;
 }
 
 export default function RequestCard({
@@ -27,8 +28,27 @@ export default function RequestCard({
   onCompanyClick,
   onStatusClick,
   activeStatusFilter,
+  isNew = false,
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
+  const [pathCopied, setPathCopied] = useState(false);
+
+  const handleCopyPath = async () => {
+    if (!item.file_path) return;
+    try {
+      await navigator.clipboard.writeText(item.file_path);
+    } catch {
+      // 클립보드 API가 막힌 환경(http 등) 대비 폴백
+      const ta = document.createElement('textarea');
+      ta.value = item.file_path;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setPathCopied(true);
+    setTimeout(() => setPathCopied(false), 2000);
+  };
 
   const imgContainerRef = useRef<HTMLDivElement>(null);
   const [naturalDims, setNaturalDims] = useState<{ w: number; h: number } | null>(null);
@@ -98,7 +118,12 @@ export default function RequestCard({
       }`}
     >
       {/* 상단 상태 뱃지 */}
-      <div className="flex items-center justify-start px-4 pt-4">
+      <div className="flex items-center justify-start gap-2 px-4 pt-4">
+        {isNew && (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-300 text-yellow-900 shadow-sm animate-pulse select-none">
+            NEW
+          </span>
+        )}
         <span
           onClick={() => onStatusClick(statusKey)}
           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm cursor-pointer transition-all select-none
@@ -188,6 +213,27 @@ export default function RequestCard({
             <span className="text-lg">📝</span>
             <span>{item.note}</span>
           </div>
+        )}
+
+        {/* 파일 위치 (경로 복사) */}
+        {item.file_path && (
+          <button
+            onClick={handleCopyPath}
+            title={`${item.file_path}\n\n클릭하면 경로가 복사됩니다. 탐색기 주소창(Ctrl+L)에 붙여넣고 엔터를 누르면 파일이 열립니다.`}
+            className={`flex items-center gap-2 w-full p-2 mt-2 text-xs rounded border transition text-left ${
+              pathCopied
+                ? 'bg-green-50 border-green-300 text-green-700'
+                : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
+            }`}
+          >
+            <span className="text-base shrink-0">📁</span>
+            <span className="truncate flex-1 font-mono">
+              {item.file_path.split('\\').pop()?.split('/').pop()}
+            </span>
+            <span className="shrink-0 font-semibold">
+              {pathCopied ? '✓ 복사됨!' : '경로 복사'}
+            </span>
+          </button>
         )}
 
         {/* 버튼 영역 */}

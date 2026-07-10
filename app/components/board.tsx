@@ -51,6 +51,7 @@ export default function Board({ only }: BoardProps) {
   const [displayCount, setDisplayCount] = useState(28);  // 완료 목록 표시 개수 (28개씩)
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
+  const [lastSeenId, setLastSeenId] = useState<number | null>(null);  // 새 작업 알림 기준 (이 id 이후 등록분이 "새 작업")
 
   // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
   const allFilteredCompleted = completed.filter((item) =>
@@ -98,10 +99,48 @@ export default function Board({ only }: BoardProps) {
     };
   }, [only, loadMore]);
 
+  // 새 작업 알림: 저장된 마지막 확인 id 불러오기 (-1 = 첫 방문)
+  useEffect(() => {
+    const stored = localStorage.getItem('vitavita_last_seen_id');
+    setLastSeenId(stored !== null ? Number(stored) : -1);
+  }, []);
+
+  // 첫 방문이면 현재 최신 글까지 확인한 것으로 조용히 초기화 (전부 NEW로 뜨는 것 방지)
+  useEffect(() => {
+    if (lastSeenId === -1 && requests.length > 0) {
+      const maxId = Math.max(...requests.map(r => r.id));
+      localStorage.setItem('vitavita_last_seen_id', String(maxId));
+      setLastSeenId(maxId);
+    }
+  }, [lastSeenId, requests]);
+
+  // 새 작업 수를 브라우저 탭 제목에도 표시
+  useEffect(() => {
+    const myName = localStorage.getItem('vitavita_creator');
+    const count = lastSeenId !== null && lastSeenId >= 0
+      ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myName).length
+      : 0;
+    document.title = count > 0 ? `(${count}) 비타민사인 현황판` : '비타민사인 현황판';
+  }, [requests, lastSeenId]);
+
   // ⭐ 이제 모든 hooks 호출 후에 early return
   if (authChecked && !isAuthed) {
     return <PasswordGate onAuthenticated={handleAuthentication} />;
   }
+
+  // 내가 등록한 글은 나에게 새 작업으로 알리지 않는다
+  const myCreatorName = typeof window !== 'undefined' ? localStorage.getItem('vitavita_creator') : null;
+  const newItems = lastSeenId !== null && lastSeenId >= 0
+    ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myCreatorName)
+    : [];
+  const newIds = new Set(newItems.map(r => r.id));
+
+  const markAllSeen = () => {
+    if (requests.length === 0) return;
+    const maxId = Math.max(...requests.map(r => r.id));
+    localStorage.setItem('vitavita_last_seen_id', String(maxId));
+    setLastSeenId(maxId);
+  };
 
   // 편집 핸들러
   const handleEdit = (item: any) => {
@@ -114,6 +153,7 @@ export default function Board({ only }: BoardProps) {
       isUrgent: item.is_urgent,
       creator: item.creator,
       isJustUpload: item.is_just_upload || false,
+      filePath: item.file_path ?? null,
     });
     setEditingId(item.id);
     setEditMode(true);
@@ -371,6 +411,23 @@ export default function Board({ only }: BoardProps) {
           </div>
         ) : (
           <section className="relative z-10 space-y-10 pb-32">
+            {/* 새 작업 알림 배너 */}
+            {newItems.length > 0 && (
+              <div className="flex items-center gap-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl px-4 py-3 text-sm text-yellow-900 font-semibold shadow-sm">
+                <span className="text-xl">🔔</span>
+                <span>
+                  새 작업 <b className="text-base">{newItems.length}건</b>이 등록되었습니다 —{' '}
+                  {newItems.slice(0, 3).map(r => r.company).join(', ')}
+                  {newItems.length > 3 ? ` 외 ${newItems.length - 3}건` : ''}
+                </span>
+                <button
+                  onClick={markAllSeen}
+                  className="ml-auto shrink-0 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 px-4 py-1.5 rounded-lg font-bold transition"
+                >
+                  모두 확인
+                </button>
+              </div>
+            )}
             {/* 상태 필터 활성화 배너 */}
             {statusFilter !== null && (
               <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-sm text-blue-700 font-semibold">
@@ -404,6 +461,7 @@ export default function Board({ only }: BoardProps) {
                     onCompanyClick={(company) => setSearchQuery(company)}
                     onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
                     activeStatusFilter={statusFilter}
+                    isNew={newIds.has(item.id)}
                   />
                 ))}
               </div>
