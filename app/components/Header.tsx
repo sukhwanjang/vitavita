@@ -62,16 +62,11 @@ export default function Header({
               placeholder="업체명/프로그램명/작업자 검색"
               className="bg-transparent outline-none px-2 py-1 text-sm w-40 md:w-56"
             />
-            <button
-              type="button"
-              className="ml-1 text-gray-500 hover:text-blue-600 p-1 rounded-full transition"
-              onClick={() => {}}
-              tabIndex={-1}
-            >
+            <span className="ml-1 text-gray-500 p-1">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
               </svg>
-            </button>
+            </span>
           </div>
         </div>
 

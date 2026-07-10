@@ -42,7 +42,7 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
           />
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl shadow hover:bg-blue-700 transition text-lg">입장하기</button>
           {pwError && <div className="text-red-500 text-sm mt-2">{pwError}</div>}
-          <div className="text-xs text-gray-400 mt-4">비밀번호는 5시간마다 다시 입력해야 합니다.</div>
+          <div className="text-xs text-gray-400 mt-4">비밀번호는 7일마다 다시 입력해야 합니다.</div>
         </form>
       </div>
     </div>

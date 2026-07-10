@@ -115,7 +115,11 @@ export default function InputFormModal({
         creator,
       }).eq('id', editingId);
 
-      if (error) setError(`수정 실패: ${error.message}`);
+      if (error) {
+        setError(`수정 실패: ${error.message}`);
+        setIsSubmitting(false);
+        return;
+      }
     } else {
       const { error } = await supabase.from('request').insert([{
         company,

@@ -12,7 +12,7 @@ export function useAuth() {
     setAuthChecked(true);
   }, []);
 
-  // 5시간 만료 후 자동 로그아웃
+  // 만료(7일) 후 자동 로그아웃
   useEffect(() => {
     if (!isAuthed) return;
     const ts = localStorage.getItem('vitapass_ts');
