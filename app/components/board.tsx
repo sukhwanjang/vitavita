@@ -16,7 +16,7 @@ import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
 import FileSidebar from './FileSidebar';
 import FileDropModal from './FileDropModal';
-import { IconBell, IconFilter, IconX, IconZap, IconCalendar, IconClock, IconCheckCircle, IconTrash } from './ui/icons';
+import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
   only?: FilterType;
@@ -311,6 +311,7 @@ export default function Board({ only }: BoardProps) {
       : null;
   const urgentCount = inProgress.filter(i => i.is_urgent).length;
   const todayCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0).length;
+  const todayDoneCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0 && i.is_work_done).length;
   const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
   const overdueCount = inProgress.filter(i => {
     const d = daysLeftOf(i);
@@ -498,39 +499,44 @@ export default function Board({ only }: BoardProps) {
               </div>
             )}
 
-            {/* 현황 요약 타일 */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {/* 현황 요약 패널 — 색은 숫자에만, 0건은 음소거 */}
+            <div className="bg-white border border-slate-200 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
               {[
-                { key: null, label: '전체 진행', count: inProgress.length, icon: <IconFilter className="w-4 h-4" />, accent: 'text-slate-500', bar: 'bg-slate-300' },
-                { key: 'urgent', label: '급함', count: urgentCount, icon: <IconZap className="w-4 h-4" />, accent: 'text-red-600', bar: 'bg-red-500' },
-                { key: 'today', label: '오늘 마감', count: todayCount, icon: <IconCalendar className="w-4 h-4" />, accent: 'text-blue-600', bar: 'bg-blue-500' },
-                { key: 'd-1', label: '내일 마감', count: tomorrowCount, icon: <IconCalendar className="w-4 h-4" />, accent: 'text-amber-600', bar: 'bg-amber-400' },
-                { key: 'overdue', label: '기한 지남', count: overdueCount, icon: <IconClock className="w-4 h-4" />, accent: 'text-slate-700', bar: 'bg-slate-700' },
-              ].map(tile => {
-                const active = statusFilter === tile.key || (tile.key === null && statusFilter === null);
-                const clickable = tile.key !== null;
+                { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900', progress: null as { done: number; total: number } | null },
+                { key: 'urgent', label: '급함', count: urgentCount, color: 'text-red-600', progress: null },
+                { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600', progress: { done: todayDoneCount, total: todayCount } },
+                { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600', progress: null },
+                { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800', progress: null },
+              ].map(seg => {
+                const active = seg.key !== null && statusFilter === seg.key;
                 return (
                   <button
-                    key={tile.label}
+                    key={seg.label}
                     onClick={() => {
-                      if (tile.key === null) setStatusFilter(null);
-                      else setStatusFilter(prev => prev === tile.key ? null : tile.key);
+                      if (seg.key === null) setStatusFilter(null);
+                      else setStatusFilter(prev => prev === seg.key ? null : seg.key);
                     }}
-                    className={`relative overflow-hidden text-left bg-white border rounded px-4 py-3.5 transition ${
-                      clickable && statusFilter === tile.key
-                        ? 'border-blue-500 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                    className={`relative text-left px-4 py-3 transition border-slate-100 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
+                      active ? 'bg-blue-50/60' : 'hover:bg-slate-50'
                     }`}
                   >
-                    <span className={`absolute left-0 top-0 bottom-0 w-1 ${tile.bar}`} />
-                    <span className={`flex items-center gap-1.5 text-xs font-medium ${tile.accent}`}>
-                      {tile.icon}
-                      {tile.label}
+                    <span className="block text-[11px] font-medium text-slate-400">{seg.label}</span>
+                    <span className={`block mt-0.5 text-[26px] leading-8 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300' : seg.color}`}>
+                      {seg.count}
+                      <span className="ml-0.5 text-sm font-medium text-slate-300">건</span>
                     </span>
-                    <span className="block mt-1.5 text-2xl font-bold text-slate-900 tabular-nums">
-                      {tile.count}
-                      <span className="ml-0.5 text-sm font-medium text-slate-400">건</span>
-                    </span>
+                    {seg.progress && seg.progress.total > 0 && (
+                      <span className="flex items-center gap-1.5 mt-1.5">
+                        <span className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                          <span
+                            className="block h-full bg-emerald-500 transition-all"
+                            style={{ width: `${(seg.progress.done / seg.progress.total) * 100}%` }}
+                          />
+                        </span>
+                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">작업완료 {seg.progress.done}/{seg.progress.total}</span>
+                      </span>
+                    )}
+                    {active && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-blue-600" />}
                   </button>
                 );
               })}
