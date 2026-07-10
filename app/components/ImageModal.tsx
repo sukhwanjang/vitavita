@@ -34,6 +34,7 @@ export default function ImageModal({
   // 펜: 그리는 중인 선 (이미지 % 좌표)
   const [drawing, setDrawing] = useState<{ x: number; y: number }[] | null>(null);
   const penStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didPanRef = useRef(false);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -169,6 +170,7 @@ export default function ImageModal({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       // 왼쪽 클릭: 드래그(패닝) 시작
+      didPanRef.current = false;
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       setLastPosition(position);
@@ -202,10 +204,27 @@ export default function ImageModal({
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
 
+    // 일정 거리 이상 움직였으면 "클릭"이 아니라 "패닝"으로 간주
+    if (Math.abs(deltaX) + Math.abs(deltaY) > 5) didPanRef.current = true;
+
     setPosition({
       x: lastPosition.x + deltaX,
       y: lastPosition.y + deltaY
     });
+  };
+
+  // 이미지 바깥(검정 영역) 클릭 시 뷰어 닫기 — 패닝 직후 클릭은 무시
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (didPanRef.current) {
+      didPanRef.current = false;
+      return;
+    }
+    const pos = clientToImagePct(e.clientX, e.clientY);
+    if (!pos) return;
+    if (pos.x < 0 || pos.x > 100 || pos.y < 0 || pos.y > 100) {
+      handleClose();
+    }
   };
 
   const finishPen = (clientX: number, clientY: number) => {
@@ -338,6 +357,7 @@ export default function ImageModal({
           ref={imageContainerRef}
           className="absolute inset-0 overflow-hidden"
           onWheel={handleWheel}
+          onClick={handleCanvasClick}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
