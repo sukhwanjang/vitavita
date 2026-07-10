@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { RequestItem } from './types';
+import { RequestItem, CheckMark, PenPath } from './types';
 import { getRenderedRect } from './utils/imageUtils';
 import { IconCheckCircle, IconZoomIn } from './ui/icons';
 
@@ -107,23 +107,47 @@ export default function CompleteConfirmModal({
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
                 }}
               />
-              {/* 체크마크 오버레이 */}
-              {naturalDims && containerDims && item.check_marks?.map((mark, i) => {
+              {/* 주석 오버레이 (핀 + 펜 선) */}
+              {naturalDims && containerDims && (() => {
                 const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
-                const posX = imgRect.x + (mark.x / 100) * imgRect.w;
-                const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                const marks = item.check_marks ?? [];
+                const pins = marks.filter((m): m is CheckMark => typeof (m as CheckMark).x === 'number');
+                const paths = marks.filter((m): m is PenPath => Array.isArray((m as PenPath).points));
                 return (
-                  <div
-                    key={i}
-                    className="absolute pointer-events-none"
-                    style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
-                  >
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[11px] font-bold select-none">
-                      {i + 1}
-                    </div>
-                  </div>
+                  <>
+                    {paths.length > 0 && (
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        {paths.map((p, i) => (
+                          <polyline
+                            key={i}
+                            points={p.points.map(pt => `${imgRect.x + (pt.x / 100) * imgRect.w},${imgRect.y + (pt.y / 100) * imgRect.h}`).join(' ')}
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        ))}
+                      </svg>
+                    )}
+                    {pins.map((mark, i) => {
+                      const posX = imgRect.x + (mark.x / 100) * imgRect.w;
+                      const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute pointer-events-none"
+                          style={{ left: posX, top: posY, transform: 'translate(-50%, -50%)' }}
+                        >
+                          <div className="w-6 h-6 bg-emerald-500 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[11px] font-bold select-none">
+                            {i + 1}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
               {/* 클릭 유도 오버레이 */}
               <div className="absolute inset-0 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10">
                 <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 text-xs font-semibold px-3 py-1.5 rounded shadow border border-slate-200">

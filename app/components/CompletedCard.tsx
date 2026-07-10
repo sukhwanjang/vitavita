@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { RequestItem } from './types';
+import { RequestItem, CheckMark, PenPath } from './types';
 import { supabase } from '../../lib/supabase';
 import { getRenderedRect } from './utils/imageUtils';
 import { IconCheckCircle, IconClock, IconFileText, IconRestore, IconTrash } from './ui/icons';
@@ -68,26 +68,50 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
                 className="cursor-pointer w-full h-32 object-contain rounded border border-slate-200 bg-slate-50 transition hover:border-blue-300"
                 alt="작업 이미지"
               />
-              {naturalDims && containerDims && item.check_marks?.map((mark, i) => {
+              {naturalDims && containerDims && (() => {
                 const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
-                const posX = imgRect.x + (mark.x / 100) * imgRect.w;
-                const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                const marks = item.check_marks ?? [];
+                const pins = marks.filter((m): m is CheckMark => typeof (m as CheckMark).x === 'number');
+                const paths = marks.filter((m): m is PenPath => Array.isArray((m as PenPath).points));
                 return (
-                  <div
-                    key={i}
-                    className="absolute pointer-events-none"
-                    style={{
-                      left: posX,
-                      top: posY,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
-                    <div className="w-5 h-5 bg-emerald-500 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[10px] font-bold select-none">
-                      {i + 1}
-                    </div>
-                  </div>
+                  <>
+                    {paths.length > 0 && (
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        {paths.map((p, i) => (
+                          <polyline
+                            key={i}
+                            points={p.points.map(pt => `${imgRect.x + (pt.x / 100) * imgRect.w},${imgRect.y + (pt.y / 100) * imgRect.h}`).join(' ')}
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        ))}
+                      </svg>
+                    )}
+                    {pins.map((mark, i) => {
+                      const posX = imgRect.x + (mark.x / 100) * imgRect.w;
+                      const posY = imgRect.y + (mark.y / 100) * imgRect.h;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute pointer-events-none"
+                          style={{
+                            left: posX,
+                            top: posY,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        >
+                          <div className="w-5 h-5 bg-emerald-500 rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[10px] font-bold select-none">
+                            {i + 1}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
             </div>
           )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { RequestItem } from '../types';
+import { RequestItem, Annotation } from '../types';
 
 export function useBoardData() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -93,8 +93,8 @@ export function useBoardData() {
     fetchRequests();
   };
 
-  // 체크마크 업데이트 함수 추가
-  const updateCheckMarks = async (id: number, checkMarks: { x: number; y: number }[]) => {
+  // 체크마크(핀·펜 선) 업데이트 함수
+  const updateCheckMarks = async (id: number, checkMarks: Annotation[]) => {
     const { error } = await supabase
       .from('request')
       .update({ check_marks: checkMarks })

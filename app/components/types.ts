@@ -11,7 +11,7 @@ export interface RequestItem {
   created_at: string;
   updated_at?: string;
   creator: string;
-  check_marks?: { x: number; y: number }[];
+  check_marks?: Annotation[];
   is_work_done?: boolean;  // 작업완료 여부
 }
 
@@ -28,4 +28,12 @@ export type FilterType = 'completed' | 'deleted';
 export interface CheckMark {
   x: number;
   y: number;
-} 
+}
+
+// 검수 펜 선 (이미지 기준 % 좌표의 점 배열)
+export interface PenPath {
+  points: { x: number; y: number }[];
+}
+
+// check_marks 컬럼에 함께 저장되는 주석 (핀 | 펜 선)
+export type Annotation = CheckMark | PenPath; 

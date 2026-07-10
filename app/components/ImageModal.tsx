@@ -1,15 +1,18 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { CheckMark } from './types';
+import { Annotation, CheckMark, PenPath } from './types';
 import { getRenderedRect } from './utils/imageUtils';
 import { IconX, IconTrash } from './ui/icons';
+
+const isPin = (a: Annotation): a is CheckMark => typeof (a as CheckMark).x === 'number';
+const isPath = (a: Annotation): a is PenPath => Array.isArray((a as PenPath).points);
 
 interface ImageModalProps {
   imageUrl: string | null;
   company?: string;
   program?: string;
-  checkMarks: CheckMark[];
-  onCheckMarksChange: (newMarks: CheckMark[]) => void;
+  checkMarks: Annotation[];
+  onCheckMarksChange: (newMarks: Annotation[]) => void;
   onClose: () => void;
 }
 
@@ -28,6 +31,9 @@ export default function ImageModal({
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
   const [naturalDims, setNaturalDims] = useState<{ w: number; h: number } | null>(null);
   const [containerDims, setContainerDims] = useState<{ w: number; h: number } | null>(null);
+  // 펜: 그리는 중인 선 (이미지 % 좌표)
+  const [drawing, setDrawing] = useState<{ x: number; y: number }[] | null>(null);
+  const penStartRef = useRef<{ x: number; y: number } | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,10 +80,14 @@ export default function ImageModal({
 
   if (!imageUrl) return null;
 
+  const pins = checkMarks.map((m, i) => ({ mark: m, index: i })).filter(x => isPin(x.mark)) as { mark: CheckMark; index: number }[];
+  const paths = checkMarks.map((m, i) => ({ mark: m, index: i })).filter(x => isPath(x.mark)) as { mark: PenPath; index: number }[];
+
   const handleClose = () => {
     onClose();
     setZoom(1);
     setPosition({ x: 0, y: 0 });
+    setDrawing(null);
   };
 
   const stop = (e: React.MouseEvent) => {
@@ -106,39 +116,42 @@ export default function ImageModal({
 
   const handleClearMarks = () => {
     if (checkMarks.length === 0) return;
-    if (!window.confirm('핀을 모두 지울까요?')) return;
+    if (!window.confirm('핀과 펜 선을 모두 지울까요?')) return;
     onCheckMarksChange([]);
   };
 
-  const handleRightClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!imageContainerRef.current || !naturalDims) return;
-
+  // 화면 좌표 → 이미지 % 좌표 (줌·패닝 역산)
+  const clientToImagePct = (clientX: number, clientY: number) => {
+    if (!imageContainerRef.current || !naturalDims) return null;
     const rect = imageContainerRef.current.getBoundingClientRect();
-    const containerW = rect.width;
-    const containerH = rect.height;
-    const clickXInContainer = e.clientX - rect.left;
-    const clickYInContainer = e.clientY - rect.top;
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+    // CSS transform: scale(zoom) translate(position) → 역변환: (click - origin) / zoom + origin - position
+    const actualX = (cx - rect.width / 2) / zoom + rect.width / 2 - position.x;
+    const actualY = (cy - rect.height / 2) / zoom + rect.height / 2 - position.y;
+    const imgRect = getRenderedRect(rect.width, rect.height, naturalDims.w, naturalDims.h);
+    return {
+      x: ((actualX - imgRect.x) / imgRect.w) * 100,
+      y: ((actualY - imgRect.y) / imgRect.h) * 100,
+      actualX,
+      actualY,
+      imgRect,
+    };
+  };
 
-    // 줌·패닝을 역산하여 원본 컨테이너 공간의 좌표로 변환
-    // CSS transform: scale(zoom) translate(position) → 올바른 역변환: (click - origin) / zoom + origin - position
-    const actualX = (clickXInContainer - containerW / 2) / zoom + containerW / 2 - position.x;
-    const actualY = (clickYInContainer - containerH / 2) / zoom + containerH / 2 - position.y;
-
-    // object-contain 렌더링 영역 계산
-    const imgRect = getRenderedRect(containerW, containerH, naturalDims.w, naturalDims.h);
-
-    // 이미지 영역 내 % 좌표로 변환 (화면 크기와 무관하게 동일 위치)
-    const newMarkX = ((actualX - imgRect.x) / imgRect.w) * 100;
-    const newMarkY = ((actualY - imgRect.y) / imgRect.h) * 100;
+  // 짧은 우클릭: 핀 추가/삭제 토글
+  const togglePinAt = (clientX: number, clientY: number) => {
+    const pos = clientToImagePct(clientX, clientY);
+    if (!pos) return;
+    const { x, y, actualX, actualY, imgRect } = pos;
 
     // 이미지 영역 바깥 클릭은 무시
-    if (newMarkX < 0 || newMarkX > 100 || newMarkY < 0 || newMarkY > 100) return;
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
     // 근처 핀 찾기 (이미지 픽셀 공간에서 비교)
-    const nearbyMarkIndex = checkMarks.findIndex(mark => {
-      const markPxX = imgRect.x + (mark.x / 100) * imgRect.w;
-      const markPxY = imgRect.y + (mark.y / 100) * imgRect.h;
+    const nearby = pins.find(p => {
+      const markPxX = imgRect.x + (p.mark.x / 100) * imgRect.w;
+      const markPxY = imgRect.y + (p.mark.y / 100) * imgRect.h;
       const distance = Math.sqrt(
         Math.pow(actualX - markPxX, 2) +
         Math.pow(actualY - markPxY, 2)
@@ -146,23 +159,44 @@ export default function ImageModal({
       return distance < 20;
     });
 
-    if (nearbyMarkIndex > -1) {
-      onCheckMarksChange(checkMarks.filter((_, index) => index !== nearbyMarkIndex));
+    if (nearby) {
+      onCheckMarksChange(checkMarks.filter((_, index) => index !== nearby.index));
     } else {
-      onCheckMarksChange([...checkMarks, { x: newMarkX, y: newMarkY }]);
+      onCheckMarksChange([...checkMarks, { x, y }]);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 마우스 왼쪽 클릭 (드래그 시작)
-    if(e.button === 0) {
+    if (e.button === 0) {
+      // 왼쪽 클릭: 드래그(패닝) 시작
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       setLastPosition(position);
+    } else if (e.button === 2) {
+      // 오른쪽 클릭: 펜 시작 후보 (움직이면 펜, 그 자리에서 떼면 핀)
+      e.preventDefault();
+      penStartRef.current = { x: e.clientX, y: e.clientY };
+      const pos = clientToImagePct(e.clientX, e.clientY);
+      if (pos && pos.x >= 0 && pos.x <= 100 && pos.y >= 0 && pos.y <= 100) {
+        setDrawing([{ x: pos.x, y: pos.y }]);
+      }
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    // 펜 그리기 (오른쪽 버튼 누른 채 이동)
+    if (drawing && (e.buttons & 2)) {
+      const pos = clientToImagePct(e.clientX, e.clientY);
+      if (!pos) return;
+      const x = Math.max(0, Math.min(100, pos.x));
+      const y = Math.max(0, Math.min(100, pos.y));
+      const last = drawing[drawing.length - 1];
+      // 너무 촘촘한 점은 생략
+      if (Math.abs(x - last.x) + Math.abs(y - last.y) < 0.15) return;
+      setDrawing(prev => prev ? [...prev, { x, y }] : prev);
+      return;
+    }
+
     if (!isDragging) return;
 
     const deltaX = e.clientX - dragStart.x;
@@ -174,13 +208,51 @@ export default function ImageModal({
     });
   };
 
-  const handleMouseUp = () => {
+  const finishPen = (clientX: number, clientY: number) => {
+    const start = penStartRef.current;
+    penStartRef.current = null;
+    const stroke = drawing;
+    setDrawing(null);
+
+    if (!start) return;
+    const movedPx = Math.abs(clientX - start.x) + Math.abs(clientY - start.y);
+
+    if (movedPx < 6) {
+      // 제자리 우클릭 → 핀 토글
+      togglePinAt(start.x, start.y);
+    } else if (stroke && stroke.length > 1) {
+      // 드래그 → 펜 선 저장
+      onCheckMarksChange([...checkMarks, { points: stroke }]);
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (e.button === 2) {
+      finishPen(e.clientX, e.clientY);
+      return;
+    }
     setIsDragging(false);
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (e: React.MouseEvent) => {
+    if (drawing) {
+      finishPen(e.clientX, e.clientY);
+    }
     setIsDragging(false);
   };
+
+  // 이미지 % 좌표 → 컨테이너 px 좌표
+  const pctToContainerPx = (pt: { x: number; y: number }) => {
+    if (!containerDims || !naturalDims) return { x: 0, y: 0 };
+    const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
+    return {
+      x: imgRect.x + (pt.x / 100) * imgRect.w,
+      y: imgRect.y + (pt.y / 100) * imgRect.h,
+    };
+  };
+
+  const toPolylinePoints = (pts: { x: number; y: number }[]) =>
+    pts.map(pt => { const p = pctToContainerPx(pt); return `${p.x},${p.y}`; }).join(' ');
 
   return (
     <div
@@ -226,23 +298,29 @@ export default function ImageModal({
           </button>
         </div>
 
-        {/* 우: 핀 관리 + 닫기 */}
+        {/* 우: 주석 관리 + 닫기 */}
         <div className="flex items-center gap-2 shrink-0">
+          {pins.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold select-none">
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold">{pins.length}</span>
+              핀
+            </span>
+          )}
+          {paths.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded bg-red-500/15 border border-red-400/30 text-red-300 text-xs font-semibold select-none">
+              <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M2 12c3-6 6 4 12-8" /></svg>
+              펜 {paths.length}
+            </span>
+          )}
           {checkMarks.length > 0 && (
-            <>
-              <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold select-none">
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold">{checkMarks.length}</span>
-                핀
-              </span>
-              <button
-                onClick={handleClearMarks}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded text-xs font-medium text-white/50 hover:bg-white/10 hover:text-white transition"
-                title="핀 모두 지우기"
-              >
-                <IconTrash className="w-3.5 h-3.5" />
-                모두 지우기
-              </button>
-            </>
+            <button
+              onClick={handleClearMarks}
+              className="inline-flex items-center gap-1 h-7 px-2.5 rounded text-xs font-medium text-white/50 hover:bg-white/10 hover:text-white transition"
+              title="핀·펜 선 모두 지우기"
+            >
+              <IconTrash className="w-3.5 h-3.5" />
+              모두 지우기
+            </button>
           )}
           <button
             onClick={handleClose}
@@ -264,8 +342,8 @@ export default function ImageModal({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          onContextMenu={handleRightClick}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{ cursor: drawing ? 'crosshair' : isDragging ? 'grabbing' : 'grab' }}
         >
           <div
             style={{
@@ -291,21 +369,71 @@ export default function ImageModal({
                 setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
               }}
             />
-            {/* 넘버링 핀 — 이미지 기준 % → 컨테이너 기준 % 변환 후 렌더링 */}
-            {naturalDims && containerDims && checkMarks.map((mark, index) => {
-              const imgRect = getRenderedRect(containerDims.w, containerDims.h, naturalDims.w, naturalDims.h);
-              const containerX = (imgRect.x + (mark.x / 100) * imgRect.w) / containerDims.w * 100;
-              const containerY = (imgRect.y + (mark.y / 100) * imgRect.h) / containerDims.h * 100;
+
+            {/* 펜 선 레이어 */}
+            {naturalDims && containerDims && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
+                {paths.map(p => (
+                  <g key={p.index}>
+                    {/* 넓은 투명 히트 영역 — 클릭하면 삭제 */}
+                    <polyline
+                      points={toPolylinePoints(p.mark.points)}
+                      fill="none"
+                      stroke="transparent"
+                      strokeWidth={16 / zoom}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCheckMarksChange(checkMarks.filter((_, i) => i !== p.index));
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      <title>펜 선 — 클릭하면 삭제</title>
+                    </polyline>
+                    <polyline
+                      points={toPolylinePoints(p.mark.points)}
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth={3}
+                      vectorEffect="non-scaling-stroke"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </g>
+                ))}
+                {/* 그리는 중인 선 미리보기 */}
+                {drawing && drawing.length > 1 && (
+                  <polyline
+                    points={toPolylinePoints(drawing)}
+                    fill="none"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    vectorEffect="non-scaling-stroke"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={0.9}
+                  />
+                )}
+              </svg>
+            )}
+
+            {/* 넘버링 핀 */}
+            {naturalDims && containerDims && pins.map((p, order) => {
+              const pos = pctToContainerPx(p.mark);
+              const containerX = (pos.x / containerDims.w) * 100;
+              const containerY = (pos.y / containerDims.h) * 100;
               return (
                 <button
-                  key={index}
+                  key={p.index}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCheckMarksChange(checkMarks.filter((_, i) => i !== index));
+                    onCheckMarksChange(checkMarks.filter((_, i) => i !== p.index));
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  title={`핀 ${index + 1} — 클릭하면 삭제`}
+                  title={`핀 ${order + 1} — 클릭하면 삭제`}
                   className="absolute group flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 border-2 border-white shadow-lg text-white text-[11px] font-bold cursor-pointer hover:bg-red-500 transition-colors select-none"
                   style={{
                     left: `${containerX}%`,
@@ -314,7 +442,7 @@ export default function ImageModal({
                     transform: `translate(-50%, -50%) scale(${1 / zoom})`,
                   }}
                 >
-                  <span className="group-hover:hidden">{index + 1}</span>
+                  <span className="group-hover:hidden">{order + 1}</span>
                   <span className="hidden group-hover:block text-[10px]">✕</span>
                 </button>
               );
@@ -330,7 +458,9 @@ export default function ImageModal({
       >
         <span><b className="text-white/60 font-medium">우클릭</b> 핀 추가</span>
         <span className="text-white/15">|</span>
-        <span><b className="text-white/60 font-medium">핀 클릭</b> 삭제</span>
+        <span><b className="text-white/60 font-medium">우클릭 드래그</b> 펜 그리기</span>
+        <span className="text-white/15">|</span>
+        <span><b className="text-white/60 font-medium">핀·선 클릭</b> 삭제</span>
         <span className="text-white/15">|</span>
         <span><b className="text-white/60 font-medium">휠</b> 확대·축소</span>
         <span className="text-white/15">|</span>
