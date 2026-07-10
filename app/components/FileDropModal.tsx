@@ -43,9 +43,9 @@ export default function FileDropModal({ show, onClose, onAdd }: FileDropModalPro
           <div>
             <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
               <IconUpload className="w-4 h-4 text-blue-600" />
-              파일 올리기
+              출력요청
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">작업 끝낸 파일의 위치를 공유합니다. 파일 대기함에 표시됩니다.</p>
+            <p className="text-xs text-slate-400 mt-0.5">작업 끝낸 파일의 위치를 공유합니다. 출력대기에 표시됩니다.</p>
           </div>
           <button
             className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"

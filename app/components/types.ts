@@ -15,7 +15,7 @@ export interface RequestItem {
   is_work_done?: boolean;  // 작업완료 여부
 }
 
-// 파일 대기함 항목 (NAS 등 공유 폴더의 파일 경로 공유)
+// 출력대기 항목 (NAS 등 공유 폴더의 파일 경로 공유)
 export interface FileDrop {
   id: number;
   path: string;

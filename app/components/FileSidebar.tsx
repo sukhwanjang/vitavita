@@ -115,7 +115,7 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
   const panelHeader = (
     <div className="flex items-center gap-2 px-4 h-11 border-b border-slate-200 bg-slate-50 shrink-0">
       <IconInbox className="w-4 h-4 text-slate-500" />
-      <h2 className="font-semibold text-slate-800 text-[13px]">파일 대기함</h2>
+      <h2 className="font-semibold text-slate-800 text-[13px]">출력대기</h2>
       {drops.length > 0 && (
         <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
           {drops.length}
@@ -139,7 +139,7 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
 
   const listBody = error ? (
     <p className="p-4 text-xs text-red-500">
-      파일 대기함을 불러올 수 없습니다.<br />({error})
+      출력대기을 불러올 수 없습니다.<br />({error})
     </p>
   ) : drops.length === 0 ? (
     <div className="flex flex-col items-center gap-2 p-8 text-slate-300">
@@ -221,7 +221,7 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
           <>
             <div className="flex items-center gap-2 px-4 h-11 border-b border-slate-200 bg-slate-50 shrink-0">
               <IconInbox className="w-4 h-4 text-slate-500" />
-              <h2 className="font-semibold text-slate-800 text-[13px]">파일 대기함</h2>
+              <h2 className="font-semibold text-slate-800 text-[13px]">출력대기</h2>
               {drops.length > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
                   {drops.length}
@@ -241,7 +241,7 @@ export default function FileSidebar({ drops, error, onRemove, open, onToggle, on
         ) : (
           <button
             onClick={onToggle}
-            title="파일 대기함 열기"
+            title="출력대기 열기"
             className={`flex flex-col items-center gap-3 pt-4 w-full h-full transition ${
               newCount > 0 ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-slate-50'
             }`}

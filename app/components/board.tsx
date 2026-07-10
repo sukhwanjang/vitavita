@@ -56,9 +56,9 @@ export default function Board({ only }: BoardProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
   const [lastSeenId, setLastSeenId] = useState<number | null>(null);  // 새 작업 알림 기준 (이 id 이후 등록분이 "새 작업")
-  const [sidebarOpen, setSidebarOpen] = useState(true);  // 파일 대기함 열림/닫힘
+  const [sidebarOpen, setSidebarOpen] = useState(true);  // 출력대기 열림/닫힘
 
-  // 파일 대기함 열림 상태 복원
+  // 출력대기 열림 상태 복원
   useEffect(() => {
     const stored = localStorage.getItem('vitavita_sidebar_open');
     if (stored !== null) setSidebarOpen(stored === '1');
@@ -71,7 +71,7 @@ export default function Board({ only }: BoardProps) {
     });
   };
 
-  // 새 파일 도착 시 파일 대기함 자동 펼침
+  // 새 파일 도착 시 출력대기 자동 펼침
   const openSidebar = () => {
     localStorage.setItem('vitavita_sidebar_open', '1');
     setSidebarOpen(true);
@@ -415,7 +415,7 @@ export default function Board({ only }: BoardProps) {
         queueTotal={queueTotal}
       />
 
-      {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 파일 대기함 폭만큼 밀어줌) */}
+      {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 출력대기 폭만큼 밀어줌) */}
       <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
         {only === 'completed' ? (
@@ -469,7 +469,7 @@ export default function Board({ only }: BoardProps) {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* 파일 대기함 사이드바 (데스크톱: 좌측 고정, 모바일: 인라인) */}
+            {/* 출력대기 사이드바 (데스크톱: 좌측 고정, 모바일: 인라인) */}
             <FileSidebar
               drops={drops}
               error={fileDropError}

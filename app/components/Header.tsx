@@ -97,7 +97,7 @@ export default function Header({
               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
             >
               <IconUpload className="w-4 h-4" />
-              파일 올리기
+              출력요청
             </button>
 
             <button
