@@ -75,6 +75,12 @@ export default function Board({ only }: BoardProps) {
     });
   };
 
+  // 새 파일 도착 시 파일 대기함 자동 펼침
+  const openSidebar = () => {
+    localStorage.setItem('vitavita_sidebar_open', '1');
+    setSidebarOpen(true);
+  };
+
   // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
   const allFilteredCompleted = completed.filter((item) =>
     item.company.includes(searchQuery) ||
@@ -492,6 +498,7 @@ export default function Board({ only }: BoardProps) {
               onRemove={removeDrop}
               open={sidebarOpen}
               onToggle={toggleSidebar}
+              onOpen={openSidebar}
             />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
