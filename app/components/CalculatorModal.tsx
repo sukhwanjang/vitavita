@@ -107,11 +107,13 @@ function RefTable({ groups }: { groups: RefGroup[] }) {
 interface CalculatorModalProps {
   show: boolean;
   onClose: () => void;
+  companySuggestions?: string[];
+  programSuggestions?: { company: string; program: string }[];
 }
 
-export default function CalculatorModal({ show, onClose }: CalculatorModalProps) {
+export default function CalculatorModal({ show, onClose, companySuggestions = [], programSuggestions = [] }: CalculatorModalProps) {
   const [rows, setRows] = useState<CalcRow[]>([emptyRow(), emptyRow(), emptyRow()]);
-  const [focusedRow, setFocusedRow] = useState<number | null>(null);
+  const [focusedRow, setFocusedRow] = useState<number | 'company' | 'program' | null>(null);
   // 자동완성 목록 위치 (스크롤 영역에 잘리지 않게 화면 기준 좌표로 띄움)
   const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -200,6 +202,31 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
     if (!r.name) return PRICE_ITEMS;
     return PRICE_ITEMS.filter(i => i.name.includes(r.name) && i.name !== r.name);
   };
+
+  // 업체명/프로그램명 자동완성 (작업 등록창과 동일한 데이터)
+  const companyCandidates = company
+    ? companySuggestions.filter(c => c.includes(company) && c !== company).slice(0, 8)
+    : companySuggestions.slice(0, 8);
+  const companyPrograms = Array.from(new Set(
+    programSuggestions.filter(p => p.company === company).map(p => p.program)
+  ));
+  const allPrograms = Array.from(new Set(programSuggestions.map(p => p.program)));
+  const programCandidates = program
+    ? (companyPrograms.some(x => x.includes(program)) ? companyPrograms : allPrograms)
+        .filter(x => x.includes(program) && x !== program)
+        .slice(0, 8)
+    : companyPrograms.slice(0, 8);
+
+  // 입력칸 위치를 기억해서 화면 기준으로 목록을 띄움 (잘림 방지)
+  const captureAnchor = (e: React.FocusEvent<HTMLInputElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = Math.max(rect.width, 260);
+    const left = Math.min(rect.left, window.innerWidth - width - 8);
+    setAnchor({ top: rect.bottom + 4, left: Math.max(left, 8), width });
+  };
+
+  const suggDropdownClass = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-[60] max-h-56 overflow-y-auto';
+  const suggItemClass = 'w-full text-left px-3 py-2 text-[14px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0';
 
   // ── 저장 / 불러오기 / 명세표 인쇄 ──
   const handleSave = async () => {
@@ -404,22 +431,62 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
         {view === 'calc' && (
         <>
         <div className="flex-1 overflow-y-auto px-6 py-4" onScroll={() => setFocusedRow(null)}>
-          {/* 업체명 / 프로그램명 (저장·명세표용) */}
+          {/* 업체명 / 프로그램명 (저장·명세표용, 등록 이력 자동완성) */}
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <input
-              type="text"
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-              placeholder="업체명 (저장·명세표에 사용)"
-              className="w-full sm:max-w-[260px] rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-10 text-[15px] font-semibold text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
-            />
-            <input
-              type="text"
-              value={program}
-              onChange={e => setProgram(e.target.value)}
-              placeholder="프로그램명 (선택)"
-              className="w-full sm:max-w-[260px] rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-10 text-[15px] text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
-            />
+            <div className="relative w-full sm:max-w-[260px]">
+              <input
+                type="text"
+                value={company}
+                onChange={e => setCompany(e.target.value)}
+                onFocus={e => { setFocusedRow('company'); captureAnchor(e); }}
+                onBlur={() => setTimeout(() => setFocusedRow(prev => (prev === 'company' ? null : prev)), 150)}
+                placeholder="업체명 (저장·명세표에 사용)"
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-10 text-[15px] font-semibold text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              />
+              {focusedRow === 'company' && anchor && companyCandidates.length > 0 && (
+                <div style={{ position: 'fixed', top: anchor.top, left: anchor.left, width: anchor.width }} className={suggDropdownClass}>
+                  {!company && (
+                    <p className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 select-none">최근 등록 업체</p>
+                  )}
+                  {companyCandidates.map(c => (
+                    <button
+                      key={c}
+                      onMouseDown={e => { e.preventDefault(); setCompany(c); setFocusedRow(null); }}
+                      className={suggItemClass}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="relative w-full sm:max-w-[260px]">
+              <input
+                type="text"
+                value={program}
+                onChange={e => setProgram(e.target.value)}
+                onFocus={e => { setFocusedRow('program'); captureAnchor(e); }}
+                onBlur={() => setTimeout(() => setFocusedRow(prev => (prev === 'program' ? null : prev)), 150)}
+                placeholder={company && companyPrograms.length > 0 ? `${company}의 최근 프로그램 자동완성` : '프로그램명 (선택)'}
+                className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-10 text-[15px] text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              />
+              {focusedRow === 'program' && anchor && programCandidates.length > 0 && (
+                <div style={{ position: 'fixed', top: anchor.top, left: anchor.left, width: anchor.width }} className={suggDropdownClass}>
+                  {!program && company && companyPrograms.length > 0 && (
+                    <p className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 select-none">{company}의 최근 프로그램</p>
+                  )}
+                  {programCandidates.map(p => (
+                    <button
+                      key={p}
+                      onMouseDown={e => { e.preventDefault(); setProgram(p); setFocusedRow(null); }}
+                      className={suggItemClass}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 열 제목 */}

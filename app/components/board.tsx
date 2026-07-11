@@ -508,6 +508,8 @@ export default function Board({ only }: BoardProps) {
       <CalculatorModal
         show={showCalculator}
         onClose={() => setShowCalculator(false)}
+        companySuggestions={companySuggestions}
+        programSuggestions={programSuggestions}
       />
 
       <FileDropModal
