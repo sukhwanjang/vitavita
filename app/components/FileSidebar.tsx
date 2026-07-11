@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { FileDrop } from './types';
 import {
   IconInbox, IconCopy, IconCheck, IconChevronLeft, IconChevronRight,
-  IconZap, IconPrinter, IconX, IconFileText, IconVolume, IconVolumeOff,
+  IconZap, IconFileText, IconVolume, IconVolumeOff,
 } from './ui/icons';
 
 const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
@@ -44,7 +44,6 @@ interface FileSidebarProps {
   error: string | null;
   onRemove: (id: number) => void;
   onRestore: (drop: FileDrop) => Promise<boolean>;
-  onSetPrinter: (id: number, printer: string | null) => void;
   open: boolean;
   onToggle: () => void;
   newIds: Set<number>;
@@ -58,7 +57,6 @@ export default function FileSidebar({
   error,
   onRemove,
   onRestore,
-  onSetPrinter,
   open,
   onToggle,
   newIds,
@@ -108,16 +106,6 @@ export default function FileSidebar({
     setUndoDrop(null);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     await onRestore(drop);
-  };
-
-  // 출력 시작/해제 토글
-  const handlePrintToggle = (drop: FileDrop) => {
-    if (drop.printer) {
-      onSetPrinter(drop.id, null);
-    } else {
-      const myName = localStorage.getItem('vitavita_creator') ?? '담당자';
-      onSetPrinter(drop.id, myName);
-    }
   };
 
   const soundToggleButton = (
@@ -170,7 +158,7 @@ export default function FileSidebar({
       const isUrgent = !!drop.is_urgent;
       const ext = extOf(drop.path);
       const waitMin = waitMinutes(drop.created_at);
-      const longWait = !drop.printer && waitMin >= 30;
+      const longWait = waitMin >= 30;
       return (
         <div
           key={drop.id}
@@ -214,23 +202,6 @@ export default function FileSidebar({
             </p>
           )}
 
-          {/* 출력중 상태 */}
-          {drop.printer && (
-            <p className="mt-1.5">
-              <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-sm bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-semibold">
-                <IconPrinter className="w-3 h-3" />
-                출력중 · {drop.printer}
-                <button
-                  onClick={() => onSetPrinter(drop.id, null)}
-                  title="출력중 표시 해제"
-                  className="ml-0.5 text-amber-600 hover:text-red-600 transition"
-                >
-                  <IconX className="w-2.5 h-2.5" />
-                </button>
-              </span>
-            </p>
-          )}
-
           <div className="flex items-center gap-2 mt-2">
             <span className={`text-[10px] ${longWait ? 'text-red-600 font-bold' : isNew ? 'text-blue-700' : 'text-slate-400'}`}>
               {drop.creator && <b className={`mr-1 font-semibold ${longWait ? 'text-red-700' : isNew ? 'text-blue-800' : 'text-slate-500'}`}>{drop.creator}</b>}
@@ -252,18 +223,6 @@ export default function FileSidebar({
               >
                 {copiedId === drop.id ? <IconCheck className="w-3 h-3" /> : <IconCopy className="w-3 h-3" />}
                 {copiedId === drop.id ? '복사됨' : '경로'}
-              </button>
-              <button
-                onClick={() => handlePrintToggle(drop)}
-                title={drop.printer ? '출력중 표시 해제' : '내가 출력 시작 (다른 사람에게 출력중으로 표시)'}
-                className={`inline-flex items-center gap-1 h-6 px-2 rounded text-[11px] font-medium border transition ${
-                  drop.printer
-                    ? 'bg-amber-100 border-amber-300 text-amber-800'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800'
-                }`}
-              >
-                <IconPrinter className="w-3 h-3" />
-                출력
               </button>
               <button
                 onClick={() => handleRemove(drop)}

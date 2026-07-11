@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { FileDrop } from '../types';
 
-// DB에 아직 없는 컬럼(is_urgent/note/printer)으로 인한 에러인지 판별
+// DB에 아직 없는 컬럼(is_urgent/note)으로 인한 에러인지 판별
 const isMissingColumnError = (message: string) =>
   /column|42703|schema cache/i.test(message);
 
@@ -85,7 +85,6 @@ export function useFileDrops() {
     };
     if (drop.is_urgent) payload.is_urgent = drop.is_urgent;
     if (drop.note) payload.note = drop.note;
-    if (drop.printer) payload.printer = drop.printer;
 
     const { error } = await supabase.from('file_drop').insert([payload]);
     if (error) {
@@ -96,19 +95,5 @@ export function useFileDrops() {
     return true;
   };
 
-  // 출력중 상태 설정/해제 (printer = 출력하는 사람 이름 | null)
-  const setPrinter = async (id: number, printer: string | null) => {
-    const { error } = await supabase.from('file_drop').update({ printer }).eq('id', id);
-    if (error) {
-      if (isMissingColumnError(error.message)) {
-        alert('출력중 표시 기능을 쓰려면 Supabase에 printer 컬럼을 추가해야 합니다.');
-      } else {
-        alert('출력 상태 변경 실패: ' + error.message);
-      }
-      return;
-    }
-    await fetchDrops();
-  };
-
-  return { drops, error, addDrop, removeDrop, restoreDrop, setPrinter };
+  return { drops, error, addDrop, removeDrop, restoreDrop };
 }

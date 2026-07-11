@@ -66,7 +66,7 @@ export default function Board({ only }: BoardProps) {
     completed,
     deleted
   } = useBoardData();
-  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop, setPrinter } = useFileDrops();
+  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
@@ -612,7 +612,6 @@ export default function Board({ only }: BoardProps) {
               error={fileDropError}
               onRemove={removeDrop}
               onRestore={restoreDrop}
-              onSetPrinter={setPrinter}
               open={sidebarOpen}
               onToggle={toggleSidebar}
               newIds={newDropIds}
