@@ -105,7 +105,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl relative animate-fadein max-h-[92vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-[92vw] max-w-[1300px] h-[85vh] relative animate-fadein flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div>
@@ -127,7 +127,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
         {/* 계산 행들 */}
         <div className="flex-1 overflow-y-auto px-6 py-4" onScroll={() => setFocusedRow(null)}>
           {/* 열 제목 */}
-          <div className="hidden md:grid grid-cols-[1fr_90px_70px_70px_60px_100px_32px] gap-2 pb-2 text-[11px] font-semibold text-slate-400 select-none">
+          <div className="hidden md:grid grid-cols-[1fr_130px_100px_100px_80px_140px_36px] gap-2.5 pb-2 text-xs font-semibold text-slate-400 select-none">
             <span>품명</span>
             <span className="text-right">단가</span>
             <span className="text-center">가로(m)</span>
@@ -142,7 +142,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
               const amount = rowAmount(r);
               const sugg = focusedRow === r.id ? suggestionsFor(r) : [];
               return (
-                <div key={r.id} className="relative grid grid-cols-2 md:grid-cols-[1fr_90px_70px_70px_60px_100px_32px] gap-2 items-center">
+                <div key={r.id} className="relative grid grid-cols-2 md:grid-cols-[1fr_130px_100px_100px_80px_140px_36px] gap-2.5 items-center">
                   {/* 품명 + 자동완성 */}
                   <div className="relative col-span-2 md:col-span-1">
                     <input
@@ -158,7 +158,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                       }}
                       onBlur={() => setTimeout(() => setFocusedRow(prev => (prev === r.id ? null : prev)), 150)}
                       placeholder="품명 검색 (예: 현수막, 유포...)"
-                      className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-9 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                      className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-10 text-[15px] text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     />
                     {focusedRow === r.id && anchor && sugg.length > 0 && (
                       <div
@@ -189,7 +189,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                     value={r.unitPrice}
                     onChange={e => update(r.id, { unitPrice: e.target.value })}
                     placeholder="단가"
-                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-right text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-10 text-[15px] text-right text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                   />
 
                   {/* 가로/세로 (개당 품목은 비활성) */}
@@ -199,7 +199,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                     onChange={e => update(r.id, { w: e.target.value })}
                     placeholder={r.perUnit ? '—' : '가로'}
                     disabled={r.perUnit}
-                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-10 text-[15px] text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
                   />
                   <input
                     type="number"
@@ -207,7 +207,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                     onChange={e => update(r.id, { h: e.target.value })}
                     placeholder={r.perUnit ? '—' : '세로'}
                     disabled={r.perUnit}
-                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-10 text-[15px] text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
                   />
 
                   {/* 수량 */}
@@ -217,11 +217,11 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                     onChange={e => update(r.id, { qty: e.target.value })}
                     placeholder="수량"
                     min={1}
-                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-10 text-[15px] text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                   />
 
                   {/* 금액 */}
-                  <span className={`text-right text-sm font-bold tabular-nums ${amount > 0 ? 'text-slate-900 dark:text-slate-100' : 'text-slate-300 dark:text-slate-700'}`}>
+                  <span className={`text-right text-base font-bold tabular-nums ${amount > 0 ? 'text-slate-900 dark:text-slate-100' : 'text-slate-300 dark:text-slate-700'}`}>
                     {amount > 0 ? `${fmt(amount)}원` : '—'}
                   </span>
 
