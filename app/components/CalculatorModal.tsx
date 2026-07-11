@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PRICE_ITEMS } from './priceData';
-import { FULL_PRICE_TABLE, REF_NOTES, EXHIBIT_TABLE, RefGroup } from './priceTableData';
+import { FULL_PRICE_TABLE, REF_NOTES, RefGroup } from './priceTableData';
 import { IconX, IconCalculator, IconPlus, IconTrash, IconCopy, IconCheck, IconFileText } from './ui/icons';
 
 interface CalcRow {
@@ -85,7 +85,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
   // 자동완성 목록 위치 (스크롤 영역에 잘리지 않게 화면 기준 좌표로 띄움)
   const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [view, setView] = useState<'calc' | 'price' | 'exhibit'>('calc');
+  const [view, setView] = useState<'calc' | 'price'>('calc');
 
   if (!show) return null;
 
@@ -159,15 +159,13 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
             <p className="text-xs text-slate-400 mt-0.5">
               {view === 'calc'
                 ? '품명을 고르면 단가가 자동으로 들어갑니다. 단가는 직접 고칠 수 있어요. 금액은 1,000원 단위 올림.'
-                : view === 'price'
-                  ? '참고용 전체 단가표 — 계산은 계산기 탭에서.'
-                  : '전시 단가표 — 내용이 정리되면 채워집니다.'}
+                : '참고용 전체 단가표 — 계산은 계산기 탭에서.'}
             </p>
           </div>
 
           {/* 탭 */}
           <div className="flex bg-slate-100 dark:bg-slate-800 rounded p-1 ml-2">
-            {([['calc', '계산기'], ['price', '단가표'], ['exhibit', '전시']] as const).map(([key, label]) => (
+            {([['calc', '계산기'], ['price', '단가표']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setView(key)}
@@ -210,19 +208,6 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                     </ul>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── 전시 탭 ── */}
-        {view === 'exhibit' && (
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <div className="max-w-2xl space-y-4">
-              <RefTable groups={EXHIBIT_TABLE} />
-              <div className="rounded border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-[13px] text-amber-800 dark:text-amber-300">
-                전시 단가표는 아직 정리 전이에요. 엑셀의 &lsquo;전시&rsquo; 시트에 있던 내용(파나플렉스)만 우선 담아뒀습니다.
-                품목·단가를 알려주시면 여기에 채워드릴게요.
               </div>
             </div>
           </div>

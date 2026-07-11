@@ -168,13 +168,3 @@ export const REF_NOTES: RefNote[] = [
     ],
   },
 ];
-
-// 전시 단가표 — 아직 정리 전 (엑셀 '전시' 시트에 있는 내용만 반영)
-export const EXHIBIT_TABLE: RefGroup[] = [
-  {
-    category: '전시',
-    rows: [
-      { name: '파나플렉스', spec: '3000×2200 / 8400×3600', price: 0, note: '단가 미기재' },
-    ],
-  },
-];

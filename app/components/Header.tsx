@@ -4,7 +4,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   IconSearch,
   IconPlus,
-  IconPrinter,
   IconUpload,
   IconEye,
   IconEyeOff,
@@ -16,7 +15,6 @@ import {
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onPrintTodayWork: () => void;
   onShowForm: () => void;
   onShowFileDrop: () => void;
   onShowCalculator: () => void;
@@ -36,7 +34,6 @@ const NAV_TABS = [
 export default function Header({
   searchQuery,
   onSearchChange,
-  onPrintTodayWork,
   onShowForm,
   onShowFileDrop,
   onShowCalculator,
@@ -108,14 +105,6 @@ export default function Header({
               className="inline-flex items-center justify-center w-9 h-9 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-amber-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
             >
               {isDark ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />}
-            </button>
-
-            <button
-              onClick={onPrintTodayWork}
-              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition"
-            >
-              <IconPrinter className="w-4 h-4" />
-              오늘 작업 출력
             </button>
 
             <button

@@ -5,7 +5,7 @@ import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
 import { useFileDrops } from './hooks/useFileDrops';
-import { handlePrintTodayWork, handlePrintImage } from './utils/printUtils';
+import { handlePrintImage } from './utils/printUtils';
 
 import PasswordGate from './PasswordGate';
 import Header from './Header';
@@ -463,7 +463,6 @@ export default function Board({ only }: BoardProps) {
       <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onPrintTodayWork={() => handlePrintTodayWork(requests)}
         onShowForm={handleShowForm}
         onShowFileDrop={() => setShowFileDrop(true)}
         onShowCalculator={() => setShowCalculator(true)}
