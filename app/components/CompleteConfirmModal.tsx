@@ -50,14 +50,14 @@ export default function CompleteConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
-      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-lg relative animate-fadein max-h-[90vh] overflow-y-auto">
         {/* 모달 헤더 */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-          <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 shrink-0">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <span className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shrink-0">
             <IconCheckCircle className="w-5 h-5" />
           </span>
           <div>
-            <h3 className="text-base font-bold text-slate-900">작업 완료 확인</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">작업 완료 확인</h3>
             {isChained && (
               <p className="text-xs text-slate-400 mt-0.5">
                 <b className="text-blue-600 font-semibold">{queueCurrent} / {queueTotal}</b> — 동일 업체·프로그램 연속 처리
@@ -68,25 +68,25 @@ export default function CompleteConfirmModal({
 
         <div className="px-6 py-5">
           {/* 작업 정보 */}
-          <dl className="bg-slate-50 border border-slate-100 rounded px-4 py-3.5 mb-4 space-y-2 text-sm">
+          <dl className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded px-4 py-3.5 mb-4 space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <dt className="text-slate-400 w-16 shrink-0">업체명</dt>
-              <dd className="font-semibold text-slate-900">{item.company}</dd>
+              <dd className="font-semibold text-slate-900 dark:text-slate-100">{item.company}</dd>
             </div>
             <div className="flex items-center gap-2">
               <dt className="text-slate-400 w-16 shrink-0">프로그램</dt>
-              <dd className="font-semibold text-slate-900">{item.program}</dd>
+              <dd className="font-semibold text-slate-900 dark:text-slate-100">{item.program}</dd>
             </div>
             {item.creator && (
               <div className="flex items-center gap-2">
                 <dt className="text-slate-400 w-16 shrink-0">작업자</dt>
-                <dd className="font-semibold text-slate-900">{item.creator}</dd>
+                <dd className="font-semibold text-slate-900 dark:text-slate-100">{item.creator}</dd>
               </div>
             )}
             {item.pickup_date && (
               <div className="flex items-center gap-2">
                 <dt className="text-slate-400 w-16 shrink-0">픽업일</dt>
-                <dd className="font-semibold text-slate-900">{item.pickup_date}</dd>
+                <dd className="font-semibold text-slate-900 dark:text-slate-100">{item.pickup_date}</dd>
               </div>
             )}
           </dl>
@@ -101,7 +101,7 @@ export default function CompleteConfirmModal({
               <img
                 src={item.image_url}
                 alt="원고 이미지"
-                className="w-full h-64 object-contain rounded border border-slate-200 bg-slate-50"
+                className="w-full h-64 object-contain rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                 onLoad={(e) => {
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
@@ -160,10 +160,10 @@ export default function CompleteConfirmModal({
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 rounded-b-md">
           <button
             onClick={onCancel}
-            className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="h-10 px-5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
           >
             닫기
           </button>

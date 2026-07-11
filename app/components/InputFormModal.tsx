@@ -230,20 +230,20 @@ export default function InputFormModal({
         .slice(0, 6)
     : companyPrograms.slice(0, 6); // 입력 전에는 해당 업체의 최근 프로그램을 바로 보여줌
 
-  const inputClass = "rounded border border-slate-300 px-3.5 h-10 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
+  const inputClass = "rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3.5 h-10 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
   const summaryReady = company && pickupDate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" onPaste={handlePasteImage}>
-      <div className="bg-white rounded-md shadow-xl border border-slate-200 w-full max-w-4xl relative animate-fadein max-h-[92vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-4xl relative animate-fadein max-h-[92vh] flex flex-col">
         {/* 모달 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div>
-            <h3 className="text-base font-bold text-slate-900">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
             <p className="text-xs text-slate-400 mt-0.5">{editMode ? '작업 내용을 수정합니다.' : '새 작업을 현황판에 등록합니다.'}</p>
           </div>
           <button
-            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
             onClick={clearForm}
             aria-label="닫기"
           >
@@ -253,12 +253,12 @@ export default function InputFormModal({
 
         {/* 본문: 좌 입력 폼 / 우 원고 이미지 */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-slate-100 dark:divide-slate-800">
             {/* 좌측: 작업 정보 */}
             <div className="px-6 py-5 space-y-5">
               {/* 업체명 + 자동완성 */}
               <div className="flex flex-col relative">
-                <label className="text-[13px] font-medium text-slate-600 mb-1.5">업체명 <span className="text-red-500">*</span></label>
+                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">업체명 <span className="text-red-500">*</span></label>
                 <input
                   ref={companyInputRef}
                   type="text"
@@ -272,12 +272,12 @@ export default function InputFormModal({
                 />
                 {/* 자동완성 드롭다운 */}
                 {companyFocused && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-20 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-20 overflow-hidden">
                     {filteredSuggestions.map(c => (
                       <button
                         key={c}
                         onMouseDown={(e) => { e.preventDefault(); setCompany(c); setCompanyFocused(false); }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition border-b border-slate-50 last:border-b-0"
+                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0"
                       >
                         {c}
                       </button>
@@ -292,7 +292,7 @@ export default function InputFormModal({
                       <button
                         key={c}
                         onClick={() => setCompany(c)}
-                        className="inline-flex items-center h-6 px-2 rounded bg-slate-50 border border-slate-200 text-[11px] font-medium text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition"
+                        className="inline-flex items-center h-6 px-2 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition"
                       >
                         {c}
                       </button>
@@ -303,7 +303,7 @@ export default function InputFormModal({
 
               {/* 프로그램명 + 자동완성 */}
               <div className="flex flex-col relative">
-                <label className="text-[13px] font-medium text-slate-600 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
+                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={program}
@@ -315,9 +315,9 @@ export default function InputFormModal({
                 />
                 {/* 자동완성 드롭다운 */}
                 {programFocused && programCandidates.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-20 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-20 overflow-hidden">
                     {!program && (
-                      <p className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 border-b border-slate-100 select-none">
+                      <p className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 select-none">
                         {company}의 최근 프로그램
                       </p>
                     )}
@@ -325,7 +325,7 @@ export default function InputFormModal({
                       <button
                         key={p}
                         onMouseDown={(e) => { e.preventDefault(); setProgram(p); setProgramFocused(false); }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition border-b border-slate-50 last:border-b-0"
+                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0"
                       >
                         {p}
                       </button>
@@ -362,7 +362,7 @@ export default function InputFormModal({
                         className={`flex-1 h-8 rounded text-xs font-semibold border transition ${
                           active
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300'
                         }`}
                       >
                         {q.label}
@@ -380,7 +380,7 @@ export default function InputFormModal({
 
               {/* 작업자 선택 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 mb-1.5">작업자 선택</label>
+                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">작업자 선택</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['박혜경', '김한별', '장석환', '정수원', '이현동', '심민영'].map((name) => (
                     <button
@@ -392,7 +392,7 @@ export default function InputFormModal({
                       className={`h-9 rounded text-sm font-medium border transition ${
                         creator === name
                           ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300'
                       }`}
                     >
                       {name}
@@ -403,24 +403,24 @@ export default function InputFormModal({
 
               {/* 메모 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 mb-1.5">메모</label>
+                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">메모</label>
                 <textarea
                   value={note}
                   onChange={e => setNote(e.target.value)}
-                  className="rounded border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                  className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                   rows={2}
                 />
               </div>
 
               {/* 우선순위 세그먼트 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 mb-1.5">우선순위</label>
-                <div className="inline-flex w-full rounded border border-slate-200 overflow-hidden">
+                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">우선순위</label>
+                <div className="inline-flex w-full rounded border border-slate-200 dark:border-slate-600 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setIsUrgent(false)}
                     className={`flex-1 h-9 text-sm font-semibold transition ${
-                      !isUrgent ? 'bg-slate-800 text-white' : 'bg-white text-slate-400 hover:text-slate-600'
+                      !isUrgent ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                     }`}
                   >
                     일반
@@ -428,8 +428,8 @@ export default function InputFormModal({
                   <button
                     type="button"
                     onClick={() => setIsUrgent(true)}
-                    className={`flex-1 h-9 inline-flex items-center justify-center gap-1 text-sm font-semibold transition border-l border-slate-200 ${
-                      isUrgent ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-600'
+                    className={`flex-1 h-9 inline-flex items-center justify-center gap-1 text-sm font-semibold transition border-l border-slate-200 dark:border-slate-600 ${
+                      isUrgent ? 'bg-red-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-red-600 dark:hover:text-red-400'
                     }`}
                   >
                     <IconZap className="w-3.5 h-3.5" />
@@ -443,9 +443,9 @@ export default function InputFormModal({
 
             {/* 우측: 원고 이미지 */}
             <div className="px-6 py-5 flex flex-col">
-              <label className="text-[13px] font-medium text-slate-600 mb-1.5">원고 이미지</label>
+              <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">원고 이미지</label>
               <div className={`flex-1 min-h-[320px] flex flex-col items-center justify-center border-2 border-dashed rounded p-4 transition ${
-                imagePreview ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50/60 hover:border-blue-400'
+                imagePreview ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 hover:border-blue-400'
               }`}>
                 {imagePreview ? (
                   <div className="relative w-full h-full flex flex-col items-center justify-center">
@@ -453,7 +453,7 @@ export default function InputFormModal({
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => { setImage(null); setImagePreview(null); }}
-                        className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+                        className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 transition"
                       >
                         <IconX className="w-3 h-3" />
                         이미지 제거
@@ -464,8 +464,8 @@ export default function InputFormModal({
                 ) : (
                   <div className="text-slate-400 text-sm text-center flex flex-col items-center gap-2">
                     <IconImage className="w-10 h-10 text-slate-300" />
-                    <span>여기에 이미지를 <b className="text-slate-600">Ctrl+V</b>로 붙여넣으세요</span>
-                    <span className="text-xs text-slate-300">(파일 선택 없이 캡처만 지원)</span>
+                    <span>여기에 이미지를 <b className="text-slate-600 dark:text-slate-300">Ctrl+V</b>로 붙여넣으세요</span>
+                    <span className="text-xs text-slate-300 dark:text-slate-600">(파일 선택 없이 캡처만 지원)</span>
                   </div>
                 )}
               </div>
@@ -474,14 +474,14 @@ export default function InputFormModal({
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex items-center gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 rounded-b-md shrink-0">
+        <div className="flex items-center gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 rounded-b-md shrink-0">
           <span className="hidden md:inline text-[11px] text-slate-400">
-            <b className="text-slate-500">Ctrl+Enter</b> 등록 · <b className="text-slate-500">ESC</b> 닫기
+            <b className="text-slate-500 dark:text-slate-300">Ctrl+Enter</b> 등록 · <b className="text-slate-500 dark:text-slate-300">ESC</b> 닫기
           </span>
           <div className="flex gap-2 ml-auto">
             <button
               onClick={clearForm}
-              className="h-10 px-5 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+              className="h-10 px-5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
             >
               취소
             </button>

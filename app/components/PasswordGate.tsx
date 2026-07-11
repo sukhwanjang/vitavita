@@ -29,17 +29,17 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f6f9] px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f6f9] dark:bg-slate-950 px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-md shadow-sm border border-slate-200 px-8 py-10">
+        <div className="bg-white dark:bg-slate-900 rounded-md shadow-sm border border-slate-200 dark:border-slate-700 px-8 py-10">
           <div className="flex flex-col items-center mb-8">
-            <img src="/logo.png" alt="Vitamin Sign Logo" className="h-14 mb-5" />
-            <h1 className="text-lg font-bold text-slate-900">비타민사인 현황판</h1>
+            <img src="/logo.png" alt="Vitamin Sign Logo" className="h-14 mb-5 dark:brightness-0 dark:invert" />
+            <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">비타민사인 현황판</h1>
             <p className="text-[13px] text-slate-400 mt-1">작업 현황 관리 시스템</p>
           </div>
           <form onSubmit={handlePwSubmit} className="flex flex-col">
-            <label className="text-[13px] font-medium text-slate-600 mb-1.5">비밀번호</label>
-            <div className="flex items-center border border-slate-300 rounded px-3 h-11 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition mb-4">
+            <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">비밀번호</label>
+            <div className="flex items-center border border-slate-300 dark:border-slate-600 dark:bg-slate-800 rounded px-3 h-11 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition mb-4">
               <IconLock className="w-4 h-4 text-slate-400 shrink-0" />
               <input
                 type="password"

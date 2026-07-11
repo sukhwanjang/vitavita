@@ -92,12 +92,12 @@ export default function RequestCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded border bg-white shadow-sm transition hover:shadow-md ${
+      className={`relative flex flex-col rounded border bg-white dark:bg-slate-900 shadow-sm transition hover:shadow-md ${
         item.is_work_done
-          ? 'border-emerald-300'
+          ? 'border-emerald-300 dark:border-emerald-700'
           : item.is_urgent
-            ? 'border-red-300 ring-1 ring-red-200'
-            : 'border-slate-200 hover:border-slate-300'
+            ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-900'
+            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
       }`}
     >
       {/* 히어로 이미지 영역 */}
@@ -226,13 +226,13 @@ export default function RequestCard({
       <div className="flex items-center gap-1.5 px-3.5 pt-2.5">
         {item.creator ? (
           <>
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold select-none">
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold select-none">
               {item.creator[0]}
             </span>
-            <span className="text-xs font-medium text-slate-600">{item.creator}</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.creator}</span>
           </>
         ) : (
-          <span className="text-xs text-slate-300">담당자 미지정</span>
+          <span className="text-xs text-slate-300 dark:text-slate-600">담당자 미지정</span>
         )}
         <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
           <IconClock className="w-3 h-3" />
@@ -248,7 +248,7 @@ export default function RequestCard({
 
       {/* 메모 (1줄, 전체 내용은 툴팁) */}
       {item.note && (
-        <div className="flex items-center gap-1.5 mx-3.5 mt-2 px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded text-xs text-slate-700" title={item.note}>
+        <div className="flex items-center gap-1.5 mx-3.5 mt-2 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900 rounded text-xs text-slate-700 dark:text-slate-300" title={item.note}>
           <IconFileText className="w-3 h-3 text-amber-500 shrink-0" />
           <span className="truncate">{item.note}</span>
         </div>
@@ -262,7 +262,7 @@ export default function RequestCard({
             className={`flex-1 inline-flex items-center justify-center gap-1 h-8 rounded text-xs font-semibold border transition ${
               item.is_work_done
                 ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950'
             }`}
             title={item.is_work_done ? '작업완료 취소' : '작업완료 표시'}
           >
@@ -281,8 +281,8 @@ export default function RequestCard({
             onClick={() => setMenuOpen(o => !o)}
             className={`inline-flex items-center justify-center w-8 h-8 rounded border transition ${
               menuOpen
-                ? 'bg-slate-100 border-slate-300 text-slate-700'
-                : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-700'
+                ? 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
             title="더 보기"
           >
@@ -293,11 +293,11 @@ export default function RequestCard({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute bottom-full right-3.5 mb-1 z-20 w-36 bg-white border border-slate-200 rounded shadow-lg overflow-hidden">
+              <div className="absolute bottom-full right-3.5 mb-1 z-20 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg overflow-hidden">
                 {item.image_url && (
                   <button
                     onClick={() => { setMenuOpen(false); onPrintImage(item.image_url!, item.company, item.program); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition border-b border-slate-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-50 dark:border-slate-700"
                   >
                     <IconPrinter className="w-3.5 h-3.5 text-slate-400" />
                     원고 출력
@@ -305,14 +305,14 @@ export default function RequestCard({
                 )}
                 <button
                   onClick={() => { setMenuOpen(false); onEdit(item); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition border-b border-slate-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-b border-slate-50 dark:border-slate-700"
                 >
                   <IconEdit className="w-3.5 h-3.5 text-slate-400" />
                   수정
                 </button>
                 <button
                   onClick={() => { setMenuOpen(false); onDelete(item.id); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition"
                 >
                   <IconTrash className="w-3.5 h-3.5" />
                   삭제

@@ -456,7 +456,7 @@ export default function Board({ only }: BoardProps) {
   ).values());
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] text-slate-900">
+    <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* 헤더 */}
       <Header
         searchQuery={searchQuery}
@@ -559,8 +559,8 @@ export default function Board({ only }: BoardProps) {
           <div>
             <div className="flex items-center gap-2 mb-5">
               <IconCheckCircle className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-lg font-bold text-slate-900">완료된 작업</h2>
-              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">완료된 작업</h2>
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
                 {allFilteredCompleted.length}건
               </span>
             </div>
@@ -589,8 +589,8 @@ export default function Board({ only }: BoardProps) {
           <div>
             <div className="flex items-center gap-2 mb-5">
               <IconTrash className="w-5 h-5 text-slate-400" />
-              <h2 className="text-lg font-bold text-slate-900">삭제된 작업</h2>
-              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">삭제된 작업</h2>
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
                 {deleted.length}건
               </span>
             </div>
@@ -622,8 +622,8 @@ export default function Board({ only }: BoardProps) {
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 새 작업 알림 배너 */}
             {newItems.length > 0 && (
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded px-4 py-3 text-sm text-blue-900">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 shrink-0">
+              <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded px-4 py-3 text-sm text-blue-900 dark:text-blue-200">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 shrink-0">
                   <IconBell className="w-4 h-4" />
                 </span>
                 <span>
@@ -641,13 +641,13 @@ export default function Board({ only }: BoardProps) {
             )}
 
             {/* 현황 요약 패널 — 색은 숫자에만, 0건은 음소거 */}
-            <div className="bg-white border border-slate-200 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
               {[
-                { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900', progress: null as { done: number; total: number } | null },
-                { key: 'urgent', label: '급함', count: urgentCount, color: 'text-red-600', progress: null },
-                { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600', progress: { done: todayDoneCount, total: todayCount } },
-                { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600', progress: null },
-                { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800', progress: null },
+                { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900 dark:text-slate-100', progress: null as { done: number; total: number } | null },
+                { key: 'urgent', label: '급함', count: urgentCount, color: 'text-red-600 dark:text-red-400', progress: null },
+                { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600 dark:text-blue-400', progress: { done: todayDoneCount, total: todayCount } },
+                { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600 dark:text-amber-400', progress: null },
+                { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800 dark:text-slate-200', progress: null },
               ].map(seg => {
                 const active = seg.key !== null && statusFilter === seg.key;
                 return (
@@ -657,18 +657,18 @@ export default function Board({ only }: BoardProps) {
                       if (seg.key === null) setStatusFilter(null);
                       else setStatusFilter(prev => prev === seg.key ? null : seg.key);
                     }}
-                    className={`relative text-left px-4 py-3 transition border-slate-100 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
-                      active ? 'bg-blue-50/60' : 'hover:bg-slate-50'
+                    className={`relative text-left px-4 py-3 transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
+                      active ? 'bg-blue-50/60 dark:bg-blue-950/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <span className="block text-[11px] font-medium text-slate-400">{seg.label}</span>
-                    <span className={`block mt-0.5 text-[26px] leading-8 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300' : seg.color}`}>
+                    <span className="block text-[11px] font-medium text-slate-400 dark:text-slate-500">{seg.label}</span>
+                    <span className={`block mt-0.5 text-[26px] leading-8 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300 dark:text-slate-700' : seg.color}`}>
                       {seg.count}
-                      <span className="ml-0.5 text-sm font-medium text-slate-300">건</span>
+                      <span className="ml-0.5 text-sm font-medium text-slate-300 dark:text-slate-600">건</span>
                     </span>
                     {seg.progress && seg.progress.total > 0 && (
                       <span className="flex items-center gap-1.5 mt-1.5">
-                        <span className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                        <span className="flex-1 h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                           <span
                             className="block h-full bg-emerald-500 transition-all"
                             style={{ width: `${(seg.progress.done / seg.progress.total) * 100}%` }}
@@ -685,10 +685,10 @@ export default function Board({ only }: BoardProps) {
 
             {/* 상태 필터 활성화 배너 */}
             {statusFilter !== null && (
-              <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded px-4 py-2.5 text-sm text-slate-700">
-                <IconFilter className="w-4 h-4 text-blue-600" />
+              <div className="flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300">
+                <IconFilter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>상태 필터 적용 중:</span>
-                <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">{
+                <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-800">{
                   statusFilter === 'urgent' ? '급함'
                   : statusFilter === 'today' ? '오늘 마감'
                   : statusFilter === 'd-1' ? '내일 마감'
@@ -698,7 +698,7 @@ export default function Board({ only }: BoardProps) {
                 }</span>
                 <button
                   onClick={() => setStatusFilter(null)}
-                  className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700 transition"
+                  className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
                 >
                   <IconX className="w-3.5 h-3.5" />
                   필터 해제

@@ -39,11 +39,11 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded overflow-hidden border border-slate-200 bg-white shadow-sm">
+    <div className="relative flex flex-col justify-between rounded overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
       <span className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
       <div>
         <div className="flex items-center gap-1.5 pl-5 pr-4 pt-3.5">
-          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 select-none">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 select-none">
             <IconCheckCircle className="w-3 h-3" />
             완료
           </span>
@@ -51,7 +51,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
         <div className="flex flex-col pl-5 pr-4 py-3.5 space-y-3">
           <div>
             <p
-              className="text-base font-bold text-slate-900 truncate cursor-pointer hover:text-blue-700 transition"
+              className="text-base font-bold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:text-blue-700 dark:hover:text-blue-400 transition"
               onClick={() => onCompanyClick(item.company)}
             >{item.company}</p>
             <p className="text-[13px] text-slate-500 truncate mt-0.5">{item.program}</p>
@@ -65,7 +65,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
                   const img = e.currentTarget;
                   setNaturalDims({ w: img.naturalWidth, h: img.naturalHeight });
                 }}
-                className="cursor-pointer w-full h-32 object-contain rounded border border-slate-200 bg-slate-50 transition hover:border-blue-300"
+                className="cursor-pointer w-full h-32 object-contain rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition hover:border-blue-300"
                 alt="작업 이미지"
               />
               {naturalDims && containerDims && (() => {
@@ -117,7 +117,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
 
           {/* 메모 */}
           {item.note && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-slate-700">
+            <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded px-3 py-2 text-xs text-slate-700 dark:text-slate-300">
               <IconFileText className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
               <span>{item.note}</span>
             </div>
@@ -138,17 +138,17 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
             <span className="text-slate-500">{item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR') : '-'}</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 justify-end pt-2.5 border-t border-slate-100">
+        <div className="flex items-center gap-1.5 justify-end pt-2.5 border-t border-slate-100 dark:border-slate-800">
           <button
             onClick={() => onRecover(item.id)}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition"
           >
             <IconRestore className="w-3 h-3" />
             복구
           </button>
           <button
             onClick={handlePermanentDelete}
-            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 transition"
           >
             <IconTrash className="w-3 h-3" />
             삭제
