@@ -40,6 +40,8 @@ interface CalculatorModalProps {
 export default function CalculatorModal({ show, onClose }: CalculatorModalProps) {
   const [rows, setRows] = useState<CalcRow[]>([emptyRow(), emptyRow(), emptyRow()]);
   const [focusedRow, setFocusedRow] = useState<number | null>(null);
+  // 자동완성 목록 위치 (스크롤 영역에 잘리지 않게 화면 기준 좌표로 띄움)
+  const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
   const [copied, setCopied] = useState(false);
 
   if (!show) return null;
@@ -123,7 +125,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
         </div>
 
         {/* 계산 행들 */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4" onScroll={() => setFocusedRow(null)}>
           {/* 열 제목 */}
           <div className="hidden md:grid grid-cols-[1fr_90px_70px_70px_60px_100px_32px] gap-2 pb-2 text-[11px] font-semibold text-slate-400 select-none">
             <span>품명</span>
@@ -147,13 +149,21 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
                       type="text"
                       value={r.name}
                       onChange={e => update(r.id, { name: e.target.value })}
-                      onFocus={() => setFocusedRow(r.id)}
+                      onFocus={e => {
+                        setFocusedRow(r.id);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const width = Math.max(rect.width, 320);
+                        const left = Math.min(rect.left, window.innerWidth - width - 8);
+                        setAnchor({ top: rect.bottom + 4, left: Math.max(left, 8), width });
+                      }}
                       onBlur={() => setTimeout(() => setFocusedRow(prev => (prev === r.id ? null : prev)), 150)}
                       placeholder="품명 검색 (예: 현수막, 유포...)"
                       className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-9 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                     />
-                    {focusedRow === r.id && sugg.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 md:w-[340px] mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-30 overflow-hidden max-h-56 overflow-y-auto">
+                    {focusedRow === r.id && anchor && sugg.length > 0 && (
+                      <div
+                        style={{ position: 'fixed', top: anchor.top, left: anchor.left, width: anchor.width }}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-[60] max-h-56 overflow-y-auto">
                         {sugg.slice(0, 40).map(item => (
                           <button
                             key={item.name}
