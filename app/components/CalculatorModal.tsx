@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { PRICE_ITEMS } from './priceData';
-import { IconX, IconCalculator, IconPlus, IconTrash, IconCopy, IconCheck } from './ui/icons';
+import { FULL_PRICE_TABLE, REF_NOTES, EXHIBIT_TABLE, RefGroup } from './priceTableData';
+import { IconX, IconCalculator, IconPlus, IconTrash, IconCopy, IconCheck, IconFileText } from './ui/icons';
 
 interface CalcRow {
   id: number;
@@ -32,6 +33,47 @@ const rowAmount = (r: CalcRow) => {
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 
+// 참고용 단가표 렌더링 (종류 셀은 세로 병합)
+function RefTable({ groups }: { groups: RefGroup[] }) {
+  return (
+    <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-700">
+      <table className="w-full text-sm border-collapse bg-white dark:bg-slate-900">
+        <thead className="bg-slate-50 dark:bg-slate-800">
+          <tr>
+            <th className="px-3 py-2 text-left text-[11px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700 w-20">종류</th>
+            <th className="px-3 py-2 text-left text-[11px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">품명</th>
+            <th className="px-3 py-2 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700 w-16">규격</th>
+            <th className="px-3 py-2 text-right text-[11px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700 w-24">단가</th>
+            <th className="px-3 py-2 text-left text-[11px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700 w-36">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map(g =>
+            g.rows.map((r, i) => (
+              <tr key={`${g.category}-${r.name}-${i}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition">
+                {i === 0 && (
+                  <td
+                    rowSpan={g.rows.length}
+                    className="px-3 py-2 align-top text-[13px] font-bold text-slate-700 dark:text-slate-300 border-b border-r border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40"
+                  >
+                    {g.category}
+                  </td>
+                )}
+                <td className="px-3 py-1.5 text-[13px] text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{r.name}</td>
+                <td className="px-3 py-1.5 text-[12px] text-center text-slate-400 border-b border-slate-100 dark:border-slate-800">{r.spec ?? ''}</td>
+                <td className="px-3 py-1.5 text-[13px] text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800">
+                  {r.price > 0 ? fmt(r.price) : '—'}
+                </td>
+                <td className="px-3 py-1.5 text-[12px] text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">{r.note ?? ''}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 interface CalculatorModalProps {
   show: boolean;
   onClose: () => void;
@@ -43,6 +85,7 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
   // 자동완성 목록 위치 (스크롤 영역에 잘리지 않게 화면 기준 좌표로 띄움)
   const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [view, setView] = useState<'calc' | 'price' | 'exhibit'>('calc');
 
   if (!show) return null;
 
@@ -107,16 +150,40 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
       <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-[92vw] max-w-[1300px] h-[85vh] relative animate-fadein flex flex-col">
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="flex items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 gap-4">
           <div>
             <h3 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
               <IconCalculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               단가 계산기
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">품명을 고르면 단가가 자동으로 들어갑니다. 단가는 직접 고칠 수 있어요. 금액은 1,000원 단위 올림.</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {view === 'calc'
+                ? '품명을 고르면 단가가 자동으로 들어갑니다. 단가는 직접 고칠 수 있어요. 금액은 1,000원 단위 올림.'
+                : view === 'price'
+                  ? '참고용 전체 단가표 — 계산은 계산기 탭에서.'
+                  : '전시 단가표 — 내용이 정리되면 채워집니다.'}
+            </p>
           </div>
+
+          {/* 탭 */}
+          <div className="flex bg-slate-100 dark:bg-slate-800 rounded p-1 ml-2">
+            {([['calc', '계산기'], ['price', '단가표'], ['exhibit', '전시']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setView(key)}
+                className={`h-8 px-4 rounded text-[13px] font-semibold transition ${
+                  view === key
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <button
-            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
+            className="ml-auto flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
             onClick={onClose}
             aria-label="닫기"
           >
@@ -124,7 +191,46 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
           </button>
         </div>
 
-        {/* 계산 행들 */}
+        {/* ── 단가표 탭 ── */}
+        {view === 'price' && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4 items-start">
+              <RefTable groups={FULL_PRICE_TABLE} />
+              <div className="space-y-3">
+                {REF_NOTES.map(n => (
+                  <div key={n.title} className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 px-4 py-3">
+                    <p className="flex items-center gap-1.5 text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <IconFileText className="w-3.5 h-3.5 text-slate-400" />
+                      {n.title}
+                    </p>
+                    <ul className="space-y-0.5">
+                      {n.lines.map((line, i) => (
+                        <li key={i} className="text-[12px] text-slate-500 dark:text-slate-400 tabular-nums">{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 전시 탭 ── */}
+        {view === 'exhibit' && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="max-w-2xl space-y-4">
+              <RefTable groups={EXHIBIT_TABLE} />
+              <div className="rounded border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-[13px] text-amber-800 dark:text-amber-300">
+                전시 단가표는 아직 정리 전이에요. 엑셀의 &lsquo;전시&rsquo; 시트에 있던 내용(파나플렉스)만 우선 담아뒀습니다.
+                품목·단가를 알려주시면 여기에 채워드릴게요.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 계산기 탭 ── */}
+        {view === 'calc' && (
+        <>
         <div className="flex-1 overflow-y-auto px-6 py-4" onScroll={() => setFocusedRow(null)}>
           {/* 열 제목 */}
           <div className="hidden md:grid grid-cols-[1fr_130px_100px_100px_80px_140px_36px] gap-2.5 pb-2 text-xs font-semibold text-slate-400 select-none">
@@ -278,6 +384,8 @@ export default function CalculatorModal({ show, onClose }: CalculatorModalProps)
             </button>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
