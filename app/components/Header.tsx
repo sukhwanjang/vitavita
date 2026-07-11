@@ -10,6 +10,7 @@ import {
   IconEyeOff,
   IconMoon,
   IconSun,
+  IconCalculator,
 } from './ui/icons';
 
 interface HeaderProps {
@@ -18,6 +19,7 @@ interface HeaderProps {
   onPrintTodayWork: () => void;
   onShowForm: () => void;
   onShowFileDrop: () => void;
+  onShowCalculator: () => void;
   showForm: boolean;
   editMode: boolean;
   hideOverdue: boolean;
@@ -37,6 +39,7 @@ export default function Header({
   onPrintTodayWork,
   onShowForm,
   onShowFileDrop,
+  onShowCalculator,
   showForm,
   editMode,
   hideOverdue,
@@ -113,6 +116,15 @@ export default function Header({
             >
               <IconPrinter className="w-4 h-4" />
               오늘 작업 출력
+            </button>
+
+            <button
+              onClick={onShowCalculator}
+              title="단가 계산기"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition"
+            >
+              <IconCalculator className="w-4 h-4" />
+              <span className="hidden lg:inline">계산기</span>
             </button>
 
             <button

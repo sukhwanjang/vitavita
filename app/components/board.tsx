@@ -17,6 +17,7 @@ import CompletedCard from './CompletedCard';
 import DeletedCard from './DeletedCard';
 import FileSidebar from './FileSidebar';
 import FileDropModal from './FileDropModal';
+import CalculatorModal from './CalculatorModal';
 import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
@@ -74,6 +75,7 @@ export default function Board({ only }: BoardProps) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showFileDrop, setShowFileDrop] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
@@ -464,6 +466,7 @@ export default function Board({ only }: BoardProps) {
         onPrintTodayWork={() => handlePrintTodayWork(requests)}
         onShowForm={handleShowForm}
         onShowFileDrop={() => setShowFileDrop(true)}
+        onShowCalculator={() => setShowCalculator(true)}
         showForm={showForm}
         editMode={editMode}
         hideOverdue={hideOverdue}
@@ -503,6 +506,11 @@ export default function Board({ only }: BoardProps) {
       )}
 
       {/* 모달들 */}
+      <CalculatorModal
+        show={showCalculator}
+        onClose={() => setShowCalculator(false)}
+      />
+
       <FileDropModal
         show={showFileDrop}
         onClose={() => setShowFileDrop(false)}

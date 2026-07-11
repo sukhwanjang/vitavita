@@ -199,6 +199,21 @@ export const IconVolumeOff = (p: IconProps) => (
   </Svg>
 );
 
+export const IconCalculator = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="8" y1="6" x2="16" y2="6" />
+    <line x1="8" y1="11" x2="8" y2="11.01" />
+    <line x1="12" y1="11" x2="12" y2="11.01" />
+    <line x1="16" y1="11" x2="16" y2="11.01" />
+    <line x1="8" y1="15" x2="8" y2="15.01" />
+    <line x1="12" y1="15" x2="12" y2="15.01" />
+    <line x1="16" y1="15" x2="16" y2="18" />
+    <line x1="8" y1="18" x2="8" y2="18.01" />
+    <line x1="12" y1="18" x2="12" y2="18.01" />
+  </Svg>
+);
+
 export const IconMoon = (p: IconProps) => (
   <Svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></Svg>
 );

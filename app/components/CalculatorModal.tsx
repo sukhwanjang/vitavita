@@ -1,0 +1,274 @@
+'use client';
+import { useState } from 'react';
+import { PRICE_ITEMS } from './priceData';
+import { IconX, IconCalculator, IconPlus, IconTrash, IconCopy, IconCheck } from './ui/icons';
+
+interface CalcRow {
+  id: number;
+  name: string;
+  unitPrice: string; // 자동 조회되지만 협의가로 수정 가능
+  w: string;         // 가로 (m)
+  h: string;         // 세로 (m)
+  qty: string;       // 수량
+  perUnit: boolean;  // true = 개당 품목
+}
+
+let nextId = 1;
+const emptyRow = (): CalcRow => ({ id: nextId++, name: '', unitPrice: '', w: '', h: '', qty: '1', perUnit: false });
+
+const num = (s: string) => {
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+};
+
+// 엑셀과 동일: 1,000원 단위 올림
+const roundUp1000 = (n: number) => (n > 0 ? Math.ceil(n / 1000) * 1000 : 0);
+
+const rowAmount = (r: CalcRow) => {
+  const unit = num(r.unitPrice);
+  const raw = r.perUnit ? unit * num(r.qty) : num(r.w) * num(r.h) * unit * num(r.qty);
+  return roundUp1000(raw);
+};
+
+const fmt = (n: number) => n.toLocaleString('ko-KR');
+
+interface CalculatorModalProps {
+  show: boolean;
+  onClose: () => void;
+}
+
+export default function CalculatorModal({ show, onClose }: CalculatorModalProps) {
+  const [rows, setRows] = useState<CalcRow[]>([emptyRow(), emptyRow(), emptyRow()]);
+  const [focusedRow, setFocusedRow] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  if (!show) return null;
+
+  const update = (id: number, patch: Partial<CalcRow>) =>
+    setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+
+  const pickItem = (id: number, itemName: string) => {
+    const item = PRICE_ITEMS.find(i => i.name === itemName);
+    if (!item) return;
+    update(id, {
+      name: item.name,
+      unitPrice: String(item.price),
+      perUnit: item.perUnit,
+      ...(item.perUnit ? { w: '', h: '' } : {}),
+    });
+    setFocusedRow(null);
+  };
+
+  const addRow = () => setRows(prev => [...prev, emptyRow()]);
+  const removeRow = (id: number) =>
+    setRows(prev => (prev.length > 1 ? prev.filter(r => r.id !== id) : [emptyRow()]));
+  const clearAll = () => setRows([emptyRow(), emptyRow(), emptyRow()]);
+
+  const activeRows = rows.filter(r => rowAmount(r) > 0);
+  const supply = activeRows.reduce((sum, r) => sum + rowAmount(r), 0);
+  const vat = Math.round(supply / 10);
+  const total = supply + vat;
+
+  const handleCopy = async () => {
+    const lines = activeRows.map(r => {
+      const spec = r.perUnit
+        ? `${num(r.qty)}개`
+        : `${r.w}×${r.h}m${num(r.qty) > 1 ? ` ×${r.qty}` : ''}`;
+      return `${r.name || '(품명없음)'} ${spec} — ${fmt(rowAmount(r))}원`;
+    });
+    const text = [
+      '[비타민사인 견적]',
+      ...lines,
+      `공급가액 ${fmt(supply)}원 / VAT ${fmt(vat)}원`,
+      `합계 ${fmt(total)}원 (VAT 포함)`,
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const suggestionsFor = (r: CalcRow) => {
+    if (!r.name) return PRICE_ITEMS;
+    return PRICE_ITEMS.filter(i => i.name.includes(r.name) && i.name !== r.name);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl relative animate-fadein max-h-[92vh] flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div>
+            <h3 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+              <IconCalculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              단가 계산기
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">품명을 고르면 단가가 자동으로 들어갑니다. 단가는 직접 고칠 수 있어요. 금액은 1,000원 단위 올림.</p>
+          </div>
+          <button
+            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
+            onClick={onClose}
+            aria-label="닫기"
+          >
+            <IconX className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* 계산 행들 */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {/* 열 제목 */}
+          <div className="hidden md:grid grid-cols-[1fr_90px_70px_70px_60px_100px_32px] gap-2 pb-2 text-[11px] font-semibold text-slate-400 select-none">
+            <span>품명</span>
+            <span className="text-right">단가</span>
+            <span className="text-center">가로(m)</span>
+            <span className="text-center">세로(m)</span>
+            <span className="text-center">수량</span>
+            <span className="text-right">금액</span>
+            <span />
+          </div>
+
+          <div className="space-y-2">
+            {rows.map(r => {
+              const amount = rowAmount(r);
+              const sugg = focusedRow === r.id ? suggestionsFor(r) : [];
+              return (
+                <div key={r.id} className="relative grid grid-cols-2 md:grid-cols-[1fr_90px_70px_70px_60px_100px_32px] gap-2 items-center">
+                  {/* 품명 + 자동완성 */}
+                  <div className="relative col-span-2 md:col-span-1">
+                    <input
+                      type="text"
+                      value={r.name}
+                      onChange={e => update(r.id, { name: e.target.value })}
+                      onFocus={() => setFocusedRow(r.id)}
+                      onBlur={() => setTimeout(() => setFocusedRow(prev => (prev === r.id ? null : prev)), 150)}
+                      placeholder="품명 검색 (예: 현수막, 유포...)"
+                      className="w-full rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 h-9 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                    />
+                    {focusedRow === r.id && sugg.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 md:w-[340px] mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-30 overflow-hidden max-h-56 overflow-y-auto">
+                        {sugg.slice(0, 40).map(item => (
+                          <button
+                            key={item.name}
+                            onMouseDown={e => { e.preventDefault(); pickItem(r.id, item.name); }}
+                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0"
+                          >
+                            <span className="inline-flex items-center h-4 px-1 rounded-sm bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-400 text-[9px] font-bold shrink-0">
+                              {item.category}
+                            </span>
+                            <span className="flex-1 truncate">{item.name}</span>
+                            <span className="text-[11px] text-slate-400 tabular-nums shrink-0">
+                              {fmt(item.price)}{item.perUnit ? '/개' : '/㎡'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 단가 */}
+                  <input
+                    type="number"
+                    value={r.unitPrice}
+                    onChange={e => update(r.id, { unitPrice: e.target.value })}
+                    placeholder="단가"
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-right text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                  />
+
+                  {/* 가로/세로 (개당 품목은 비활성) */}
+                  <input
+                    type="number"
+                    value={r.perUnit ? '' : r.w}
+                    onChange={e => update(r.id, { w: e.target.value })}
+                    placeholder={r.perUnit ? '—' : '가로'}
+                    disabled={r.perUnit}
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
+                  />
+                  <input
+                    type="number"
+                    value={r.perUnit ? '' : r.h}
+                    onChange={e => update(r.id, { h: e.target.value })}
+                    placeholder={r.perUnit ? '—' : '세로'}
+                    disabled={r.perUnit}
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition disabled:bg-slate-50 dark:disabled:bg-slate-800/40 disabled:text-slate-300 dark:disabled:text-slate-600"
+                  />
+
+                  {/* 수량 */}
+                  <input
+                    type="number"
+                    value={r.qty}
+                    onChange={e => update(r.id, { qty: e.target.value })}
+                    placeholder="수량"
+                    min={1}
+                    className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-2 h-9 text-sm text-center text-slate-900 dark:text-slate-100 tabular-nums focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+                  />
+
+                  {/* 금액 */}
+                  <span className={`text-right text-sm font-bold tabular-nums ${amount > 0 ? 'text-slate-900 dark:text-slate-100' : 'text-slate-300 dark:text-slate-700'}`}>
+                    {amount > 0 ? `${fmt(amount)}원` : '—'}
+                  </span>
+
+                  {/* 행 삭제 */}
+                  <button
+                    onClick={() => removeRow(r.id)}
+                    title="행 삭제"
+                    className="flex items-center justify-center w-8 h-8 rounded text-slate-300 dark:text-slate-600 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 transition"
+                  >
+                    <IconTrash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={addRow}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded border border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+            >
+              <IconPlus className="w-3 h-3" />
+              행 추가
+            </button>
+            <button
+              onClick={clearAll}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded text-xs font-semibold text-slate-400 hover:text-red-500 transition"
+            >
+              전체 지우기
+            </button>
+          </div>
+        </div>
+
+        {/* 합계 푸터 */}
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 rounded-b-md shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-5 text-sm">
+              <span className="text-slate-500 dark:text-slate-400">공급가액 <b className="text-slate-900 dark:text-slate-100 tabular-nums">{fmt(supply)}</b>원</span>
+              <span className="text-slate-500 dark:text-slate-400">VAT <b className="text-slate-900 dark:text-slate-100 tabular-nums">{fmt(vat)}</b>원</span>
+              <span className="text-base font-bold text-blue-700 dark:text-blue-400 tabular-nums">합계 {fmt(total)}원</span>
+            </div>
+            <button
+              onClick={handleCopy}
+              disabled={activeRows.length === 0}
+              className={`inline-flex items-center gap-1.5 h-9 px-4 rounded text-sm font-semibold border transition ${
+                copied
+                  ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40'
+              }`}
+              title="견적 내용을 복사해서 카톡·문자에 붙여넣을 수 있어요"
+            >
+              {copied ? <IconCheck className="w-3.5 h-3.5" /> : <IconCopy className="w-3.5 h-3.5" />}
+              {copied ? '복사됨!' : '견적 복사'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
