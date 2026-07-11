@@ -55,7 +55,7 @@ const toStatementItems = (calcRows: CalcRow[]): StatementItem[] =>
     .map(r => {
       const qty = num(r.qty) || 1;
       return {
-        name: r.name || '품명없음',
+        name: r.name.trim() || '품명없음',
         spec: r.perUnit ? '' : `${r.w}*${r.h}m`,
         qty,
         unitPrice: Math.round(rowAmount(r) / qty),
