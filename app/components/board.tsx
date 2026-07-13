@@ -664,6 +664,9 @@ export default function Board({ only }: BoardProps) {
               onRemove={removeDrop}
               onRestore={restoreDrop}
               requests={requests}
+              onImageClick={(it) => {
+                if (it.image_url) setModalImage({ url: it.image_url, company: it.company, program: it.program, id: it.id });
+              }}
               open={sidebarOpen}
               onToggle={toggleSidebar}
               newIds={newDropIds}

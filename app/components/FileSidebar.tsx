@@ -45,6 +45,7 @@ interface FileSidebarProps {
   onRemove: (id: number) => void;
   onRestore: (drop: FileDrop) => Promise<boolean>;
   requests?: RequestItem[]; // 연결된 작업 카드 표시용
+  onImageClick?: (item: RequestItem) => void; // 연결 카드 썸네일 클릭 → 검수 뷰어
   open: boolean;
   onToggle: () => void;
   newIds: Set<number>;
@@ -59,6 +60,7 @@ export default function FileSidebar({
   onRemove,
   onRestore,
   requests = [],
+  onImageClick,
   open,
   onToggle,
   newIds,
@@ -203,7 +205,13 @@ export default function FileSidebar({
             return (
               <p className="flex items-center gap-1.5 mt-1.5">
                 {linked.image_url && (
-                  <img src={linked.image_url} className="w-10 h-7 object-cover rounded-sm border border-slate-200 dark:border-slate-600 shrink-0" alt="" />
+                  <button
+                    onClick={() => onImageClick?.(linked)}
+                    title="클릭하면 원고를 크게 봅니다"
+                    className="shrink-0 rounded-sm overflow-hidden border border-slate-200 dark:border-slate-600 hover:ring-2 hover:ring-blue-400 transition"
+                  >
+                    <img src={linked.image_url} className="w-10 h-7 object-cover block" alt="" />
+                  </button>
                 )}
                 <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 truncate">
                   🔗 {linked.company} · {linked.program}
