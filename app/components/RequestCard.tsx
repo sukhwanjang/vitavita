@@ -222,19 +222,20 @@ export default function RequestCard({
           )}
         </div>
 
-        {/* 하단 스크림: 업체명 / 프로그램명 */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-900/45 to-transparent pt-10 pb-2.5 px-3.5 pointer-events-none">
-          <p
-            className="text-white font-bold text-[15px] leading-tight truncate drop-shadow-sm pointer-events-auto cursor-pointer hover:underline"
-            onClick={(e) => { e.stopPropagation(); onCompanyClick(item.company); }}
-            title="클릭하면 이 업체로 검색"
-          >{item.company}</p>
-          <p className="text-white/70 text-xs truncate mt-0.5">{item.program}</p>
-        </div>
+      </div>
+
+      {/* 업체명 / 프로그램명 (이미지 아래 — 이미지를 가리지 않게) */}
+      <div className="px-3.5 pt-2.5">
+        <p
+          className="font-bold text-[15px] leading-tight truncate text-slate-900 dark:text-slate-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+          onClick={() => onCompanyClick(item.company)}
+          title="클릭하면 이 업체로 검색"
+        >{item.company}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{item.program}</p>
       </div>
 
       {/* 메타: 담당자 + 등록 시각 */}
-      <div className="flex items-center gap-1.5 px-3.5 pt-2.5">
+      <div className="flex items-center gap-1.5 px-3.5 pt-1.5">
         {item.creator ? (
           <>
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold select-none">
