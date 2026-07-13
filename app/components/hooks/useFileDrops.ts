@@ -41,19 +41,20 @@ export function useFileDrops() {
   const addDrop = async (
     path: string,
     creator: string | null,
-    opts?: { urgent?: boolean; note?: string | null }
+    opts?: { urgent?: boolean; note?: string | null; requestId?: number | null }
   ) => {
     const payload: Record<string, unknown> = { path, creator };
     if (opts?.urgent) payload.is_urgent = true;
     if (opts?.note) payload.note = opts.note;
+    if (opts?.requestId) payload.request_id = opts.requestId;
 
     let { error } = await supabase.from('file_drop').insert([payload]);
 
     // 컬럼이 아직 없으면 기본 필드만으로 재시도 (기능 저하만, 등록은 성공)
-    if (error && isMissingColumnError(error.message) && (opts?.urgent || opts?.note)) {
+    if (error && isMissingColumnError(error.message) && (opts?.urgent || opts?.note || opts?.requestId)) {
       ({ error } = await supabase.from('file_drop').insert([{ path, creator }]));
       if (!error) {
-        alert('등록은 됐지만 급함/메모는 저장되지 않았습니다.\nSupabase에 is_urgent, note 컬럼을 추가해야 합니다.');
+        alert('등록은 됐지만 급함/메모/작업연결은 저장되지 않았습니다.\nSupabase에 is_urgent, note, request_id 컬럼을 추가해야 합니다.');
       }
     }
 
@@ -83,6 +84,7 @@ export function useFileDrops() {
     };
     if (drop.is_urgent) payload.is_urgent = drop.is_urgent;
     if (drop.note) payload.note = drop.note;
+    if (drop.request_id) payload.request_id = drop.request_id;
 
     const { error } = await supabase.from('file_drop').insert([payload]);
     if (error) {
@@ -93,5 +95,15 @@ export function useFileDrops() {
     return true;
   };
 
-  return { drops, error, addDrop, removeDrop, restoreDrop };
+  // 작업 카드 완료 시 연결된 출력요청 자동 정리 (조용히, 실패해도 무시)
+  const removeByRequest = async (requestId: number) => {
+    try {
+      await supabase.from('file_drop').delete().eq('request_id', requestId);
+      await fetchDrops();
+    } catch {
+      // request_id 컬럼이 없는 등의 상황은 조용히 넘어감
+    }
+  };
+
+  return { drops, error, addDrop, removeDrop, restoreDrop, removeByRequest };
 }

@@ -66,7 +66,7 @@ export default function Board({ only }: BoardProps) {
     completed,
     deleted
   } = useBoardData();
-  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop } = useFileDrops();
+  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop, removeByRequest } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
@@ -289,6 +289,12 @@ export default function Board({ only }: BoardProps) {
       : []
   );
 
+  // 카드별 연결된 출력요청 수 (카드에 배지 표시용)
+  const dropCountByRequest = new Map<number, number>();
+  drops.forEach(dr => {
+    if (dr.request_id) dropCountByRequest.set(dr.request_id, (dropCountByRequest.get(dr.request_id) ?? 0) + 1);
+  });
+
   const markAllSeen = () => {
     if (requests.length === 0) return;
     const maxId = Math.max(...requests.map(r => r.id));
@@ -348,6 +354,8 @@ export default function Board({ only }: BoardProps) {
   const handleConfirmComplete = async () => {
     if (!completingItem) return;
     await originalHandleComplete(completingItem.id);
+    // 카드 완료 → 연결된 출력요청 자동 정리 (출력대기에 잔재가 안 남게)
+    removeByRequest(completingItem.id);
     advanceQueue();
   };
 
@@ -548,7 +556,8 @@ export default function Board({ only }: BoardProps) {
       <FileDropModal
         show={showFileDrop}
         onClose={() => setShowFileDrop(false)}
-        onAdd={(path, creator, urgent, note) => addDrop(path, creator, { urgent, note })}
+        onAdd={(path, creator, urgent, note, requestId) => addDrop(path, creator, { urgent, note, requestId })}
+        cards={inProgress}
       />
 
       <InputFormModal
@@ -654,6 +663,7 @@ export default function Board({ only }: BoardProps) {
               error={fileDropError}
               onRemove={removeDrop}
               onRestore={restoreDrop}
+              requests={requests}
               open={sidebarOpen}
               onToggle={toggleSidebar}
               newIds={newDropIds}
@@ -763,6 +773,7 @@ export default function Board({ only }: BoardProps) {
                     onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
                     activeStatusFilter={statusFilter}
                     isNew={newIds.has(item.id)}
+                    printCount={dropCountByRequest.get(item.id) ?? 0}
                   />
                 ))}
               </div>

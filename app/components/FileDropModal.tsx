@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { IconX, IconUpload, IconZap } from './ui/icons';
+import { RequestItem } from './types';
+import { IconX, IconUpload, IconZap, IconCheck } from './ui/icons';
 
 // 탐색기 "경로로 복사"(Ctrl+Shift+C)로 붙여넣으면 따옴표가 붙어 오므로 제거
 const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
@@ -8,28 +9,36 @@ const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
 interface FileDropModalProps {
   show: boolean;
   onClose: () => void;
-  onAdd: (path: string, creator: string | null, urgent: boolean, note: string | null) => Promise<boolean>;
+  onAdd: (path: string, creator: string | null, urgent: boolean, note: string | null, requestId: number | null) => Promise<boolean>;
+  cards?: RequestItem[]; // 진행 중인 작업 카드 (연결 선택용)
 }
 
-export default function FileDropModal({ show, onClose, onAdd }: FileDropModalProps) {
+export default function FileDropModal({ show, onClose, onAdd, cards = [] }: FileDropModalProps) {
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [linkedId, setLinkedId] = useState<number | null>(null);
 
   if (!show) return null;
 
+  // 경로에 업체명이 들어있으면 그 카드를 추천(맨 앞 정렬 + 배지)
+  const path = cleanPath(input);
+  const isMatch = (c: RequestItem) => !!c.company && path.includes(c.company);
+  const sortedCards = [...cards].sort((a, b) => (isMatch(b) ? 1 : 0) - (isMatch(a) ? 1 : 0));
+  const linkedCard = linkedId !== null ? cards.find(c => c.id === linkedId) : null;
+
   const handleAdd = async () => {
-    const path = cleanPath(input);
     if (!path || isAdding) return;
     setIsAdding(true);
     const creator = localStorage.getItem('vitavita_creator');
-    const ok = await onAdd(path, creator, isUrgent, note.trim() || null);
+    const ok = await onAdd(path, creator, isUrgent, note.trim() || null, linkedId);
     setIsAdding(false);
     if (ok) {
       setInput('');
       setNote('');
       setIsUrgent(false);
+      setLinkedId(null);
       onClose();
     }
   };
@@ -38,6 +47,7 @@ export default function FileDropModal({ show, onClose, onAdd }: FileDropModalPro
     setInput('');
     setNote('');
     setIsUrgent(false);
+    setLinkedId(null);
     onClose();
   };
 
@@ -75,6 +85,62 @@ export default function FileDropModal({ show, onClose, onAdd }: FileDropModalPro
           <p className="text-xs text-slate-400 mt-2">
             탐색기에서 파일 선택 → <b className="text-slate-600 dark:text-slate-300">Ctrl+Shift+C</b> (경로로 복사) → 여기에 <b className="text-slate-600 dark:text-slate-300">Ctrl+V</b>
           </p>
+
+          {/* 작업 카드 연결 (선택) */}
+          {cards.length > 0 && (
+            <div className="mt-5">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">작업 연결 <span className="text-slate-400 font-normal text-xs">(선택)</span></span>
+                {path && sortedCards.some(isMatch) && (
+                  <span className="text-[10px] font-bold bg-amber-400 text-amber-950 rounded px-1.5 py-0.5">경로에서 업체명 발견 → 추천</span>
+                )}
+                {linkedCard && (
+                  <span className="ml-auto text-[11px] font-bold text-blue-600 dark:text-blue-400 truncate">
+                    🔗 {linkedCard.company} · {linkedCard.program}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1.5">
+                {sortedCards.slice(0, 12).map(c => {
+                  const selected = linkedId === c.id;
+                  const rec = isMatch(c);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setLinkedId(prev => (prev === c.id ? null : c.id))}
+                      title={selected ? '클릭하면 연결 해제' : '이 작업에 연결'}
+                      className={`relative shrink-0 w-[118px] rounded-md overflow-hidden border-2 text-left transition ${
+                        selected
+                          ? 'border-blue-500 ring-2 ring-blue-500/30'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600'
+                      }`}
+                    >
+                      {rec && (
+                        <span className="absolute top-1 left-1 z-10 text-[9px] font-black bg-amber-400 text-amber-950 rounded px-1 py-0.5">추천</span>
+                      )}
+                      {selected && (
+                        <span className="absolute top-1 right-1 z-10 flex items-center justify-center w-[18px] h-[18px] rounded-full bg-blue-600 text-white">
+                          <IconCheck className="w-3 h-3" />
+                        </span>
+                      )}
+                      <span className="block h-[54px] bg-slate-800">
+                        {c.image_url ? (
+                          <img src={c.image_url} className="w-full h-full object-cover opacity-90" alt="" />
+                        ) : (
+                          <span className="flex items-center justify-center h-full text-white/20 text-xl font-black select-none">{c.company?.[0] ?? '?'}</span>
+                        )}
+                      </span>
+                      <span className="block px-2 py-1 bg-white dark:bg-slate-800">
+                        <span className="block text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">{c.company}</span>
+                        <span className="block text-[10px] text-slate-400 truncate">{c.program}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 요청 메모 + 급함 */}
           <div className="flex gap-2 mt-4">

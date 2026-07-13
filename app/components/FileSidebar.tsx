@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { FileDrop } from './types';
+import { FileDrop, RequestItem } from './types';
 import {
   IconInbox, IconCopy, IconCheck, IconChevronLeft, IconChevronRight,
   IconZap, IconFileText, IconVolume, IconVolumeOff,
@@ -44,6 +44,7 @@ interface FileSidebarProps {
   error: string | null;
   onRemove: (id: number) => void;
   onRestore: (drop: FileDrop) => Promise<boolean>;
+  requests?: RequestItem[]; // 연결된 작업 카드 표시용
   open: boolean;
   onToggle: () => void;
   newIds: Set<number>;
@@ -57,6 +58,7 @@ export default function FileSidebar({
   error,
   onRemove,
   onRestore,
+  requests = [],
   open,
   onToggle,
   newIds,
@@ -193,6 +195,22 @@ export default function FileSidebar({
             )}
           </div>
           <p className="text-[10px] text-slate-400 break-all mt-1 font-mono" title={drop.path}>{folderOf(drop.path)}</p>
+
+          {/* 연결된 작업 카드 */}
+          {drop.request_id && (() => {
+            const linked = requests.find(rq => rq.id === drop.request_id);
+            if (!linked) return null;
+            return (
+              <p className="flex items-center gap-1.5 mt-1.5">
+                {linked.image_url && (
+                  <img src={linked.image_url} className="w-10 h-7 object-cover rounded-sm border border-slate-200 dark:border-slate-600 shrink-0" alt="" />
+                )}
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 truncate">
+                  🔗 {linked.company} · {linked.program}
+                </span>
+              </p>
+            );
+          })()}
 
           {/* 요청 메모 */}
           {drop.note && (

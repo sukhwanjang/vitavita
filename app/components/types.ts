@@ -23,6 +23,7 @@ export interface FileDrop {
   created_at: string;
   is_urgent?: boolean;      // 긴급 출력 (DB에 is_urgent 컬럼 필요)
   note?: string | null;     // 요청 메모 (DB에 note 컬럼 필요)
+  request_id?: number | null; // 연결된 작업 카드 id (DB에 request_id 컬럼 필요)
 }
 
 export type FilterType = 'completed' | 'deleted';
