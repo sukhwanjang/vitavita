@@ -92,14 +92,21 @@ export default function RequestCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded border bg-white dark:bg-slate-900 shadow-sm transition hover:shadow-md ${
+      className={`relative flex flex-col rounded border shadow-sm transition hover:shadow-md ${
         item.is_work_done
-          ? 'border-emerald-300 dark:border-emerald-700'
+          ? 'border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-300 dark:ring-emerald-700 bg-emerald-50 dark:bg-emerald-950/40'
           : item.is_urgent
-            ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-900'
-            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+            ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-900 bg-white dark:bg-slate-900'
+            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900'
       }`}
     >
+      {/* 작업완료 상단 리본 */}
+      {item.is_work_done && (
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1 h-6 px-3 rounded-full bg-emerald-600 text-white text-[11px] font-extrabold shadow-md select-none pointer-events-none">
+          <IconCheck className="w-3.5 h-3.5" />
+          작업완료
+        </div>
+      )}
       {/* 히어로 이미지 영역 */}
       <div
         ref={imgContainerRef}
@@ -180,11 +187,13 @@ export default function RequestCard({
           </div>
         )}
 
-        {/* 작업완료 도장 */}
+        {/* 작업완료 도장 (비스듬히 찍힌 인주 스탬프) */}
         {item.is_work_done && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/90 border-2 border-white shadow-lg">
-              <IconCheck className="w-8 h-8 text-white" />
+            <span className="flex items-center justify-center gap-1 px-5 py-2 rounded-md border-[3px] border-emerald-500 bg-emerald-500/15 backdrop-blur-[1px] text-emerald-100 text-xl font-black tracking-widest select-none shadow-lg -rotate-12"
+              style={{ textShadow: '0 1px 3px rgba(0,0,0,.55)' }}>
+              <IconCheck className="w-6 h-6" />
+              작업완료
             </span>
           </div>
         )}
