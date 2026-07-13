@@ -26,10 +26,8 @@ export function useFileDrops() {
 
   useEffect(() => {
     fetchDrops();
-    // 현황판과 같은 10초 주기, 탭이 보일 때만
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') fetchDrops();
-    }, 10000);
+    // 10초 주기 — 탭이 가려져 있어도 계속 확인 (출력요청 알림을 놓치지 않게)
+    const interval = setInterval(fetchDrops, 10000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') fetchDrops();
     };

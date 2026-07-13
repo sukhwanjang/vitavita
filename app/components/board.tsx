@@ -27,11 +27,10 @@ interface BoardProps {
 // 경로에서 파일명만 추출
 const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
 
-// 새 출력요청 알림음 ("띵동" 2음)
-const playNotifySound = () => {
+// 새 출력요청 알림음 ("띵동" 2음) — 공유 AudioContext 사용 (브라우저 자동재생 차단 대응)
+const playNotifySound = (ctx: AudioContext) => {
   try {
-    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-    const ctx = new Ctx();
+    if (ctx.state === 'suspended') ctx.resume();
     const tone = (freq: number, start: number, dur: number) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
@@ -112,6 +111,29 @@ export default function Board({ only }: BoardProps) {
   // ── 출력대기 새 파일 알림 (모든 페이지에서 동작) ──
   const [lastSeenDropId, setLastSeenDropId] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useState(true);
+
+  // 공유 AudioContext — 브라우저는 "클릭 한 번" 전까지 소리를 막으므로,
+  // 첫 클릭/키입력 때 오디오를 활성화해두고 이후 알림음은 언제든 재생
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [audioReady, setAudioReady] = useState(true); // 판정 전에는 배너 숨김
+  useEffect(() => {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx: AudioContext = new Ctx();
+    audioCtxRef.current = ctx;
+    setAudioReady(ctx.state === 'running');
+    ctx.onstatechange = () => setAudioReady(ctx.state === 'running');
+    const unlock = () => {
+      ctx.resume().catch(() => {});
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+      ctx.close().catch(() => {});
+    };
+  }, []);
   const [dropToast, setDropToast] = useState<{ name: string; creator: string | null } | null>(null);
   const prevMaxDropIdRef = useRef<number | null>(null);
   const dropToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -160,7 +182,7 @@ export default function Board({ only }: BoardProps) {
         setDropToast({ name: fileNameOf(newest.path), creator: newest.creator });
         if (dropToastTimerRef.current) clearTimeout(dropToastTimerRef.current);
         dropToastTimerRef.current = setTimeout(() => setDropToast(null), 7000);
-        if (soundOn) playNotifySound();
+        if (soundOn && audioCtxRef.current) playNotifySound(audioCtxRef.current);
         openSidebar();
       }
     }
@@ -472,6 +494,17 @@ export default function Board({ only }: BoardProps) {
         onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
         overdueHiddenCount={overdueHiddenCount}
       />
+
+      {/* 알림음 잠김 안내 (브라우저가 소리를 막은 상태 — 클릭 한 번이면 활성화) */}
+      {soundOn && !audioReady && (
+        <button
+          onClick={() => audioCtxRef.current?.resume().catch(() => {})}
+          className="fixed bottom-4 right-4 z-[80] flex items-center gap-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 text-sm font-bold px-4 py-3 shadow-xl animate-pulse transition"
+          title="브라우저 보안 정책 때문에 첫 클릭 전까지 소리가 차단됩니다"
+        >
+          🔕 알림음이 잠겨 있어요 — 클릭해서 켜기
+        </button>
+      )}
 
       {/* 새 출력요청 토스트 (어느 페이지에 있어도 표시) */}
       {dropToast && (
