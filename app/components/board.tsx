@@ -304,12 +304,6 @@ export default function Board({ only }: BoardProps) {
       : []
   );
 
-  // 카드별 연결된 출력요청 수 (카드에 배지 표시용)
-  const dropCountByRequest = new Map<number, number>();
-  drops.forEach(dr => {
-    if (dr.request_id) dropCountByRequest.set(dr.request_id, (dropCountByRequest.get(dr.request_id) ?? 0) + 1);
-  });
-
   // 편집 핸들러
   const handleEdit = (item: any) => {
     setFormInitialData({
@@ -756,7 +750,6 @@ export default function Board({ only }: BoardProps) {
                     onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
                     activeStatusFilter={statusFilter}
                     isNew={newIds.has(item.id)}
-                    printCount={dropCountByRequest.get(item.id) ?? 0}
                   />
                 ))}
               </div>

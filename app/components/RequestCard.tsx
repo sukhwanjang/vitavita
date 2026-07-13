@@ -16,7 +16,6 @@ interface RequestCardProps {
   onStatusClick: (key: string) => void;
   activeStatusFilter: string | null;
   isNew?: boolean;
-  printCount?: number; // 연결된 출력요청 수
 }
 
 export default function RequestCard({
@@ -31,7 +30,6 @@ export default function RequestCard({
   onStatusClick,
   activeStatusFilter,
   isNew = false,
-  printCount = 0,
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -211,15 +209,6 @@ export default function RequestCard({
             {barText}
             {activeStatusFilter === statusKey && <IconX className="w-3 h-3" />}
           </button>
-          {printCount > 0 && (
-            <span
-              className="inline-flex items-center gap-1 h-[22px] px-2 rounded-sm text-[11px] font-bold bg-amber-400 text-amber-950 shadow-sm select-none"
-              title="출력대기에 이 작업의 출력요청이 올라와 있습니다"
-            >
-              <IconPrinter className="w-3 h-3" />
-              {printCount}건
-            </span>
-          )}
         </div>
 
       </div>
