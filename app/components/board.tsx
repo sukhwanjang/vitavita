@@ -491,7 +491,8 @@ export default function Board({ only }: BoardProps) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* 헤더 */}
+      {/* 헤더 (출력 전용 화면에서는 숨김) */}
+      {only !== 'queue' && (
       <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -504,6 +505,7 @@ export default function Board({ only }: BoardProps) {
         onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
         overdueHiddenCount={overdueHiddenCount}
       />
+      )}
 
       {/* 알림음 잠김 안내 (브라우저가 소리를 막은 상태 — 클릭 한 번이면 활성화) */}
       {soundOn && !audioReady && (
@@ -605,6 +607,27 @@ export default function Board({ only }: BoardProps) {
         queueTotal={queueTotal}
       />
 
+      {/* 출력 전용 화면 (/queue) — 출력대기만 꽉 차게 */}
+      {only === 'queue' ? (
+        <FileSidebar
+          fullPage
+          drops={drops}
+          error={fileDropError}
+          onRemove={removeDrop}
+          onRestore={restoreDrop}
+          requests={requests}
+          onImageClick={(it) => {
+            if (it.image_url) setModalImage({ url: it.image_url, company: it.company, program: it.program, id: it.id });
+          }}
+          open
+          onToggle={() => {}}
+          newIds={newDropIds}
+          onMarkAllSeen={markDropsSeen}
+          soundOn={soundOn}
+          onToggleSound={toggleSound}
+        />
+      ) : (
+      <>
       {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 출력대기 폭만큼 밀어줌) */}
       <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
@@ -759,6 +782,8 @@ export default function Board({ only }: BoardProps) {
         )}
       </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

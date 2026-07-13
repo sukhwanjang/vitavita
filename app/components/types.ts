@@ -26,7 +26,7 @@ export interface FileDrop {
   request_id?: number | null; // 연결된 작업 카드 id (DB에 request_id 컬럼 필요)
 }
 
-export type FilterType = 'completed' | 'deleted';
+export type FilterType = 'completed' | 'deleted' | 'queue';
 
 export interface CheckMark {
   x: number;
