@@ -270,6 +270,21 @@ export default function Board({ only }: BoardProps) {
     document.title = total > 0 ? `(${total}) 비타민사인 현황판` : '비타민사인 현황판';
   }, [requests, lastSeenId, drops, lastSeenDropId]);
 
+  // 새 작업 NEW 뱃지: 배너 없이 60초 후 자동 확인 처리
+  useEffect(() => {
+    const myName = localStorage.getItem('vitavita_creator');
+    const count = lastSeenId !== null && lastSeenId >= 0
+      ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myName).length
+      : 0;
+    if (count === 0) return;
+    const t = setTimeout(() => {
+      const maxId = Math.max(...requests.map(r => r.id));
+      localStorage.setItem('vitavita_last_seen_id', String(maxId));
+      setLastSeenId(maxId);
+    }, 60000);
+    return () => clearTimeout(t);
+  }, [requests, lastSeenId]);
+
   // ⭐ 이제 모든 hooks 호출 후에 early return
   if (authChecked && !isAuthed) {
     return <PasswordGate onAuthenticated={handleAuthentication} />;
@@ -294,13 +309,6 @@ export default function Board({ only }: BoardProps) {
   drops.forEach(dr => {
     if (dr.request_id) dropCountByRequest.set(dr.request_id, (dropCountByRequest.get(dr.request_id) ?? 0) + 1);
   });
-
-  const markAllSeen = () => {
-    if (requests.length === 0) return;
-    const maxId = Math.max(...requests.map(r => r.id));
-    localStorage.setItem('vitavita_last_seen_id', String(maxId));
-    setLastSeenId(maxId);
-  };
 
   // 편집 핸들러
   const handleEdit = (item: any) => {
@@ -675,26 +683,6 @@ export default function Board({ only }: BoardProps) {
               onToggleSound={toggleSound}
             />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
-            {/* 새 작업 알림 배너 */}
-            {newItems.length > 0 && (
-              <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded px-4 py-3 text-sm text-blue-900 dark:text-blue-200">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 shrink-0">
-                  <IconBell className="w-4 h-4" />
-                </span>
-                <span>
-                  새 작업 <b className="font-bold">{newItems.length}건</b>이 등록되었습니다 —{' '}
-                  {newItems.slice(0, 3).map(r => r.company).join(', ')}
-                  {newItems.length > 3 ? ` 외 ${newItems.length - 3}건` : ''}
-                </span>
-                <button
-                  onClick={markAllSeen}
-                  className="ml-auto shrink-0 h-8 px-3.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
-                >
-                  모두 확인
-                </button>
-              </div>
-            )}
-
             {/* 현황 요약 패널 — 색은 숫자에만, 0건은 음소거 */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
               {[
@@ -712,25 +700,17 @@ export default function Board({ only }: BoardProps) {
                       if (seg.key === null) setStatusFilter(null);
                       else setStatusFilter(prev => prev === seg.key ? null : seg.key);
                     }}
-                    className={`relative text-left px-4 py-3 transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
+                    className={`relative flex items-center gap-2 text-left px-4 py-1.5 transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
                       active ? 'bg-blue-50/60 dark:bg-blue-950/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <span className="block text-[11px] font-medium text-slate-400 dark:text-slate-500">{seg.label}</span>
-                    <span className={`block mt-0.5 text-[26px] leading-8 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300 dark:text-slate-700' : seg.color}`}>
+                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">{seg.label}</span>
+                    <span className={`text-lg leading-6 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300 dark:text-slate-700' : seg.color}`}>
                       {seg.count}
-                      <span className="ml-0.5 text-sm font-medium text-slate-300 dark:text-slate-600">건</span>
+                      <span className="ml-0.5 text-[11px] font-medium text-slate-300 dark:text-slate-600">건</span>
                     </span>
                     {seg.progress && seg.progress.total > 0 && (
-                      <span className="flex items-center gap-1.5 mt-1.5">
-                        <span className="flex-1 h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                          <span
-                            className="block h-full bg-emerald-500 transition-all"
-                            style={{ width: `${(seg.progress.done / seg.progress.total) * 100}%` }}
-                          />
-                        </span>
-                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">작업완료 {seg.progress.done}/{seg.progress.total}</span>
-                      </span>
+                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0 ml-auto">✓ {seg.progress.done}/{seg.progress.total}</span>
                     )}
                     {active && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-blue-600" />}
                   </button>
