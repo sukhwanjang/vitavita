@@ -10,6 +10,7 @@ import {
   IconMoon,
   IconSun,
   IconCalculator,
+  IconFrame,
 } from './ui/icons';
 
 interface HeaderProps {
@@ -18,6 +19,7 @@ interface HeaderProps {
   onShowForm: () => void;
   onShowFileDrop: () => void;
   onShowCalculator: () => void;
+  onShowFrameCalc: () => void;
   showForm: boolean;
   editMode: boolean;
   hideOverdue: boolean;
@@ -37,6 +39,7 @@ export default function Header({
   onShowForm,
   onShowFileDrop,
   onShowCalculator,
+  onShowFrameCalc,
   showForm,
   editMode,
   hideOverdue,
@@ -114,6 +117,15 @@ export default function Header({
             >
               <IconCalculator className="w-4 h-4" />
               <span className="hidden lg:inline">계산기</span>
+            </button>
+
+            <button
+              onClick={onShowFrameCalc}
+              title="액자 틀 재단 계산기"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition"
+            >
+              <IconFrame className="w-4 h-4" />
+              <span className="hidden lg:inline">액자재단</span>
             </button>
 
             <button

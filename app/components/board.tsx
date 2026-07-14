@@ -18,6 +18,7 @@ import DeletedCard from './DeletedCard';
 import FileSidebar from './FileSidebar';
 import FileDropModal from './FileDropModal';
 import CalculatorModal from './CalculatorModal';
+import FrameCalcModal from './FrameCalcModal';
 import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
@@ -75,6 +76,7 @@ export default function Board({ only }: BoardProps) {
   const [showForm, setShowForm] = useState(false);
   const [showFileDrop, setShowFileDrop] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showFrameCalc, setShowFrameCalc] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
@@ -499,6 +501,7 @@ export default function Board({ only }: BoardProps) {
         onShowForm={handleShowForm}
         onShowFileDrop={() => setShowFileDrop(true)}
         onShowCalculator={() => setShowCalculator(true)}
+        onShowFrameCalc={() => setShowFrameCalc(true)}
         showForm={showForm}
         editMode={editMode}
         hideOverdue={hideOverdue}
@@ -555,6 +558,11 @@ export default function Board({ only }: BoardProps) {
         onClose={() => setShowCalculator(false)}
         companySuggestions={companySuggestions}
         programSuggestions={programSuggestions}
+      />
+
+      <FrameCalcModal
+        show={showFrameCalc}
+        onClose={() => setShowFrameCalc(false)}
       />
 
       <FileDropModal

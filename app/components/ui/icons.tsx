@@ -199,6 +199,13 @@ export const IconVolumeOff = (p: IconProps) => (
   </Svg>
 );
 
+export const IconFrame = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="1" />
+    <rect x="7" y="7" width="10" height="10" rx="0.5" />
+  </Svg>
+);
+
 export const IconCalculator = (p: IconProps) => (
   <Svg {...p}>
     <rect x="4" y="2" width="16" height="20" rx="2" />
