@@ -6,8 +6,11 @@ import { FileDrop } from '../types';
 const isMissingColumnError = (message: string) =>
   /column|42703|schema cache/i.test(message);
 
+const DONE_KEEP = 50; // 완료 보관 개수 (초과분은 오래된 것부터 자동 삭제)
+
 export function useFileDrops() {
   const [drops, setDrops] = useState<FileDrop[]>([]);
+  const [doneDrops, setDoneDrops] = useState<FileDrop[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDrops = useCallback(async () => {
@@ -21,7 +24,23 @@ export function useFileDrops() {
       return;
     }
     setError(null);
-    setDrops(data ?? []);
+
+    const all = data ?? [];
+    const doneRows = all
+      .filter(r => r.done)
+      .sort((a, b) =>
+        new Date(b.done_at ?? b.created_at).getTime() -
+        new Date(a.done_at ?? a.created_at).getTime()
+      );
+
+    // 완료 보관 50개 초과분은 오래된 것부터 완전 삭제
+    if (doneRows.length > DONE_KEEP) {
+      const excess = doneRows.slice(DONE_KEEP).map(r => r.id);
+      supabase.from('file_drop').delete().in('id', excess).then(() => {});
+    }
+
+    setDrops(all.filter(r => !r.done));
+    setDoneDrops(doneRows.slice(0, DONE_KEEP));
   }, []);
 
   useEffect(() => {
@@ -66,28 +85,46 @@ export function useFileDrops() {
     return true;
   };
 
+  // 완료 처리: 삭제 대신 완료 보관함으로 이동 (done 컬럼 없으면 예전처럼 삭제)
   const removeDrop = async (id: number) => {
-    const { error } = await supabase.from('file_drop').delete().eq('id', id);
+    let { error } = await supabase
+      .from('file_drop')
+      .update({ done: true, done_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error && isMissingColumnError(error.message)) {
+      ({ error } = await supabase.from('file_drop').delete().eq('id', id));
+    }
     if (error) {
-      alert('삭제 실패: ' + error.message);
+      alert('완료 처리 실패: ' + error.message);
       return;
     }
     await fetchDrops();
   };
 
-  // 실수로 지운 항목 복구 (원래 등록 시각 유지)
+  // 복구: 완료 보관함 → 대기 목록 (실행 취소와 보관함 [복구] 공용)
   const restoreDrop = async (drop: FileDrop) => {
-    const payload: Record<string, unknown> = {
-      path: drop.path,
-      creator: drop.creator,
-      created_at: drop.created_at,
-    };
-    if (drop.is_urgent) payload.is_urgent = drop.is_urgent;
-    if (drop.note) payload.note = drop.note;
-    if (drop.request_id) payload.request_id = drop.request_id;
+    const { data, error } = await supabase
+      .from('file_drop')
+      .update({ done: false, done_at: null })
+      .eq('id', drop.id)
+      .select('id');
 
-    const { error } = await supabase.from('file_drop').insert([payload]);
-    if (error) {
+    // done 컬럼이 없거나(구버전 삭제 방식) 행이 이미 사라진 경우 → 재등록으로 복구
+    if ((error && isMissingColumnError(error.message)) || (!error && (data ?? []).length === 0)) {
+      const payload: Record<string, unknown> = {
+        path: drop.path,
+        creator: drop.creator,
+        created_at: drop.created_at,
+      };
+      if (drop.is_urgent) payload.is_urgent = drop.is_urgent;
+      if (drop.note) payload.note = drop.note;
+      if (drop.request_id) payload.request_id = drop.request_id;
+      const { error: insErr } = await supabase.from('file_drop').insert([payload]);
+      if (insErr) {
+        alert('복구 실패: ' + insErr.message);
+        return false;
+      }
+    } else if (error) {
       alert('복구 실패: ' + error.message);
       return false;
     }
@@ -95,15 +132,22 @@ export function useFileDrops() {
     return true;
   };
 
-  // 작업 카드 완료 시 연결된 출력요청 자동 정리 (조용히, 실패해도 무시)
+  // 작업 카드 완료 시 연결된 출력요청 자동 정리 (완료 보관으로, 실패해도 무시)
   const removeByRequest = async (requestId: number) => {
     try {
-      await supabase.from('file_drop').delete().eq('request_id', requestId);
+      const { error } = await supabase
+        .from('file_drop')
+        .update({ done: true, done_at: new Date().toISOString() })
+        .eq('request_id', requestId)
+        .eq('done', false);
+      if (error && isMissingColumnError(error.message)) {
+        await supabase.from('file_drop').delete().eq('request_id', requestId);
+      }
       await fetchDrops();
     } catch {
       // request_id 컬럼이 없는 등의 상황은 조용히 넘어감
     }
   };
 
-  return { drops, error, addDrop, removeDrop, restoreDrop, removeByRequest };
+  return { drops, doneDrops, error, addDrop, removeDrop, restoreDrop, removeByRequest };
 }

@@ -13,6 +13,7 @@ const HEADER_OFFSET = 109;
 
 interface FileSidebarProps {
   drops: FileDrop[];
+  doneDrops?: FileDrop[]; // 완료 보관함 (최근 50개)
   error: string | null;
   onRemove: (id: number) => void;
   onRestore: (drop: FileDrop) => Promise<boolean>;
@@ -29,6 +30,7 @@ interface FileSidebarProps {
 
 export default function FileSidebar({
   drops,
+  doneDrops = [],
   error,
   onRemove,
   onRestore,
@@ -44,6 +46,7 @@ export default function FileSidebar({
 }: FileSidebarProps) {
   const router = useRouter();
   const [undoDrop, setUndoDrop] = useState<FileDrop | null>(null);
+  const [showDone, setShowDone] = useState(false); // 완료 보관함 보기
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const newCount = newIds.size;
@@ -99,7 +102,51 @@ export default function FileSidebar({
     </div>
   );
 
-  const listBody = (
+  // 완료 보관함 보기 토글 버튼 (헤더 공용)
+  const doneToggleButton = (
+    <button
+      onClick={() => setShowDone(v => !v)}
+      title={showDone ? '대기 목록으로' : '완료된 파일 보기 (최근 50개 보관)'}
+      className={`h-6 px-2 rounded text-[10px] font-bold border transition shrink-0 ${
+        showDone
+          ? 'bg-emerald-600 border-emerald-600 text-white'
+          : 'border-slate-200 dark:border-slate-600 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-300'
+      }`}
+    >
+      완료 {doneDrops.length}
+    </button>
+  );
+
+  // 완료 보관함 목록
+  const doneList = doneDrops.length === 0 ? (
+    <p className="p-6 text-xs text-slate-400 text-center">완료된 파일이 없습니다</p>
+  ) : (
+    <>
+      <p className="px-4 py-1.5 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 sticky top-0">
+        최근 완료 {doneDrops.length}개 · 최대 50개 보관 (초과분 자동 삭제)
+      </p>
+      {doneDrops.map(d => (
+        <div key={d.id} className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 break-all">{fileNameOf(d.path)}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] text-slate-400 tabular-nums">
+              ✓ {new Date(d.done_at ?? d.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
+              {d.creator && ` · ${d.creator}`}
+            </span>
+            <button
+              onClick={() => onRestore(d)}
+              title="대기 목록으로 복구"
+              className="ml-auto shrink-0 h-6 px-2 rounded text-[10px] font-semibold border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 transition"
+            >
+              복구
+            </button>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+
+  const listBody = showDone ? doneList : (
     <DropList
       drops={drops}
       error={error}
@@ -123,6 +170,7 @@ export default function FileSidebar({
             </span>
           )}
           <span className="ml-auto flex items-center gap-1.5">
+            {doneToggleButton}
             {soundToggleButton}
             <button
               onClick={() => router.push('/')}
@@ -160,6 +208,7 @@ export default function FileSidebar({
                 </span>
               )}
               <span className="ml-auto flex items-center gap-0.5">
+                {doneToggleButton}
                 <button
                   onClick={() => router.push('/queue')}
                   title="출력대기 전용 화면 (출력기 컴퓨터용 — 출력대기만 크게 표시)"
@@ -216,6 +265,7 @@ export default function FileSidebar({
               </span>
             )}
             <span className="ml-auto flex items-center gap-0.5">
+              {doneToggleButton}
               <button
                 onClick={() => router.push('/queue')}
                 title="출력대기 전용 화면 (출력기 컴퓨터용 — 출력대기만 크게 표시)"

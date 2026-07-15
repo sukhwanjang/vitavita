@@ -67,7 +67,7 @@ export default function Board({ only }: BoardProps) {
     completed,
     deleted
   } = useBoardData();
-  const { drops, error: fileDropError, addDrop, removeDrop, restoreDrop, removeByRequest } = useFileDrops();
+  const { drops, doneDrops, error: fileDropError, addDrop, removeDrop, restoreDrop, removeByRequest } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
@@ -620,6 +620,7 @@ export default function Board({ only }: BoardProps) {
         <FileSidebar
           fullPage
           drops={drops}
+          doneDrops={doneDrops}
           error={fileDropError}
           onRemove={removeDrop}
           onRestore={restoreDrop}
@@ -693,6 +694,7 @@ export default function Board({ only }: BoardProps) {
             {/* 출력대기 사이드바 (데스크톱: 좌측 고정, 모바일: 인라인) */}
             <FileSidebar
               drops={drops}
+              doneDrops={doneDrops}
               error={fileDropError}
               onRemove={removeDrop}
               onRestore={restoreDrop}
