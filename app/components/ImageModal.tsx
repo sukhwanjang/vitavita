@@ -280,17 +280,17 @@ export default function ImageModal({
     >
       {/* 상단 툴바 */}
       <div
-        className="flex items-center gap-3 h-14 px-4 bg-slate-900/95 border-b border-white/10 shrink-0"
+        className="relative flex items-center gap-3 h-14 px-4 bg-slate-900/95 border-b border-white/10 shrink-0"
         onClick={stop}
       >
-        {/* 좌: 작업 정보 (건의: 확대 화면에서 어떤 작업인지 바로 보이게) */}
-        <div className="flex items-baseline gap-2.5 min-w-0">
+        {/* 정중앙: 작업 정보 (건의: 확대 화면에서 어떤 작업인지 바로 보이게) */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-baseline gap-2.5 max-w-[46%] pointer-events-none">
           {company && <span className="text-white font-extrabold text-lg md:text-2xl tracking-tight truncate">{company}</span>}
           {program && <span className="text-sky-300 text-sm md:text-lg font-semibold truncate">{program}</span>}
         </div>
 
-        {/* 중앙: 줌 컨트롤 */}
-        <div className="flex items-center gap-1 mx-auto">
+        {/* 좌: 줌 컨트롤 */}
+        <div className="flex items-center gap-1">
           <button
             onClick={() => setZoom(z => clampZoom(z - 0.25))}
             className="flex items-center justify-center w-8 h-8 rounded text-white/60 hover:bg-white/10 hover:text-white transition text-lg font-medium select-none"
@@ -318,7 +318,7 @@ export default function ImageModal({
         </div>
 
         {/* 우: 주석 관리 + 닫기 */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {pins.length > 0 && (
             <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold select-none">
               <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold">{pins.length}</span>
