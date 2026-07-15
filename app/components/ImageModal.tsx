@@ -280,13 +280,13 @@ export default function ImageModal({
     >
       {/* 상단 툴바 */}
       <div
-        className="flex items-center gap-3 h-12 px-4 bg-slate-900/95 border-b border-white/10 shrink-0"
+        className="flex items-center gap-3 h-14 px-4 bg-slate-900/95 border-b border-white/10 shrink-0"
         onClick={stop}
       >
-        {/* 좌: 작업 정보 */}
-        <div className="flex items-baseline gap-2 min-w-0">
-          {company && <span className="text-white font-bold text-sm truncate">{company}</span>}
-          {program && <span className="text-white/50 text-xs truncate">{program}</span>}
+        {/* 좌: 작업 정보 (건의: 확대 화면에서 어떤 작업인지 바로 보이게) */}
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          {company && <span className="text-white font-extrabold text-lg md:text-2xl tracking-tight truncate">{company}</span>}
+          {program && <span className="text-sky-300 text-sm md:text-lg font-semibold truncate">{program}</span>}
         </div>
 
         {/* 중앙: 줌 컨트롤 */}
