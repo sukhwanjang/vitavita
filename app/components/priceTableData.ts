@@ -19,6 +19,7 @@ export const FULL_PRICE_TABLE: RefGroup[] = [
     rows: [
       { name: '유포 출력', price: 22000 },
       { name: '유포 컷팅', price: 27000 },
+      { name: '유포G', price: 27000 },
       { name: '유포+자석', price: 38000 },
       { name: '유포1T', price: 40000, note: '포맥스/폼포드' },
       { name: '유포2T', price: 44000 },

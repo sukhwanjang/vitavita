@@ -13,6 +13,7 @@ export const PRICE_ITEMS: PriceItem[] = [
   // 유포
   { category: '유포', name: '유포 출력', price: 22000, perUnit: false },
   { category: '유포', name: '유포 컷팅', price: 27000, perUnit: false },
+  { category: '유포', name: '유포G', price: 27000, perUnit: false },
   { category: '유포', name: '유포+자석', price: 38000, perUnit: false },
   { category: '유포', name: '유포1T', price: 40000, perUnit: false, note: '포맥스/폼보드' },
   { category: '유포', name: '유포2T', price: 44000, perUnit: false },
