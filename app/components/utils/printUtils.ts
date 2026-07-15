@@ -7,6 +7,7 @@ export interface FramePrintFrame {
   horizLen: number;
   vertLen: number;
   supportLen: number;
+  qty?: number; // 같은 사이즈 개수
 }
 export interface FramePrintStock {
   cuts: { len: number; kind: string }[];
@@ -93,10 +94,10 @@ export const handlePrintFrameCut = (opts: {
     </div>`;
   }).join('');
 
-  // 전개도 — 프레임별
+  // 전개도 — 프레임별 (같은 사이즈는 ×N로 한 번만)
   const frameDiagrams = opts.frames.map((f, i) => `
     <div class="frame">
-      <div class="frame-title">틀 ${i + 1} · ${mmTxt(f.width)} × ${mmTxt(f.height)}</div>
+      <div class="frame-title">틀 ${i + 1} · ${mmTxt(f.width)} × ${mmTxt(f.height)}${(f.qty ?? 1) > 1 ? ` <span style="color:#dc2626">×${f.qty}개</span>` : ''}</div>
       ${frameSvg(f)}
     </div>`).join('');
 

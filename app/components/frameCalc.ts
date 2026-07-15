@@ -11,6 +11,7 @@ export interface FrameSpec {
   width: number;    // 가로 (mm)
   height: number;   // 세로 (mm)
   supports: number; // 지지대 개수
+  qty: number;      // 같은 사이즈 개수
 }
 
 export interface FrameSettings {
@@ -50,17 +51,21 @@ export function framePieces(spec: FrameSpec, s: FrameSettings): FramePieces {
   };
 }
 
-// 한 프레임의 모든 조각(가로2 + 세로2 + 지지대N)
+// 한 프레임의 모든 조각(가로2 + 세로2 + 지지대N) × 수량
 export function pieceList(spec: FrameSpec, s: FrameSettings): Piece[] {
   const p = framePieces(spec, s);
-  const out: Piece[] = [
-    { len: p.horizLen, kind: '가로', frameId: spec.id },
-    { len: p.horizLen, kind: '가로', frameId: spec.id },
-    { len: p.vertLen, kind: '세로', frameId: spec.id },
-    { len: p.vertLen, kind: '세로', frameId: spec.id },
-  ];
-  for (let i = 0; i < p.supportQty; i++) {
-    out.push({ len: p.supportLen, kind: '지지대', frameId: spec.id });
+  const qty = Math.max(1, spec.qty || 1);
+  const out: Piece[] = [];
+  for (let q = 0; q < qty; q++) {
+    out.push(
+      { len: p.horizLen, kind: '가로', frameId: spec.id },
+      { len: p.horizLen, kind: '가로', frameId: spec.id },
+      { len: p.vertLen, kind: '세로', frameId: spec.id },
+      { len: p.vertLen, kind: '세로', frameId: spec.id },
+    );
+    for (let i = 0; i < p.supportQty; i++) {
+      out.push({ len: p.supportLen, kind: '지지대', frameId: spec.id });
+    }
   }
   return out;
 }
