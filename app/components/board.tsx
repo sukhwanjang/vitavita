@@ -272,6 +272,35 @@ export default function Board({ only }: BoardProps) {
     document.title = total > 0 ? `(${total}) 비타민사인 현황판` : '비타민사인 현황판';
   }, [requests, lastSeenId, drops, lastSeenDropId]);
 
+  // ── 새 버전 배포 감지 → 자동 새로고침 ──
+  // 매장 컴퓨터처럼 며칠씩 켜둔 화면이 옛날 코드로 계속 도는 것을 방지.
+  // 입력 중이거나 모달이 열려 있으면 방해하지 않고 다음 확인 때 새로고침.
+  const buildIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const extractBuildId = (html: string) => html.match(/webpack-([a-f0-9]+)\.js/)?.[1] ?? null;
+    const check = async () => {
+      try {
+        const res = await fetch('/', { cache: 'no-store' });
+        const id = extractBuildId(await res.text());
+        if (!id) return; // 개발 모드 등에서는 동작 안 함
+        if (buildIdRef.current === null) {
+          buildIdRef.current = id;
+          return;
+        }
+        if (id !== buildIdRef.current) {
+          const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '');
+          const modalOpen = !!document.querySelector('.fixed.inset-0');
+          if (!typing && !modalOpen) window.location.reload();
+        }
+      } catch {
+        // 오프라인 등은 조용히 무시
+      }
+    };
+    check();
+    const interval = setInterval(check, 5 * 60 * 1000); // 5분마다
+    return () => clearInterval(interval);
+  }, []);
+
   // 새 작업 NEW 뱃지: 배너 없이 60초 후 자동 확인 처리
   useEffect(() => {
     const myName = localStorage.getItem('vitavita_creator');

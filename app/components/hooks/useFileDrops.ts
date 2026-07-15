@@ -85,15 +85,12 @@ export function useFileDrops() {
     return true;
   };
 
-  // 완료 처리: 삭제 대신 완료 보관함으로 이동 (done 컬럼 없으면 예전처럼 삭제)
+  // 완료 처리: 삭제하지 않고 완료 보관함으로 이동
   const removeDrop = async (id: number) => {
-    let { error } = await supabase
+    const { error } = await supabase
       .from('file_drop')
       .update({ done: true, done_at: new Date().toISOString() })
       .eq('id', id);
-    if (error && isMissingColumnError(error.message)) {
-      ({ error } = await supabase.from('file_drop').delete().eq('id', id));
-    }
     if (error) {
       alert('완료 처리 실패: ' + error.message);
       return;
@@ -135,17 +132,14 @@ export function useFileDrops() {
   // 작업 카드 완료 시 연결된 출력요청 자동 정리 (완료 보관으로, 실패해도 무시)
   const removeByRequest = async (requestId: number) => {
     try {
-      const { error } = await supabase
+      await supabase
         .from('file_drop')
         .update({ done: true, done_at: new Date().toISOString() })
         .eq('request_id', requestId)
         .eq('done', false);
-      if (error && isMissingColumnError(error.message)) {
-        await supabase.from('file_drop').delete().eq('request_id', requestId);
-      }
       await fetchDrops();
     } catch {
-      // request_id 컬럼이 없는 등의 상황은 조용히 넘어감
+      // 실패해도 조용히 넘어감 (수동 완료로 정리 가능)
     }
   };
 
