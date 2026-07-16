@@ -286,7 +286,7 @@ export const handlePrintStatement = (opts: {
               </tr>
               <tr>
                 <td class="fl">주소</td>
-                <td colspan="3" class="smtxt">경기도 고양시 일산동구 동국로 56(식사동)</td>
+                <td colspan="3" class="smtxt">경기도 고양시 일산동구 동국로 58(식사동)</td>
               </tr>
               <tr>
                 <td class="fl">업태</td>
