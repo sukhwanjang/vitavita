@@ -250,6 +250,18 @@ export default function Board({ only }: BoardProps) {
     setLastSeenId(stored !== null ? Number(stored) : -1);
   }, []);
 
+  // 주소에 ?new=1 이 붙어 있으면 새 작업 등록창을 바로 연다 (일러스트 툴 바로가기 버튼용)
+  // 열고 나면 주소에서 지워서 새로고침 때 다시 안 뜨게 함
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('new') === '1') {
+      setShowForm(true);
+      params.delete('new');
+      const rest = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
+    }
+  }, []);
+
   // 첫 방문이면 현재 최신 글까지 확인한 것으로 조용히 초기화 (전부 NEW로 뜨는 것 방지)
   useEffect(() => {
     if (lastSeenId === -1 && requests.length > 0) {
