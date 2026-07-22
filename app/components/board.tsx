@@ -251,15 +251,50 @@ export default function Board({ only }: BoardProps) {
   }, []);
 
   // 주소에 ?new=1 이 붙어 있으면 새 작업 등록창을 바로 연다 (일러스트 툴 바로가기 버튼용)
+  // 이미 열려 있는 현황판 탭이 있으면: 그 탭에 등록창을 띄우고 이 탭은 스스로 닫힘 (탭 안 쌓이게)
   // 열고 나면 주소에서 지워서 새로고침 때 다시 안 뜨게 함
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('new') === '1') {
-      setShowForm(true);
+    const wantNew = params.get('new') === '1';
+    if (wantNew) {
       params.delete('new');
       const rest = params.toString();
       window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
     }
+    if (typeof BroadcastChannel === 'undefined') {
+      if (wantNew) setShowForm(true);
+      return;
+    }
+    let selfBusy = wantNew; // 신호 주고받는 동안 자기 핑에 답하지 않게
+    let gotPong = false;
+    const bc = new BroadcastChannel('vitavita-cmd');
+    const onMsg = (e: MessageEvent) => {
+      if (selfBusy) {
+        if (e.data === 'pong') gotPong = true;
+        return;
+      }
+      if (e.data === 'ping') bc.postMessage('pong');
+      if (e.data === 'open-new-form') setShowForm(true);
+    };
+    bc.addEventListener('message', onMsg);
+    let t: ReturnType<typeof setTimeout> | null = null;
+    if (wantNew) {
+      bc.postMessage('ping');
+      t = setTimeout(() => {
+        if (gotPong) {
+          // 기존 탭에 등록창을 열게 하고 이 탭은 닫기 (브라우저가 못 닫게 하면 여기서라도 염)
+          bc.postMessage('open-new-form');
+          window.close();
+        }
+        setShowForm(true);
+        selfBusy = false; // 이후에는 일반 탭처럼 다른 탭의 신호에 응답
+      }, 350);
+    }
+    return () => {
+      if (t) clearTimeout(t);
+      bc.removeEventListener('message', onMsg);
+      bc.close();
+    };
   }, []);
 
   // 첫 방문이면 현재 최신 글까지 확인한 것으로 조용히 초기화 (전부 NEW로 뜨는 것 방지)
