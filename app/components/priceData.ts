@@ -26,6 +26,7 @@ export const PRICE_ITEMS: PriceItem[] = [
   { category: '출력', name: '인화지', price: 22000, perUnit: false },
   // 현수막
   { category: '현수막', name: '현수막(재단)', price: 7000, perUnit: false },
+  { category: '현수막', name: '현수막타공', price: 8000, perUnit: false },
   { category: '현수막', name: '텐트천', price: 10000, perUnit: false },
   // 페트배너
   { category: '페트배너', name: '페트', price: 30000, perUnit: false },
