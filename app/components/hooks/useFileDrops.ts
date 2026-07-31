@@ -8,6 +8,21 @@ const isMissingColumnError = (message: string) =>
 
 const DONE_KEEP = 50; // 완료 보관 개수 (초과분은 오래된 것부터 자동 삭제)
 
+// 경로에서 파일 이름만 뽑기 (중복 업로드 검사용 — 폴더가 달라도 이름이 같으면 같은 파일로 봄)
+const baseName = (p: string) => {
+  const seg = p.trim().replace(/[\\/]+$/, '').split(/[\\/]/);
+  return (seg[seg.length - 1] || p).trim();
+};
+
+const timeAgo = (iso: string) => {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return '방금';
+  if (min < 60) return `${min}분 전`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
+};
+
 export function useFileDrops() {
   const [drops, setDrops] = useState<FileDrop[]>([]);
   const [doneDrops, setDoneDrops] = useState<FileDrop[]>([]);
@@ -62,6 +77,26 @@ export function useFileDrops() {
     creator: string | null,
     opts?: { urgent?: boolean; note?: string | null; requestId?: number | null }
   ) => {
+    // ── 중복 업로드 검사: 같은 이름 파일이 이미 올라와 있으면 알려줌 ──
+    const name = baseName(path);
+    const nameLc = name.toLowerCase();
+    const dup = drops.find(d => baseName(d.path).toLowerCase() === nameLc);
+    if (dup) {
+      const who = dup.creator ? ` · ${dup.creator}` : '';
+      const goAhead = window.confirm(
+        `이미 업로드한 파일입니다!\n\n${name}\n(${timeAgo(dup.created_at)}${who} · 지금 출력대기에 있음)\n\n그래도 한 번 더 올릴까요?`
+      );
+      if (!goAhead) return false;
+    } else {
+      const dupDone = doneDrops.find(d => baseName(d.path).toLowerCase() === nameLc);
+      if (dupDone) {
+        const goAhead = window.confirm(
+          `이미 출력 완료 처리된 파일입니다.\n\n${name}\n(${timeAgo(dupDone.done_at ?? dupDone.created_at)} 완료됨)\n\n다시 올릴까요?`
+        );
+        if (!goAhead) return false;
+      }
+    }
+
     const payload: Record<string, unknown> = { path, creator };
     if (opts?.urgent) payload.is_urgent = true;
     if (opts?.note) payload.note = opts.note;
