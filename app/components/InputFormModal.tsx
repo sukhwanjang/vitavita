@@ -139,6 +139,17 @@ export default function InputFormModal({
         return;
       }
       imageUrl = uploaded;
+    } else if (imageUrl?.startsWith('data:')) {
+      // 미리보기가 base64로만 남은 경우에도 반드시 스토리지에 올린다
+      // (base64가 DB에 그대로 저장되면 행 하나가 수 MB가 되어 현황판 전체가 느려짐)
+      const blob = await (await fetch(imageUrl)).blob();
+      const file = new File([blob], 'pasted_image.png', { type: blob.type || 'image/png' });
+      const uploaded = await uploadImage(file);
+      if (!uploaded) {
+        setIsSubmitting(false);
+        return;
+      }
+      imageUrl = uploaded;
     }
 
     if (editMode && editingId !== null) {
