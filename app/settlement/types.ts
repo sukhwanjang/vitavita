@@ -19,6 +19,7 @@ export interface SettlementItem {
   paid: boolean;
   paid_by: string | null;
   paid_at: string | null;
+  card_paid: boolean;
   memo: string;
   sort_order: number;
   created_at: string;

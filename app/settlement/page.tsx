@@ -10,6 +10,9 @@ import { formatAmount, formatWhen } from './excel';
 import { SettlementItem, ParsedRow, ItemType, InvoiceStatus, WORKER_NAMES } from './types';
 import { IconSearch, IconUpload } from '../components/ui/icons';
 
+// 빠른 필터: 안 끝난 것만 골라보기
+type QuickFilter = 'all' | 'stmt_no' | 'inv_no' | 'inv_req' | 'pay_wait';
+
 // 기본값: 지난달 (월말 정산은 보통 지난달 분)
 const prevMonth = () => {
   const d = new Date();
@@ -23,6 +26,9 @@ export default function SettlementPage() {
 
   const [items, setItems] = useState<SettlementItem[]>([]);
   const [blacklist, setBlacklist] = useState<Set<string>>(new Set());
+  const [companyInfo, setCompanyInfo] = useState<Map<string, string>>(new Map());
+  const [infoEdit, setInfoEdit] = useState<{ company: string; text: string } | null>(null);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [months, setMonths] = useState<string[]>([]);
   const [month, setMonth] = useState('');
   const [tab, setTab] = useState<ItemType>('미수');
@@ -89,7 +95,14 @@ export default function SettlementPage() {
     setBlacklist(new Set((data ?? []).map(r => r.company)));
   }, []);
 
-  useEffect(() => { fetchMonths(); fetchBlacklist(); }, [fetchMonths, fetchBlacklist]);
+  // 업체 정보 (업체명 기준 — 매달 유지되는 메모)
+  const fetchCompanyInfo = useCallback(async () => {
+    const { data, error: err } = await supabase.from('settlement_company_info').select('company, info');
+    if (err) return; // 테이블 없으면 조용히 무시
+    setCompanyInfo(new Map((data ?? []).map(r => [r.company, r.info])));
+  }, []);
+
+  useEffect(() => { fetchMonths(); fetchBlacklist(); fetchCompanyInfo(); }, [fetchMonths, fetchBlacklist, fetchCompanyInfo]);
   useEffect(() => { if (month) fetchItems(month); }, [month, fetchItems]);
 
   // 10초마다 새로고침 (다른 사람 체크 실시간 반영)
@@ -98,10 +111,11 @@ export default function SettlementPage() {
       if (document.visibilityState === 'visible' && month) {
         fetchItems(month);
         fetchBlacklist();
+        fetchCompanyInfo();
       }
     }, 10000);
     return () => clearInterval(t);
-  }, [month, fetchItems, fetchBlacklist]);
+  }, [month, fetchItems, fetchBlacklist, fetchCompanyInfo]);
 
   // ── 상태 변경 ──────────────────────────────────────
   const requireWorker = () => {
@@ -160,6 +174,36 @@ export default function SettlementPage() {
   const saveMemo = (it: SettlementItem, memo: string) => {
     if (memo === it.memo) return;
     updateRow(it.id, { memo });
+  };
+
+  // 카드 결제 표시 (이 달 항목에만 표시)
+  const toggleCard = (it: SettlementItem) => {
+    updateRow(it.id, { card_paid: !it.card_paid });
+  };
+
+  // 업체 정보 저장 — 업체명 기준이라 매달 유지됨
+  const saveCompanyInfo = async () => {
+    if (!infoEdit) return;
+    const { company, text } = infoEdit;
+    const trimmed = text.trim();
+    setCompanyInfo(prev => {
+      const next = new Map(prev);
+      if (trimmed) next.set(company, trimmed); else next.delete(company);
+      return next;
+    });
+    setInfoEdit(null);
+    const res = trimmed
+      ? await supabase.from('settlement_company_info').upsert({
+          company,
+          info: trimmed,
+          updated_by: worker || null,
+          updated_at: new Date().toISOString(),
+        })
+      : await supabase.from('settlement_company_info').delete().eq('company', company);
+    if (res.error) {
+      setError(`업체 정보 저장 실패: ${res.error.message}`);
+      fetchCompanyInfo();
+    }
   };
 
   const deleteRow = async (it: SettlementItem) => {
@@ -245,8 +289,17 @@ export default function SettlementPage() {
   // ── 화면용 데이터 ───────────────────────────────────
   const tabItems = useMemo(() => items.filter(it => it.item_type === tab), [items, tab]);
   const matches = useCallback(
-    (it: SettlementItem) => !search || it.company.includes(search),
-    [search],
+    (it: SettlementItem) => {
+      if (search && !it.company.includes(search)) return false;
+      switch (quickFilter) {
+        case 'stmt_no': return !it.statement_sent;
+        case 'inv_no': return it.invoice_status === '미발행';
+        case 'inv_req': return it.invoice_status === '발행요청';
+        case 'pay_wait': return !it.paid;
+        default: return true;
+      }
+    },
+    [search, quickFilter],
   );
   // 블랙리스트 업체는 아래 별도 구역으로 분리
   const normalVisible = useMemo(
@@ -276,6 +329,20 @@ export default function SettlementPage() {
     .filter(it => blacklist.has(it.company))
     .reduce((s, it) => s + Number(it.amount || 0), 0);
 
+  // 빠른 필터 버튼용 개수 (블랙리스트 제외)
+  const filterCounts: Record<Exclude<QuickFilter, 'all'>, number> = {
+    stmt_no: activeItems.filter(it => !it.statement_sent).length,
+    inv_no: activeItems.filter(it => it.invoice_status === '미발행').length,
+    inv_req: activeItems.filter(it => it.invoice_status === '발행요청').length,
+    pay_wait: activeItems.filter(it => !it.paid).length,
+  };
+  const FILTER_DEFS: { key: Exclude<QuickFilter, 'all'>; label: string }[] = [
+    { key: 'stmt_no', label: '📄 명세표 안보냄' },
+    { key: 'inv_no', label: '🧾 계산서 미발행' },
+    { key: 'inv_req', label: '🧾 발행요청만' },
+    { key: 'pay_wait', label: '💰 입금 대기' },
+  ];
+
   const monthOptions = months.includes(month) || !month ? months : [month, ...months];
 
   if (!authChecked || !adminChecked) return null;
@@ -301,14 +368,45 @@ export default function SettlementPage() {
         }`}
       >
         <td className="px-4 py-2">
-          <p className="font-medium text-slate-800 dark:text-slate-200">
-            {isBlack && <span className="mr-1" title="블랙리스트">🚫</span>}
-            {it.company}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-medium text-slate-800 dark:text-slate-200">
+              {isBlack && <span className="mr-1" title="블랙리스트">🚫</span>}
+              {it.company}
+            </p>
+            <button
+              onClick={() => setInfoEdit({ company: it.company, text: companyInfo.get(it.company) ?? '' })}
+              className={`shrink-0 w-5 h-5 rounded-full text-[11px] font-bold leading-none transition ${
+                companyInfo.has(it.company)
+                  ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 hover:bg-violet-200'
+                  : 'text-slate-300 dark:text-slate-600 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20'
+              }`}
+              title={companyInfo.get(it.company) || '업체 정보 적기 (매달 유지됨)'}
+            >
+              i
+            </button>
+          </div>
+          {companyInfo.has(it.company) && (
+            <p className="text-[11px] text-violet-600 dark:text-violet-400 whitespace-pre-line">{companyInfo.get(it.company)}</p>
+          )}
           {it.biz_no && <p className="text-[11px] text-slate-400">{it.biz_no}</p>}
         </td>
-        <td className="px-3 py-2 text-right tabular-nums font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-          {formatAmount(Number(it.amount || 0))}원
+        <td className="px-3 py-2 text-right whitespace-nowrap">
+          <div className="inline-flex items-center gap-1.5">
+            <button
+              onClick={() => toggleCard(it)}
+              className={`h-6 px-1.5 rounded text-[10px] font-bold border transition ${
+                it.card_paid
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 hover:text-indigo-500 hover:border-indigo-300'
+              }`}
+              title={it.card_paid ? '카드 결제 표시 해제' : '카드 결제 표시'}
+            >
+              카드
+            </button>
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">
+              {formatAmount(Number(it.amount || 0))}원
+            </span>
+          </div>
         </td>
 
         {/* 명세표 */}
@@ -552,6 +650,37 @@ export default function SettlementPage() {
           </div>
         )}
 
+        {/* 빠른 필터 — 안 끝난 것만 골라보기 */}
+        {tabItems.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <button
+              onClick={() => setQuickFilter('all')}
+              className={`h-8 px-3 rounded-full text-[13px] font-medium border transition ${
+                quickFilter === 'all'
+                  ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-slate-400'
+              }`}
+            >
+              전체 {activeItems.length}
+            </button>
+            {FILTER_DEFS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setQuickFilter(cur => (cur === f.key ? 'all' : f.key))}
+                className={`h-8 px-3 rounded-full text-[13px] font-medium border transition ${
+                  quickFilter === f.key
+                    ? 'bg-red-600 text-white border-red-600'
+                    : filterCounts[f.key] === 0
+                      ? 'bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-700'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-red-300 hover:text-red-600'
+                }`}
+              >
+                {f.label} {filterCounts[f.key]}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* 목록 */}
         {loaded && !needSetup && items.length === 0 && (
           <div className="text-center py-24 text-slate-400">
@@ -588,7 +717,9 @@ export default function SettlementPage() {
         )}
 
         {tabItems.length > 0 && normalVisible.length === 0 && blackVisible.length === 0 && (
-          <p className="text-center py-16 text-slate-400 text-sm">'{search}' 검색 결과가 없습니다.</p>
+          <p className="text-center py-16 text-slate-400 text-sm">
+            {search ? `'${search}' 검색 결과가 없습니다.` : quickFilter !== 'all' ? '조건에 맞는 업체가 없습니다 — 전부 처리됐어요! 🎉' : '이 구분에는 데이터가 없습니다.'}
+          </p>
         )}
         {items.length > 0 && tabItems.length === 0 && (
           <p className="text-center py-16 text-slate-400 text-sm">이 구분에는 데이터가 없습니다.</p>
@@ -601,6 +732,52 @@ export default function SettlementPage() {
           onClose={() => setShowUpload(false)}
           onConfirm={handleUploadConfirm}
         />
+      )}
+
+      {/* 업체 정보 편집 — 매달 유지되는 업체별 메모 */}
+      {infoEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setInfoEdit(null)}>
+          <div
+            className="w-full max-w-md bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100 mb-1">
+              ℹ️ {infoEdit.company}
+            </h3>
+            <p className="text-xs text-slate-400 mb-3">
+              여기 적은 내용은 다음 달, 다다음 달에도 이 업체 옆에 계속 표시됩니다. (담당자 연락처, 결제 방식, 주의사항 등)
+            </p>
+            <textarea
+              value={infoEdit.text}
+              onChange={e => setInfoEdit({ ...infoEdit, text: e.target.value })}
+              onKeyDown={e => {
+                if (e.key === 'Escape') setInfoEdit(null);
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveCompanyInfo();
+              }}
+              rows={4}
+              autoFocus
+              placeholder="예) 담당 김과장 010-1234-5678 / 매달 카드결제 / 계산서는 요청 오면 발행"
+              className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none resize-none"
+            />
+            <div className="flex justify-between items-center mt-3">
+              <span className="text-[11px] text-slate-300 dark:text-slate-600">Ctrl+Enter 저장</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setInfoEdit(null)}
+                  className="h-9 px-4 rounded border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={saveCompanyInfo}
+                  className="h-9 px-5 rounded bg-violet-600 text-sm font-semibold text-white hover:bg-violet-700"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

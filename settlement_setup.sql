@@ -40,3 +40,20 @@ alter table settlement_blacklist enable row level security;
 drop policy if exists "settlement_blacklist_all" on settlement_blacklist;
 create policy "settlement_blacklist_all" on settlement_blacklist
   for all using (true) with check (true);
+
+-- 카드 결제 표시 (2026-08 추가)
+alter table settlement_items add column if not exists card_paid boolean not null default false;
+
+-- 업체 정보 (업체명 기준 — 매달 유지되는 메모, 2026-08 추가)
+create table if not exists settlement_company_info (
+  company text primary key,
+  info text not null default '',
+  updated_by text,
+  updated_at timestamptz not null default now()
+);
+
+alter table settlement_company_info enable row level security;
+
+drop policy if exists "settlement_company_info_all" on settlement_company_info;
+create policy "settlement_company_info_all" on settlement_company_info
+  for all using (true) with check (true);
