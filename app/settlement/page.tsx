@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../components/hooks/useAuth';
 import PasswordGate from '../components/PasswordGate';
+import AdminGate from './AdminGate';
 import UploadModal from './UploadModal';
 import { formatAmount, formatWhen } from './excel';
 import { SettlementItem, ParsedRow, ItemType, InvoiceStatus, WORKER_NAMES } from './types';
@@ -31,6 +32,15 @@ export default function SettlementPage() {
   const [error, setError] = useState('');
   const [needSetup, setNeedSetup] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // 관리자 비밀번호 (현황판 로그인과 별개 — 일주일 유지)
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [adminAuthed, setAdminAuthed] = useState(false);
+  useEffect(() => {
+    const ts = localStorage.getItem('vita_settle_ts');
+    if (ts && Number(ts) > Date.now()) setAdminAuthed(true);
+    setAdminChecked(true);
+  }, []);
 
   useEffect(() => {
     setWorker(localStorage.getItem('vitavita_creator') ?? '');
@@ -268,8 +278,9 @@ export default function SettlementPage() {
 
   const monthOptions = months.includes(month) || !month ? months : [month, ...months];
 
-  if (!authChecked) return null;
+  if (!authChecked || !adminChecked) return null;
   if (!isAuthed) return <PasswordGate onAuthenticated={handleAuthentication} />;
+  if (!adminAuthed) return <AdminGate onAuthenticated={() => setAdminAuthed(true)} />;
 
   const chip = (active: boolean, color: string) =>
     `inline-flex items-center justify-center h-8 px-3 rounded text-[13px] font-medium border transition whitespace-nowrap ${
