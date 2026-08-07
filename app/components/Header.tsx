@@ -31,6 +31,7 @@ const NAV_TABS = [
   { href: '/', label: '진행 현황' },
   { href: '/completed', label: '완료' },
   { href: '/deleted', label: '삭제' },
+  { href: '/settlement', label: '월말 정산' },
 ];
 
 export default function Header({
