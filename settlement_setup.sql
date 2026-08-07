@@ -27,3 +27,16 @@ alter table settlement_items enable row level security;
 drop policy if exists "settlement_all" on settlement_items;
 create policy "settlement_all" on settlement_items
   for all using (true) with check (true);
+
+-- 블랙리스트 (못 받는 업체 — 업체명 기준, 모든 달에 공통 적용)
+create table if not exists settlement_blacklist (
+  company text primary key,
+  added_by text,
+  created_at timestamptz not null default now()
+);
+
+alter table settlement_blacklist enable row level security;
+
+drop policy if exists "settlement_blacklist_all" on settlement_blacklist;
+create policy "settlement_blacklist_all" on settlement_blacklist
+  for all using (true) with check (true);

@@ -9,11 +9,6 @@ import { formatAmount, formatWhen } from './excel';
 import { SettlementItem, ParsedRow, ItemType, InvoiceStatus, WORKER_NAMES } from './types';
 import { IconSearch, IconUpload } from '../components/ui/icons';
 
-const nowMonth = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-};
-
 // 기본값: 지난달 (월말 정산은 보통 지난달 분)
 const prevMonth = () => {
   const d = new Date();
@@ -26,6 +21,7 @@ export default function SettlementPage() {
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
 
   const [items, setItems] = useState<SettlementItem[]>([]);
+  const [blacklist, setBlacklist] = useState<Set<string>>(new Set());
   const [months, setMonths] = useState<string[]>([]);
   const [month, setMonth] = useState('');
   const [tab, setTab] = useState<ItemType>('미수');
@@ -76,16 +72,26 @@ export default function SettlementPage() {
     setItems(data ?? []);
   }, []);
 
-  useEffect(() => { fetchMonths(); }, [fetchMonths]);
+  // 블랙리스트 (업체명 기준 — 모든 달에 공통 적용)
+  const fetchBlacklist = useCallback(async () => {
+    const { data, error: err } = await supabase.from('settlement_blacklist').select('company');
+    if (err) return; // 테이블 없으면 조용히 무시 (설정 배너가 안내)
+    setBlacklist(new Set((data ?? []).map(r => r.company)));
+  }, []);
+
+  useEffect(() => { fetchMonths(); fetchBlacklist(); }, [fetchMonths, fetchBlacklist]);
   useEffect(() => { if (month) fetchItems(month); }, [month, fetchItems]);
 
   // 10초마다 새로고침 (다른 사람 체크 실시간 반영)
   useEffect(() => {
     const t = setInterval(() => {
-      if (document.visibilityState === 'visible' && month) fetchItems(month);
+      if (document.visibilityState === 'visible' && month) {
+        fetchItems(month);
+        fetchBlacklist();
+      }
     }, 10000);
     return () => clearInterval(t);
-  }, [month, fetchItems]);
+  }, [month, fetchItems, fetchBlacklist]);
 
   // ── 상태 변경 ──────────────────────────────────────
   const requireWorker = () => {
@@ -153,6 +159,25 @@ export default function SettlementPage() {
     if (err) { setError(`삭제 실패: ${err.message}`); fetchItems(month); }
   };
 
+  // 블랙리스트 추가/해제 — 업체명 기준이라 다음 달에도 자동 적용
+  const toggleBlacklist = async (it: SettlementItem) => {
+    if (!requireWorker()) return;
+    const isBlack = blacklist.has(it.company);
+    if (!isBlack && !confirm(`'${it.company}' 을(를) 블랙리스트로 분리할까요?\n앞으로 매달 목록 맨 아래에 따로 표시됩니다.`)) return;
+    setBlacklist(prev => {
+      const next = new Set(prev);
+      if (isBlack) next.delete(it.company); else next.add(it.company);
+      return next;
+    });
+    const res = isBlack
+      ? await supabase.from('settlement_blacklist').delete().eq('company', it.company)
+      : await supabase.from('settlement_blacklist').insert({ company: it.company, added_by: worker });
+    if (res.error) {
+      setError(`블랙리스트 저장 실패: ${res.error.message}`);
+      fetchBlacklist();
+    }
+  };
+
   // ── 엑셀 업로드 저장 ────────────────────────────────
   const handleUploadConfirm = async (m: string, rows: ParsedRow[]) => {
     const { data: existing, error: exErr } = await supabase
@@ -209,22 +234,37 @@ export default function SettlementPage() {
 
   // ── 화면용 데이터 ───────────────────────────────────
   const tabItems = useMemo(() => items.filter(it => it.item_type === tab), [items, tab]);
-  const visible = useMemo(
-    () => (search ? tabItems.filter(it => it.company.includes(search)) : tabItems),
-    [tabItems, search],
+  const matches = useCallback(
+    (it: SettlementItem) => !search || it.company.includes(search),
+    [search],
   );
+  // 블랙리스트 업체는 아래 별도 구역으로 분리
+  const normalVisible = useMemo(
+    () => tabItems.filter(it => !blacklist.has(it.company) && matches(it)),
+    [tabItems, blacklist, matches],
+  );
+  const blackVisible = useMemo(
+    () => tabItems.filter(it => blacklist.has(it.company) && matches(it)),
+    [tabItems, blacklist, matches],
+  );
+
   const misuCount = items.filter(it => it.item_type === '미수').length;
   const mijiCount = items.filter(it => it.item_type === '미지급').length;
 
+  // 진행률은 블랙리스트 제외하고 계산 (못 받는 업체가 진행률을 흐리지 않게)
+  const activeItems = useMemo(() => tabItems.filter(it => !blacklist.has(it.company)), [tabItems, blacklist]);
   const stat = {
-    total: tabItems.length,
-    stmt: tabItems.filter(it => it.statement_sent).length,
-    inv: tabItems.filter(it => it.invoice_status === '발행완료').length,
-    invReq: tabItems.filter(it => it.invoice_status === '발행요청').length,
-    paid: tabItems.filter(it => it.paid).length,
-    amount: tabItems.reduce((s, it) => s + Number(it.amount || 0), 0),
-    unpaidAmount: tabItems.filter(it => !it.paid).reduce((s, it) => s + Number(it.amount || 0), 0),
+    total: activeItems.length,
+    stmt: activeItems.filter(it => it.statement_sent).length,
+    inv: activeItems.filter(it => it.invoice_status === '발행완료').length,
+    invReq: activeItems.filter(it => it.invoice_status === '발행요청').length,
+    paid: activeItems.filter(it => it.paid).length,
+    amount: activeItems.reduce((s, it) => s + Number(it.amount || 0), 0),
+    unpaidAmount: activeItems.filter(it => !it.paid).reduce((s, it) => s + Number(it.amount || 0), 0),
   };
+  const blackAmount = tabItems
+    .filter(it => blacklist.has(it.company))
+    .reduce((s, it) => s + Number(it.amount || 0), 0);
 
   const monthOptions = months.includes(month) || !month ? months : [month, ...months];
 
@@ -235,6 +275,131 @@ export default function SettlementPage() {
     `inline-flex items-center justify-center h-8 px-3 rounded text-[13px] font-medium border transition whitespace-nowrap ${
       active ? color : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-slate-400'
     }`;
+
+  const renderRow = (it: SettlementItem, isBlack: boolean) => {
+    const rowDone = it.statement_sent && it.invoice_status === '발행완료' && it.paid;
+    return (
+      <tr
+        key={it.id}
+        className={`border-b border-slate-100 dark:border-slate-800 last:border-0 transition ${
+          isBlack
+            ? 'opacity-80'
+            : rowDone
+              ? 'bg-emerald-50/60 dark:bg-emerald-900/10'
+              : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/40'
+        }`}
+      >
+        <td className="px-4 py-2">
+          <p className="font-medium text-slate-800 dark:text-slate-200">
+            {isBlack && <span className="mr-1" title="블랙리스트">🚫</span>}
+            {it.company}
+          </p>
+          {it.biz_no && <p className="text-[11px] text-slate-400">{it.biz_no}</p>}
+        </td>
+        <td className="px-3 py-2 text-right tabular-nums font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+          {formatAmount(Number(it.amount || 0))}원
+        </td>
+
+        {/* 명세표 */}
+        <td className="px-3 py-2 text-center">
+          <button
+            onClick={() => toggleStatement(it)}
+            className={chip(it.statement_sent, 'bg-blue-600 text-white border-blue-600')}
+            title={it.statement_sent ? `${it.statement_by ?? ''} · ${formatWhen(it.statement_at)}` : '클릭하면 발송 처리'}
+          >
+            {it.statement_sent ? '보냄 ✓' : '안보냄'}
+          </button>
+          {it.statement_sent && (
+            <p className="text-[10px] text-slate-400 mt-0.5">{it.statement_by} {formatWhen(it.statement_at)}</p>
+          )}
+        </td>
+
+        {/* 세금계산서 */}
+        <td className="px-3 py-2 text-center">
+          <div className="inline-flex rounded border border-slate-200 dark:border-slate-600 overflow-hidden">
+            {(['미발행', '발행요청', '발행완료'] as InvoiceStatus[]).map(s => (
+              <button
+                key={s}
+                onClick={() => setInvoice(it, s)}
+                className={`h-8 px-2 text-[12px] font-medium transition ${
+                  it.invoice_status === s
+                    ? s === '발행완료' ? 'bg-emerald-600 text-white'
+                      : s === '발행요청' ? 'bg-amber-500 text-white'
+                      : 'bg-slate-500 text-white'
+                    : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600'
+                }`}
+              >
+                {s === '미발행' ? '미발행' : s === '발행요청' ? '요청' : '발행 ✓'}
+              </button>
+            ))}
+          </div>
+          {it.invoice_status !== '미발행' && (
+            <p className="text-[10px] text-slate-400 mt-0.5">{it.invoice_by} {formatWhen(it.invoice_at)}</p>
+          )}
+        </td>
+
+        {/* 입금 */}
+        <td className="px-3 py-2 text-center">
+          <button
+            onClick={() => togglePaid(it)}
+            className={chip(it.paid, 'bg-emerald-600 text-white border-emerald-600')}
+          >
+            {it.paid ? '입금 ✓' : '대기'}
+          </button>
+          {it.paid && (
+            <p className="text-[10px] text-slate-400 mt-0.5">{it.paid_by} {formatWhen(it.paid_at)}</p>
+          )}
+        </td>
+
+        {/* 메모 */}
+        <td className="px-3 py-2">
+          <input
+            defaultValue={it.memo}
+            key={`${it.id}-${it.memo}`}
+            onBlur={e => saveMemo(it, e.target.value.trim())}
+            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            placeholder="메모"
+            className="w-full min-w-[120px] bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-600 focus:border-blue-400 focus:ring-0 rounded px-2 h-8 text-[13px] text-slate-600 dark:text-slate-300 placeholder:text-slate-300 dark:placeholder:text-slate-600 outline-none transition"
+          />
+        </td>
+
+        <td className="px-2 py-2 text-center whitespace-nowrap">
+          <button
+            onClick={() => toggleBlacklist(it)}
+            className={`text-[11px] font-medium px-1.5 py-1 rounded transition ${
+              isBlack
+                ? 'text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                : 'text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+            }`}
+            title={isBlack ? '블랙리스트 해제 — 일반 목록으로 복귀' : '블랙리스트 — 매달 아래로 분리'}
+          >
+            {isBlack ? '해제' : '🚫'}
+          </button>
+          <button
+            onClick={() => deleteRow(it)}
+            className="text-slate-300 hover:text-red-500 text-sm px-1"
+            title="행 삭제"
+          >
+            ✕
+          </button>
+        </td>
+      </tr>
+    );
+  };
+
+  const tableHead = (
+    <thead>
+      <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-xs text-slate-400 dark:text-slate-500">
+        <th className="px-4 py-2.5 font-medium">업체명</th>
+        <th className="px-3 py-2.5 font-medium text-right">금액</th>
+        <th className="px-3 py-2.5 font-medium text-center">명세표</th>
+        <th className="px-3 py-2.5 font-medium text-center">세금계산서</th>
+        <th className="px-3 py-2.5 font-medium text-center">입금</th>
+        <th className="px-3 py-2.5 font-medium">메모</th>
+        <th className="px-2 py-2.5" />
+      </tr>
+    </thead>
+  );
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950">
@@ -342,7 +507,7 @@ export default function SettlementPage() {
           </div>
         )}
 
-        {/* 진행 현황 요약 */}
+        {/* 진행 현황 요약 (블랙리스트 제외) */}
         {stat.total > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             {[
@@ -384,122 +549,38 @@ export default function SettlementPage() {
           </div>
         )}
 
-        {visible.length > 0 && (
+        {normalVisible.length > 0 && (
           <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
-            <table className="w-full text-sm min-w-[860px]">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-xs text-slate-400 dark:text-slate-500">
-                  <th className="px-4 py-2.5 font-medium">업체명</th>
-                  <th className="px-3 py-2.5 font-medium text-right">금액</th>
-                  <th className="px-3 py-2.5 font-medium text-center">명세표</th>
-                  <th className="px-3 py-2.5 font-medium text-center">세금계산서</th>
-                  <th className="px-3 py-2.5 font-medium text-center">입금</th>
-                  <th className="px-3 py-2.5 font-medium">메모</th>
-                  <th className="px-2 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map(it => {
-                  const rowDone = it.statement_sent && it.invoice_status === '발행완료' && it.paid;
-                  return (
-                    <tr
-                      key={it.id}
-                      className={`border-b border-slate-100 dark:border-slate-800 last:border-0 transition ${
-                        rowDone ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/40'
-                      }`}
-                    >
-                      <td className="px-4 py-2">
-                        <p className="font-medium text-slate-800 dark:text-slate-200">{it.company}</p>
-                        {it.biz_no && <p className="text-[11px] text-slate-400">{it.biz_no}</p>}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        {formatAmount(Number(it.amount || 0))}원
-                      </td>
-
-                      {/* 명세표 */}
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => toggleStatement(it)}
-                          className={chip(it.statement_sent, 'bg-blue-600 text-white border-blue-600')}
-                          title={it.statement_sent ? `${it.statement_by ?? ''} · ${formatWhen(it.statement_at)}` : '클릭하면 발송 처리'}
-                        >
-                          {it.statement_sent ? '보냄 ✓' : '안보냄'}
-                        </button>
-                        {it.statement_sent && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">{it.statement_by} {formatWhen(it.statement_at)}</p>
-                        )}
-                      </td>
-
-                      {/* 세금계산서 */}
-                      <td className="px-3 py-2 text-center">
-                        <div className="inline-flex rounded border border-slate-200 dark:border-slate-600 overflow-hidden">
-                          {(['미발행', '발행요청', '발행완료'] as InvoiceStatus[]).map(s => (
-                            <button
-                              key={s}
-                              onClick={() => setInvoice(it, s)}
-                              className={`h-8 px-2 text-[12px] font-medium transition ${
-                                it.invoice_status === s
-                                  ? s === '발행완료' ? 'bg-emerald-600 text-white'
-                                    : s === '발행요청' ? 'bg-amber-500 text-white'
-                                    : 'bg-slate-500 text-white'
-                                  : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600'
-                              }`}
-                            >
-                              {s === '미발행' ? '미발행' : s === '발행요청' ? '요청' : '발행 ✓'}
-                            </button>
-                          ))}
-                        </div>
-                        {it.invoice_status !== '미발행' && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">{it.invoice_by} {formatWhen(it.invoice_at)}</p>
-                        )}
-                      </td>
-
-                      {/* 입금 */}
-                      <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => togglePaid(it)}
-                          className={chip(it.paid, 'bg-emerald-600 text-white border-emerald-600')}
-                        >
-                          {it.paid ? '입금 ✓' : '대기'}
-                        </button>
-                        {it.paid && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">{it.paid_by} {formatWhen(it.paid_at)}</p>
-                        )}
-                      </td>
-
-                      {/* 메모 */}
-                      <td className="px-3 py-2">
-                        <input
-                          defaultValue={it.memo}
-                          key={`${it.id}-${it.memo}`}
-                          onBlur={e => saveMemo(it, e.target.value.trim())}
-                          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                          placeholder="메모"
-                          className="w-full min-w-[120px] bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-600 focus:border-blue-400 focus:ring-0 rounded px-2 h-8 text-[13px] text-slate-600 dark:text-slate-300 placeholder:text-slate-300 dark:placeholder:text-slate-600 outline-none transition"
-                        />
-                      </td>
-
-                      <td className="px-2 py-2 text-center">
-                        <button
-                          onClick={() => deleteRow(it)}
-                          className="text-slate-300 hover:text-red-500 text-sm px-1"
-                          title="행 삭제"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+            <table className="w-full text-sm min-w-[900px]">
+              {tableHead}
+              <tbody>{normalVisible.map(it => renderRow(it, false))}</tbody>
             </table>
           </div>
         )}
 
-        {items.length > 0 && visible.length === 0 && (
-          <p className="text-center py-16 text-slate-400 text-sm">
-            {search ? `'${search}' 검색 결과가 없습니다.` : '이 구분에는 데이터가 없습니다.'}
-          </p>
+        {/* 블랙리스트 구역 — 못 받는 업체, 매달 자동으로 여기로 분리됨 */}
+        {blackVisible.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">🚫 블랙리스트 (못 받는 업체)</span>
+              <span className="text-xs text-slate-400">
+                {blackVisible.length}곳 · {formatAmount(blackAmount)}원 — 진행률 계산에서 제외됨
+              </span>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 overflow-x-auto">
+              <table className="w-full text-sm min-w-[900px]">
+                {tableHead}
+                <tbody>{blackVisible.map(it => renderRow(it, true))}</tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {tabItems.length > 0 && normalVisible.length === 0 && blackVisible.length === 0 && (
+          <p className="text-center py-16 text-slate-400 text-sm">'{search}' 검색 결과가 없습니다.</p>
+        )}
+        {items.length > 0 && tabItems.length === 0 && (
+          <p className="text-center py-16 text-slate-400 text-sm">이 구분에는 데이터가 없습니다.</p>
         )}
       </main>
 
