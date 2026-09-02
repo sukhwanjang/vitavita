@@ -26,3 +26,6 @@
 # Optional OS generated files
 .DS_Store
 Thumbs.dbtsconfig.tsbuildinfo
+
+# 스크립트 산출물
+scripts/*.json
