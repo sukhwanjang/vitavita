@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { RequestItem } from './types';
 import { IconX, IconUpload, IconZap, IconCheck } from './ui/icons';
+import ThumbImg from './ui/ThumbImg';
 
 // 탐색기 "경로로 복사"(Ctrl+Shift+C)로 붙여넣으면 따옴표가 붙어 오므로 제거
 const cleanPath = (raw: string) => raw.trim().replace(/^"+|"+$/g, '');
@@ -126,7 +127,7 @@ export default function FileDropModal({ show, onClose, onAdd, cards = [] }: File
                       )}
                       <span className="block h-[54px] bg-slate-800">
                         {c.image_url ? (
-                          <img src={c.image_url} className="w-full h-full object-cover opacity-90" alt="" />
+                          <ThumbImg src={c.image_url} className="w-full h-full object-cover opacity-90" alt="" />
                         ) : (
                           <span className="flex items-center justify-center h-full text-white/20 text-xl font-black select-none">{c.company?.[0] ?? '?'}</span>
                         )}

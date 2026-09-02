@@ -60,8 +60,18 @@ export function useFileDrops() {
 
   useEffect(() => {
     fetchDrops();
-    // 10초 주기 — 탭이 가려져 있어도 계속 확인 (출력요청 알림을 놓치지 않게)
-    const interval = setInterval(fetchDrops, 10000);
+    // 화면에 보이면 30초, 가려져 있으면 60초 주기.
+    // 가려져 있어도 아예 멈추지는 않는다 (출력요청 알림을 놓치지 않게).
+    // 예전엔 가려져 있어도 10초마다 돌아서 켜둔 PC 수만큼 트래픽이 그대로 쌓였다.
+    let hiddenTick = 0;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        hiddenTick = 0;
+        fetchDrops();
+      } else if (++hiddenTick % 2 === 0) {
+        fetchDrops();
+      }
+    }, 30000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') fetchDrops();
     };

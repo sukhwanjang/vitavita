@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { RequestItem, Annotation } from '../types';
+import { storagePathsOf } from '../utils/imageResize';
 
 export function useBoardData() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
@@ -45,6 +46,11 @@ export function useBoardData() {
       await Promise.all(toDelete.map(r =>
         supabase.from('request').delete().eq('id', r.id)
       ));
+      // 행만 지우고 이미지 파일을 남겨두면 스토리지가 계속 불어난다 (1GB 한도를 이렇게 넘겼다)
+      const files = toDelete.flatMap(r => storagePathsOf(r.image_url));
+      if (files.length) {
+        supabase.storage.from('request-images').remove(files).then(() => {});
+      }
     }
 
     setRequests(data);
@@ -52,10 +58,11 @@ export function useBoardData() {
 
   useEffect(() => {
     fetchRequests();
-    // 새로고침 빈도 10초 — 탭이 화면에 보일 때만
+    // 새로고침 빈도 30초 — 탭이 화면에 보일 때만
+    // (10초였을 때 켜둔 PC 수만큼 곱해져 egress가 감당이 안 됐다. 화면 전환 시엔 아래 onVisible이 즉시 당겨온다)
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') fetchRequests();
-    }, 10000);
+    }, 30000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') fetchRequests();
     };

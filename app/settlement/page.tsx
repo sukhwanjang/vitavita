@@ -105,7 +105,7 @@ export default function SettlementPage() {
   useEffect(() => { fetchMonths(); fetchBlacklist(); fetchCompanyInfo(); }, [fetchMonths, fetchBlacklist, fetchCompanyInfo]);
   useEffect(() => { if (month) fetchItems(month); }, [month, fetchItems]);
 
-  // 10초마다 새로고침 (다른 사람 체크 실시간 반영)
+  // 30초마다 새로고침 (다른 사람 체크 반영). 10초는 트래픽 대비 이득이 없었다.
   useEffect(() => {
     const t = setInterval(() => {
       if (document.visibilityState === 'visible' && month) {
@@ -113,7 +113,7 @@ export default function SettlementPage() {
         fetchBlacklist();
         fetchCompanyInfo();
       }
-    }, 10000);
+    }, 30000);
     return () => clearInterval(t);
   }, [month, fetchItems, fetchBlacklist, fetchCompanyInfo]);
 

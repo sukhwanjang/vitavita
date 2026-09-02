@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { FileDrop, RequestItem } from './types';
 import { IconInbox, IconCopy, IconCheck, IconZap, IconFileText } from './ui/icons';
+import ThumbImg from './ui/ThumbImg';
 
 // 출력대기 목록 본문 — 사이드바(FileSidebar)와 전용 화면(/queue)에서 공용
 export const fileNameOf = (path: string) => path.split('\\').pop()?.split('/').pop() ?? path;
@@ -156,7 +157,7 @@ export default function DropList({
                       title="클릭하면 원고를 크게 봅니다"
                       className="shrink-0 rounded-sm overflow-hidden border border-slate-200 dark:border-slate-600 hover:ring-2 hover:ring-blue-400 transition"
                     >
-                      <img src={linked.image_url} className={`${large ? 'w-12 h-8' : 'w-10 h-7'} object-cover block`} alt="" />
+                      <ThumbImg src={linked.image_url} className={`${large ? 'w-12 h-8' : 'w-10 h-7'} object-cover block`} alt="" />
                     </button>
                   )}
                   <span className={`${metaCls} font-bold text-blue-700 dark:text-blue-300 truncate`}>

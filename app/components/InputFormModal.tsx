@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { IconX, IconImage, IconZap, IconCalendar } from './ui/icons';
+import { resizeImageFile, THUMB_DIR } from './utils/imageResize';
 
 // 한국 시간 기준 오늘 + offset일의 YYYY-MM-DD
 const kstDate = (offsetDays: number) => {
@@ -113,11 +114,29 @@ export default function InputFormModal({
 
   const uploadImage = async (file: File): Promise<string | null> => {
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-    const { error } = await supabase.storage.from('request-images').upload(fileName, file);
+    // 파일명이 매번 다르므로 오래 캐시해도 안전하다. 캐시가 짧으면 같은 사진을 반복해서 내려받게 된다.
+    const cacheControl = '31536000';
+
+    // 원본을 그대로 올리면 사진 한 장이 수 MB라 목록에서 트래픽이 폭증한다 → 긴 변 1600px로 줄여서 올린다
+    const full = await resizeImageFile(file, 1600, 0.8);
+    const { error } = await supabase.storage
+      .from('request-images')
+      .upload(fileName, full, { cacheControl, contentType: full.type });
     if (error) {
       setError(`이미지 업로드 실패: ${error.message}`);
       return null;
     }
+
+    // 카드 목록용 썸네일. 실패해도 화면에서 원본으로 폴백되므로 업로드 자체를 막지는 않는다.
+    try {
+      const thumb = await resizeImageFile(file, 400, 0.7, '_thumb');
+      await supabase.storage
+        .from('request-images')
+        .upload(THUMB_DIR + fileName, thumb, { cacheControl, contentType: thumb.type });
+    } catch {
+      // 썸네일은 없어도 동작한다
+    }
+
     const { data } = supabase.storage.from('request-images').getPublicUrl(fileName);
     return data?.publicUrl ?? null;
   };

@@ -4,6 +4,7 @@ import { RequestItem, CheckMark, PenPath } from './types';
 import { supabase } from '../../lib/supabase';
 import { getRenderedRect } from './utils/imageUtils';
 import { IconCheckCircle, IconClock, IconFileText, IconRestore, IconTrash } from './ui/icons';
+import ThumbImg from './ui/ThumbImg';
 
 interface CompletedCardProps {
   item: RequestItem;
@@ -58,7 +59,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
           </div>
           {item.image_url && (
             <div ref={imgContainerRef} className="relative w-full h-32">
-              <img
+              <ThumbImg
                 src={item.image_url}
                 onClick={() => onImageClick(item.image_url!)}
                 onLoad={(e) => {

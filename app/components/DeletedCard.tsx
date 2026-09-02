@@ -2,6 +2,7 @@
 import { RequestItem } from './types';
 import { supabase } from '../../lib/supabase';
 import { IconClock, IconTrash } from './ui/icons';
+import ThumbImg from './ui/ThumbImg';
 
 interface DeletedCardProps {
   item: RequestItem;
@@ -31,7 +32,7 @@ export default function DeletedCard({ item, onRefresh }: DeletedCardProps) {
           <p className="text-[13px] text-slate-500 truncate mt-0.5">{item.program}</p>
         </div>
         {item.image_url && (
-          <img src={item.image_url} className="w-full h-32 object-contain rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 grayscale" />
+          <ThumbImg src={item.image_url} className="w-full h-32 object-contain rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 grayscale" />
         )}
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
           <IconClock className="w-3 h-3" />
