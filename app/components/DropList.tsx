@@ -116,7 +116,7 @@ export default function DropList({
           ? '기한 미지정'
           : daysLeft === 0
             ? '당일'
-            : daysLeft > 0 ? `D-${daysLeft}` : `D+${Math.abs(daysLeft)}`;
+            : daysLeft > 0 ? `D-${daysLeft}` : '지남';
         const isNew = newIds.has(drop.id);
         const isUrgent = !!drop.is_urgent;
         const ext = extOf(drop.path);
