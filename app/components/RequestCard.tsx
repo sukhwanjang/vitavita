@@ -15,7 +15,6 @@ interface RequestCardProps {
   onCompanyClick: (company: string) => void;
   onStatusClick: (key: string) => void;
   activeStatusFilter: string | null;
-  isNew?: boolean;
 }
 
 export default function RequestCard({
@@ -29,7 +28,6 @@ export default function RequestCard({
   onCompanyClick,
   onStatusClick,
   activeStatusFilter,
-  isNew = false,
 }: RequestCardProps) {
   const isActive = !item.completed && !item.is_deleted;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,13 +49,21 @@ export default function RequestCard({
     return () => observer.disconnect();
   }, []);
 
-  // 날짜 계산
-  const daysLeft = item.pickup_date
-    ? Math.ceil(
-        (new Date(item.pickup_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0))
+  // 픽업일까지 남은 날짜를 카드의 완료 기한으로 표시한다.
+  const pickupDate = item.pickup_date ? new Date(`${item.pickup_date}T00:00:00`) : null;
+  const daysLeft = pickupDate && !Number.isNaN(pickupDate.getTime())
+    ? Math.round(
+        (pickupDate.getTime() - new Date().setHours(0, 0, 0, 0))
         / (1000 * 60 * 60 * 24)
       )
     : null;
+  const deadlineLabel = daysLeft === null
+    ? '기한 미지정'
+    : daysLeft === 0
+      ? '당일'
+      : daysLeft > 0
+        ? `D-${daysLeft}`
+        : `D+${Math.abs(daysLeft)}`;
 
   // 이 카드의 상태 필터 키 (board.tsx의 statusFilter와 매핑)
   const statusKey = item.is_urgent
@@ -198,13 +204,14 @@ export default function RequestCard({
           </div>
         )}
 
-        {/* 상단 오버레이: 상태 칩 + NEW */}
+        {/* 상단 오버레이: 완료 기한 + 상태 칩 */}
         <div className="absolute top-2 left-2 right-2 flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-          {isNew && (
-            <span className="inline-flex items-center h-[22px] px-2 rounded-sm text-[11px] font-bold bg-white/95 text-blue-700 shadow-sm select-none animate-pulse">
-              NEW
-            </span>
-          )}
+          <span
+            className="inline-flex items-center h-[22px] px-2 rounded-sm text-[11px] font-bold bg-white/95 text-blue-700 shadow-sm select-none"
+            title={item.pickup_date ? `완료 기한 (픽업일): ${item.pickup_date}` : '픽업일이 지정되지 않았습니다'}
+          >
+            {deadlineLabel}
+          </span>
           <button
             onClick={() => onStatusClick(statusKey)}
             className={`inline-flex items-center gap-1 h-[22px] px-2 rounded-sm text-[11px] font-bold shadow-sm cursor-pointer transition select-none ${statusChipClass} ${
