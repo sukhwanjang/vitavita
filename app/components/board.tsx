@@ -373,6 +373,7 @@ export default function Board({ only }: BoardProps) {
   const newItems = lastSeenId !== null && lastSeenId >= 0
     ? requests.filter(r => !r.completed && !r.is_deleted && r.id > lastSeenId && r.creator !== myCreatorName)
     : [];
+  const newIds = new Set(newItems.map(r => r.id));
 
   // 새 출력요청 id 목록 (내가 올린 것도 포함 — 무조건 표시)
   const newDropIds = new Set(
@@ -857,6 +858,7 @@ export default function Board({ only }: BoardProps) {
                     onCompanyClick={(company) => setSearchQuery(company)}
                     onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
                     activeStatusFilter={statusFilter}
+                    isNew={newIds.has(item.id)}
                   />
                 ))}
               </div>

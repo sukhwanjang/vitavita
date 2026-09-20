@@ -105,6 +105,18 @@ export default function DropList({
   return (
     <>
       {sortedDrops.map(drop => {
+        const linked = requests.find(request => request.id === drop.request_id);
+        const pickupDate = linked?.pickup_date
+          ? new Date(`${linked.pickup_date.slice(0, 10)}T00:00:00`)
+          : null;
+        const daysLeft = pickupDate && !Number.isNaN(pickupDate.getTime())
+          ? Math.round((pickupDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
+          : null;
+        const deadlineLabel = daysLeft === null
+          ? '기한 미지정'
+          : daysLeft === 0
+            ? '당일'
+            : daysLeft > 0 ? `D-${daysLeft}` : `D+${Math.abs(daysLeft)}`;
         const isNew = newIds.has(drop.id);
         const isUrgent = !!drop.is_urgent;
         const ext = extOf(drop.path);
@@ -125,11 +137,12 @@ export default function DropList({
               <span className={`absolute left-0 top-0 bottom-0 w-[3px] ${isUrgent ? 'bg-red-600' : 'bg-blue-600'}`} />
             )}
             <div className="flex items-start gap-1.5">
-              {isNew && (
-                <span className="inline-flex items-center h-4 px-1.5 rounded-sm bg-blue-600 text-white text-[9px] font-bold animate-pulse shrink-0 mt-0.5 select-none">
-                  NEW
-                </span>
-              )}
+              <span
+                className="inline-flex items-center h-4 px-1.5 rounded-sm bg-blue-600 text-white text-[9px] font-bold shrink-0 mt-0.5 select-none"
+                title={linked?.pickup_date ? `픽업일: ${linked.pickup_date}` : '연결된 작업의 픽업일이 없습니다'}
+              >
+                {deadlineLabel}
+              </span>
               {isUrgent && (
                 <span className="inline-flex items-center gap-0.5 h-4 px-1.5 rounded-sm bg-red-600 text-white text-[9px] font-bold shrink-0 mt-0.5 select-none">
                   <IconZap className="w-2.5 h-2.5" />
@@ -146,10 +159,7 @@ export default function DropList({
             <p className={`${pathCls} text-slate-400 break-all mt-1 font-mono`} title={drop.path}>{folderOf(drop.path)}</p>
 
             {/* 연결된 작업 카드 */}
-            {drop.request_id && (() => {
-              const linked = requests.find(rq => rq.id === drop.request_id);
-              if (!linked) return null;
-              return (
+            {linked && (
                 <p className="flex items-center gap-1.5 mt-1.5">
                   {linked.image_url && (
                     <button
@@ -164,8 +174,7 @@ export default function DropList({
                     🔗 {linked.company} · {linked.program}
                   </span>
                 </p>
-              );
-            })()}
+            )}
 
             {/* 요청 메모 */}
             {drop.note && (
