@@ -56,10 +56,11 @@ export default function DropList({
 }: DropListProps) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  // 긴급 먼저, 그다음 최신순
+  // 긴급 먼저, 그다음 파일 이름 가나다순
+  const nameOf = (d: FileDrop) => (d.path.split(/[\\/]/).pop() || d.path);
   const sortedDrops = [...drops].sort((a, b) =>
     ((b.is_urgent ? 1 : 0) - (a.is_urgent ? 1 : 0)) ||
-    (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    nameOf(a).localeCompare(nameOf(b), 'ko')
   );
 
   const handleCopy = async (id: number, path: string) => {
