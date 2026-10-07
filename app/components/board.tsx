@@ -481,6 +481,9 @@ export default function Board({ only }: BoardProps) {
       item.creator?.includes(searchQuery);
     if (!matchesSearch) return false;
 
+    // 준비완료 필터: 작업완료 표시된 카드만 — 정리용이라 '지남 숨김'도 무시하고 전부 보여준다
+    if (statusFilter === 'ready') return !!item.is_work_done;
+
     // 날짜 계산 (hideOverdue & statusFilter 공통)
     const daysLeft = item.pickup_date
       ? Math.ceil(
@@ -527,7 +530,7 @@ export default function Board({ only }: BoardProps) {
           / (1000 * 60 * 60 * 24)
         )
       : null;
-  const urgentCount = inProgress.filter(i => i.is_urgent).length;
+  const readyCount = inProgress.filter(i => i.is_work_done).length; // 작업완료(준비완료) 카드 수
   const todayCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0).length;
   const todayDoneCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0 && i.is_work_done).length;
   const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
@@ -790,7 +793,7 @@ export default function Board({ only }: BoardProps) {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
               {[
                 { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900 dark:text-slate-100', progress: null as { done: number; total: number } | null },
-                { key: 'urgent', label: '급함', count: urgentCount, color: 'text-red-600 dark:text-red-400', progress: null },
+                { key: 'ready', label: '준비완료', count: readyCount, color: 'text-emerald-600 dark:text-emerald-400', progress: null },
                 { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600 dark:text-blue-400', progress: { done: todayDoneCount, total: todayCount } },
                 { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600 dark:text-amber-400', progress: null },
                 { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800 dark:text-slate-200', progress: null },
@@ -827,7 +830,8 @@ export default function Board({ only }: BoardProps) {
                 <IconFilter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>상태 필터 적용 중:</span>
                 <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-800">{
-                  statusFilter === 'urgent' ? '급함'
+                  statusFilter === 'ready' ? '준비완료'
+                  : statusFilter === 'urgent' ? '급함'
                   : statusFilter === 'today' ? '오늘 마감'
                   : statusFilter === 'd-1' ? '내일 마감'
                   : statusFilter === 'overdue' ? '기한 지남'
