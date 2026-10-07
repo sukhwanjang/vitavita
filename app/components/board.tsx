@@ -483,6 +483,8 @@ export default function Board({ only }: BoardProps) {
 
     // 준비완료 필터: 작업완료 표시된 카드만 — 정리용이라 '지남 숨김'도 무시하고 전부 보여준다
     if (statusFilter === 'ready') return !!item.is_work_done;
+    // 미완료 필터: 아직 작업완료 안 된 카드만 — 마찬가지로 전부 보여준다
+    if (statusFilter === 'notready') return !item.is_work_done;
 
     // 날짜 계산 (hideOverdue & statusFilter 공통)
     const daysLeft = item.pickup_date
@@ -534,10 +536,7 @@ export default function Board({ only }: BoardProps) {
   const todayCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0).length;
   const todayDoneCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 0 && i.is_work_done).length;
   const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
-  const overdueCount = inProgress.filter(i => {
-    const d = daysLeftOf(i);
-    return !i.is_urgent && d !== null && d < 0;
-  }).length;
+  const notReadyCount = inProgress.filter(i => !i.is_work_done).length; // 아직 작업 안 된 카드 수
 
   // 표시할 완료 목록 (displayCount 개수만큼)
   const filteredCompleted = allFilteredCompleted.slice(0, displayCount);
@@ -796,7 +795,7 @@ export default function Board({ only }: BoardProps) {
                 { key: 'ready', label: '준비완료', count: readyCount, color: 'text-emerald-600 dark:text-emerald-400', progress: null },
                 { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600 dark:text-blue-400', progress: { done: todayDoneCount, total: todayCount } },
                 { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600 dark:text-amber-400', progress: null },
-                { key: 'overdue', label: '기한 지남', count: overdueCount, color: 'text-slate-800 dark:text-slate-200', progress: null },
+                { key: 'notready', label: '미완료', count: notReadyCount, color: 'text-red-600 dark:text-red-400', progress: null },
               ].map(seg => {
                 const active = seg.key !== null && statusFilter === seg.key;
                 return (
@@ -831,6 +830,7 @@ export default function Board({ only }: BoardProps) {
                 <span>상태 필터 적용 중:</span>
                 <span className="inline-flex items-center h-6 px-2.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-800">{
                   statusFilter === 'ready' ? '준비완료'
+                  : statusFilter === 'notready' ? '미완료'
                   : statusFilter === 'urgent' ? '급함'
                   : statusFilter === 'today' ? '오늘 마감'
                   : statusFilter === 'd-1' ? '내일 마감'
