@@ -11,6 +11,7 @@ import {
   IconSun,
   IconCalculator,
   IconFrame,
+  IconPrinter,
 } from './ui/icons';
 
 interface HeaderProps {
@@ -20,6 +21,7 @@ interface HeaderProps {
   onShowFileDrop: () => void;
   onShowCalculator: () => void;
   onShowFrameCalc: () => void;
+  onShowColorNotes: () => void;
   showForm: boolean;
   editMode: boolean;
   hideOverdue: boolean;
@@ -41,6 +43,7 @@ export default function Header({
   onShowFileDrop,
   onShowCalculator,
   onShowFrameCalc,
+  onShowColorNotes,
   showForm,
   editMode,
   hideOverdue,
@@ -100,6 +103,16 @@ export default function Header({
               </button>
             )}
           </div>
+
+          {/* 출력 색상 기록 — 검색창 바로 옆 작은 버튼 */}
+          <button
+            onClick={onShowColorNotes}
+            title="출력 색상 기록 — 거래처별로 어떤 모드로 찍었는지 메모"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition shrink-0"
+          >
+            <IconPrinter className="w-4 h-4" />
+            <span className="hidden md:inline">색상 기록</span>
+          </button>
 
           {/* 우측 액션 */}
           <div className="flex items-center gap-2 ml-auto shrink-0">
