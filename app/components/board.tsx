@@ -20,6 +20,7 @@ import FileDropModal from './FileDropModal';
 import CalculatorModal from './CalculatorModal';
 import FrameCalcModal from './FrameCalcModal';
 import ColorNotesModal from './ColorNotesModal';
+import BroadcastPanel from './BroadcastPanel';
 import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
@@ -632,6 +633,9 @@ export default function Board({ only }: BoardProps) {
           </div>
         </div>
       )}
+
+      {/* 층간 방송 (어느 페이지에 있어도 보내기/받기 가능 — 1층 /queue 화면 포함) */}
+      <BroadcastPanel audioCtxRef={audioCtxRef} soundOn={soundOn} />
 
       {/* 모달들 */}
       <CalculatorModal
