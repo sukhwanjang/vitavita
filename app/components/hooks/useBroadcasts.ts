@@ -39,6 +39,7 @@ export function useBroadcasts() {
   const [items, setItems] = useState<Broadcast[]>([]);
   const [tableMissing, setTableMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false); // 첫 조회가 끝났는지 (빈 목록과 미조회 구분용)
   const cleanedRef = useRef(false);
   const missingRef = useRef(false);
 
@@ -54,12 +55,14 @@ export function useBroadcasts() {
     if (error) {
       if (isMissingTableError(error.message)) { setTableMissing(true); missingRef.current = true; }
       else setError(error.message);
+      setLoaded(true);
       return;
     }
     setTableMissing(false);
     missingRef.current = false;
     setError(null);
     setItems(data ?? []);
+    setLoaded(true);
 
     // 오래된 방송 정리 (세션당 1회, 실패해도 무시)
     if (!cleanedRef.current) {
@@ -138,5 +141,5 @@ export function useBroadcasts() {
     await fetchRecent();
   };
 
-  return { items, tableMissing, error, send, ack, refresh: fetchRecent };
+  return { items, loaded, tableMissing, error, send, ack, refresh: fetchRecent };
 }

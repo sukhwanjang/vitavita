@@ -27,6 +27,8 @@ const QUICK_PHRASES = [
 
 const SPEAK_REPEAT = 2;          // 음성 반복 횟수 (작업장 소음 대비)
 const BANNER_MAX_AGE_MS = 30 * 60 * 1000; // 30분 지난 방송은 배너로 안 띄움
+const ANNOUNCE_MAX_AGE_MS = 10 * 60 * 1000; // 10분 지난 방송은 소리로 안 알림 (늦게 켠 화면에서 옛 방송 재생 방지)
+const HEARD_KEY = 'vitavita_bc_heard_id'; // 이 브라우저가 마지막으로 들은 방송 id (새로고침해도 다시 안 울리게)
 
 const timeLabel = (iso: string) => {
   const d = new Date(iso);
@@ -90,7 +92,7 @@ const speak = (text: string, repeat = SPEAK_REPEAT) => {
 };
 
 export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
-  const { items, tableMissing, error, send, ack } = useBroadcasts();
+  const { items, loaded, tableMissing, error, send, ack } = useBroadcasts();
   const clientId = getClientId();
 
   const [open, setOpen] = useState(false);
@@ -100,7 +102,7 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
   const [ackToast, setAckToast] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const prevMaxIdRef = useRef<number | null>(null);
+  const heardIdRef = useRef<number | null>(null);
   const prevAckedRef = useRef<Set<number> | null>(null);
   const ackToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -132,18 +134,39 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
   };
 
   // ── 새 방송 도착 감지 → 차임 + 음성 ──
+  // 한 번 울린 방송은 id를 브라우저에 저장해 두고, 그보다 새 방송만 울린다.
+  // (예전엔 새로고침·재접속마다 마지막 방송을 또 읽어서 "퇴근하세요"가 다음 날까지 울렸음)
   useEffect(() => {
+    if (!loaded) return; // 첫 조회 전의 빈 목록을 기준으로 잡지 않도록
     const maxId = items.length > 0 ? Math.max(...items.map(b => b.id)) : 0;
-    if (prevMaxIdRef.current === null) {
-      // 첫 로딩: 지금 있는 것까지는 "이미 들은 것"으로 (새로고침마다 다시 울리지 않게)
-      prevMaxIdRef.current = maxId;
-      return;
+
+    if (heardIdRef.current === null) {
+      const stored = localStorage.getItem(HEARD_KEY);
+      if (stored !== null) {
+        heardIdRef.current = Number(stored);
+      } else {
+        // 이 브라우저에서 처음 켬: 지금 있는 방송까지는 들은 것으로 (조용히 시작)
+        heardIdRef.current = maxId;
+        localStorage.setItem(HEARD_KEY, String(maxId));
+        return;
+      }
     }
-    if (maxId > prevMaxIdRef.current) {
+
+    if (maxId > heardIdRef.current) {
+      const since = heardIdRef.current;
+      heardIdRef.current = maxId;
+      localStorage.setItem(HEARD_KEY, String(maxId));
+
+      // 울릴 대상: 남이 보낸 것 · 아직 확인 안 된 것 · 10분 이내 것
+      const now = Date.now();
       const fresh = items
-        .filter(b => b.id > (prevMaxIdRef.current ?? 0) && b.client_id !== clientId)
+        .filter(b =>
+          b.id > since &&
+          b.client_id !== clientId &&
+          !b.acked_by &&
+          now - new Date(b.created_at).getTime() < ANNOUNCE_MAX_AGE_MS
+        )
         .sort((a, b) => a.id - b.id);
-      prevMaxIdRef.current = maxId;
       if (fresh.length > 0 && soundOn) {
         if (audioCtxRef.current) playBroadcastChime(audioCtxRef.current);
         const latest = fresh[fresh.length - 1];
@@ -152,7 +175,7 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, soundOn]);
+  }, [items, loaded, soundOn]);
 
   // ── 내가 보낸 방송이 확인되면 작은 토스트 ──
   useEffect(() => {
