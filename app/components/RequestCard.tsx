@@ -112,12 +112,12 @@ export default function RequestCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border shadow-sm transition duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
+      className={`relative flex flex-col rounded-2xl border shadow-md dark:shadow-sm transition duration-200 hover:shadow-xl hover:-translate-y-0.5 ${
         item.is_work_done
           ? 'border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-300 dark:ring-emerald-700 bg-emerald-50 dark:bg-emerald-950/40'
           : item.is_urgent
             ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-900 bg-white dark:bg-slate-900'
-            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900'
+            : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-white dark:bg-slate-900'
       }`}
     >
       {/* 작업완료 상단 리본 */}
@@ -130,7 +130,7 @@ export default function RequestCard({
       {/* 히어로 이미지 영역 */}
       <div
         ref={imgContainerRef}
-        className={`relative h-48 rounded-t-[15px] overflow-hidden bg-slate-100 dark:bg-slate-800 ${item.image_url ? 'cursor-pointer' : ''}`}
+        className={`relative h-48 rounded-t-[15px] overflow-hidden bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700/60 ${item.image_url ? 'cursor-pointer' : ''}`}
         onClick={item.image_url ? () => onImageClick(item.image_url!) : undefined}
       >
         {item.image_url ? (

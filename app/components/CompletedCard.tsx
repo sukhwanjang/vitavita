@@ -44,7 +44,7 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+    <div className="relative flex flex-col justify-between rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md dark:shadow-sm">
       <span className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
       <div>
         <div className="flex items-center gap-1.5 pl-5 pr-4 pt-3.5">

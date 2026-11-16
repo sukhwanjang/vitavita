@@ -44,7 +44,7 @@ export default function TopBar({
   }, []);
 
   return (
-    <header className="hidden lg:block sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+    <header className="hidden lg:block sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-300 dark:border-slate-800 shadow-sm">
       <div className="flex items-center h-16 gap-4 px-6">
         {/* 화면 이름 + 오늘 날짜 */}
         <div className="shrink-0 leading-tight">
@@ -53,7 +53,7 @@ export default function TopBar({
         </div>
 
         {/* 검색 */}
-        <div className="flex items-center flex-1 max-w-lg ml-4 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-full px-4 h-10 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-brand/40 dark:focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-brand/10 transition">
+        <div className="flex items-center flex-1 max-w-lg ml-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-transparent rounded-full px-4 h-10 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:border-brand/40 dark:focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-brand/10 transition">
           <IconSearch className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="text"

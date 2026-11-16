@@ -23,7 +23,7 @@ export default function DeletedCard({ item, onRestore, onRefresh }: DeletedCardP
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm opacity-80">
+    <div className="relative flex flex-col justify-between rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md dark:shadow-sm opacity-80">
       <span className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 dark:bg-slate-600" />
       <div className="flex flex-col pl-5 pr-4 py-3.5 space-y-3">
         <div className="flex items-center gap-1.5">

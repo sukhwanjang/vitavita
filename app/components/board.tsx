@@ -595,7 +595,7 @@ export default function Board({ only }: BoardProps) {
   ).values());
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-[#e7ebf2] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* 넓은 화면: 왼쪽 남색 메뉴 + 상단 막대 (출력 전용 화면에서는 숨김) */}
       {only !== 'queue' && (
         <>
@@ -889,7 +889,7 @@ export default function Board({ only }: BoardProps) {
             />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
             {/* 오늘 요약 패널 — 큰 문장 + 진행 막대 + 눌러서 거르는 숫자 5개 */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 flex flex-col xl:flex-row xl:items-center gap-5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl shadow-md dark:shadow-sm p-5 flex flex-col xl:flex-row xl:items-center gap-5">
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-brand-orange-dark dark:text-brand-orange mb-1">오늘의 작업</p>
                 {todayCount > 0 ? (
@@ -903,7 +903,7 @@ export default function Board({ only }: BoardProps) {
                   </p>
                 )}
                 <div className="flex items-center gap-3 mt-3">
-                  <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="flex-1 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                       style={{ width: `${todayCount > 0 ? Math.round((todayDoneCount / todayCount) * 100) : 0}%` }}
@@ -934,8 +934,8 @@ export default function Board({ only }: BoardProps) {
                       title={seg.key === null ? '필터 해제' : active ? '클릭하여 필터 해제' : `클릭하여 ${seg.label}만 보기`}
                       className={`flex flex-col items-start px-3.5 py-2.5 rounded-xl text-left whitespace-nowrap transition ${
                         active
-                          ? 'bg-brand text-white shadow-sm dark:bg-blue-600'
-                          : 'bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-brand text-white shadow-sm border border-brand dark:border-blue-600 dark:bg-blue-600'
+                          : 'bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-transparent hover:bg-slate-200 dark:hover:bg-slate-800'
                       }`}
                     >
                       <span className={`text-[11px] font-semibold ${active ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>{seg.label}</span>
@@ -997,7 +997,7 @@ export default function Board({ only }: BoardProps) {
                             작업완료 {doneInGroup}
                           </span>
                         )}
-                        <span className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                        <span className="flex-1 h-px bg-slate-300 dark:bg-slate-800" />
                       </div>
                       <div className="board-grid">
                         {group.items.map(item => (
