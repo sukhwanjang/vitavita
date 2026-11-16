@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FilterType, CheckMark } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useBoardData } from './hooks/useBoardData';
 import { useFileDrops } from './hooks/useFileDrops';
+import { useCompletedList } from './hooks/useCompletedList';
 import { handlePrintImage } from './utils/printUtils';
 
 import PasswordGate from './PasswordGate';
@@ -59,20 +60,27 @@ export default function Board({ only }: BoardProps) {
   const { authChecked, isAuthed, handleAuthentication } = useAuth();
   const {
     requests,
+    error: loadError,
+    loaded,
+    history,
+    linkedExtra,
+    ensureLinked,
     fetchRequests,
     handleComplete: originalHandleComplete,
     handleRecover,
     handleDelete,
+    handleRestoreDeleted,
     updateCheckMarks,
     handleWorkDone,
     inProgress,
-    completed,
     deleted
-  } = useBoardData();
+  } = useBoardData({ history: only !== 'queue' });
   const { drops, doneDrops, error: fileDropError, addDrop, removeDrop, restoreDrop, removeByRequest } = useFileDrops();
 
   // UI 상태
   const [searchQuery, setSearchQuery] = useState('');
+  // 완료된 작업은 완료 화면에서만, 조금씩 받아 온다 (검색은 전체 기록에서)
+  const completedList = useCompletedList(only === 'completed', searchQuery);
   const [hideOverdue, setHideOverdue] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -88,8 +96,6 @@ export default function Board({ only }: BoardProps) {
   const [pendingQueue, setPendingQueue] = useState<any[]>([]);   // 남은 연속 완료 대상
   const [queueTotal, setQueueTotal] = useState(1);               // 체인 총 개수
   const [formInitialData, setFormInitialData] = useState<any>(null);
-  const [displayCount, setDisplayCount] = useState(28);  // 완료 목록 표시 개수 (28개씩)
-  const [isLoadingMore, setIsLoadingMore] = useState(false);  // 로딩 중 상태
   const loadMoreRef = useRef<HTMLDivElement>(null);  // 무한 스크롤 트리거 ref
   const [lastSeenId, setLastSeenId] = useState<number | null>(null);  // 새 작업 알림 기준 (이 id 이후 등록분이 "새 작업")
   const [sidebarOpen, setSidebarOpen] = useState(true);  // 출력대기 열림/닫힘
@@ -201,32 +207,9 @@ export default function Board({ only }: BoardProps) {
     if (only) router.push('/');
   };
 
-  // 검색 필터링된 완료 목록 (전체) - useCallback보다 먼저 계산
-  const allFilteredCompleted = completed.filter((item) =>
-    item.company.includes(searchQuery) ||
-    item.program.includes(searchQuery) ||
-    item.creator?.includes(searchQuery)
-  );
-
-  // ⭐ useCallback을 early return 전에 배치
-  const loadMore = useCallback(() => {
-    setDisplayCount(prev => {
-      const currentTotal = allFilteredCompleted.length;
-      const currentDisplay = prev;
-
-      // 더 로드할 항목이 있고, 현재 로딩 중이 아닐 때만
-      if (currentTotal > currentDisplay) {
-        setIsLoadingMore(true);
-        setTimeout(() => {
-          setIsLoadingMore(false);
-        }, 200);
-        return currentDisplay + 28;
-      }
-      return currentDisplay;
-    });
-  }, [allFilteredCompleted.length]);
-
-  // ⭐ useEffect를 early return 전에 배치
+  // 완료 화면: 맨 아래에 닿으면 다음 묶음을 받아 온다
+  // (loadMore는 한 묶음을 받을 때마다 새로 만들어지므로, 아래 표시가 계속 보이면 이어서 더 받는다)
+  const loadMoreCompleted = completedList.loadMore;
   useEffect(() => {
     if (only !== 'completed' || !loadMoreRef.current) return;
 
@@ -234,7 +217,7 @@ export default function Board({ only }: BoardProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          loadMore();
+          loadMoreCompleted();
         }
       },
       { threshold: 0.1 }
@@ -245,7 +228,17 @@ export default function Board({ only }: BoardProps) {
     return () => {
       observer.disconnect();
     };
-  }, [only, loadMore]);
+  }, [only, loadMoreCompleted]);
+
+  // 출력대기에 연결된 작업이 진행 목록에 없으면(이미 완료된 카드) 그 카드만 따로 받아 온다
+  useEffect(() => {
+    if (!loaded) return;
+    const known = new Set(requests.map(r => r.id));
+    const missing = drops
+      .map(d => d.request_id)
+      .filter((id): id is number => typeof id === 'number' && !known.has(id));
+    if (missing.length) ensureLinked(Array.from(new Set(missing)));
+  }, [loaded, requests, drops, ensureLinked]);
 
   // 새 작업 알림: 저장된 마지막 확인 id 불러오기 (-1 = 첫 방문)
   useEffect(() => {
@@ -481,7 +474,8 @@ export default function Board({ only }: BoardProps) {
     const matchesSearch =
       item.company.includes(searchQuery) ||
       item.program.includes(searchQuery) ||
-      item.creator?.includes(searchQuery);
+      item.creator?.includes(searchQuery) ||
+      item.note?.includes(searchQuery); // 완료 화면 검색과 맞춰 메모도 찾는다
     if (!matchesSearch) return false;
 
     // 준비완료 필터: 작업완료 표시된 카드만 — 정리용이라 '지남 숨김'도 무시하고 전부 보여준다
@@ -541,24 +535,31 @@ export default function Board({ only }: BoardProps) {
   const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
   const notReadyCount = inProgress.filter(i => !i.is_work_done).length; // 아직 작업 안 된 카드 수
 
-  // 표시할 완료 목록 (displayCount 개수만큼)
-  const filteredCompleted = allFilteredCompleted.slice(0, displayCount);
+  // 출력대기 연결 표시용: 진행 목록 + 따로 받아 둔 완료 카드
+  const linkableRequests = linkedExtra.length ? [...requests, ...linkedExtra] : requests;
 
-  // 더 표시할 항목이 있는지 확인
-  const hasMoreCompleted = allFilteredCompleted.length > displayCount;
-  const remainingCount = allFilteredCompleted.length - displayCount;
-
-  // 현재 모달에 표시할 아이템의 체크마크 가져오기
-  const currentItem = modalImage ? requests.find(r => r.id === modalImage.id) : null;
+  // 현재 모달에 표시할 아이템의 체크마크 가져오기 (진행 목록 → 완료 화면 목록 → 연결 카드 순으로 찾는다)
+  const currentItem = modalImage
+    ? (requests.find(r => r.id === modalImage.id)
+        ?? completedList.items.find(r => r.id === modalImage.id)
+        ?? linkedExtra.find(r => r.id === modalImage.id))
+    : null;
   const currentCheckMarks = currentItem?.check_marks || [];
+
+  // 화면 위 안내 띠에 쓸 불러오기 실패 문구
+  const bannerError = only === 'completed' ? (loadError ?? completedList.error) : loadError;
+  const retryLoad = () => {
+    fetchRequests();
+    if (only === 'completed') completedList.refresh();
+  };
 
   // 완료 모달에 실시간 체크마크 반영 (updateCheckMarks 후 requests가 갱신되므로 여기서 조회)
   const completingItemLive = completingItem
     ? (requests.find(r => r.id === completingItem.id) ?? completingItem)
     : null;
 
-  // 등록 폼 자동완성용 — 최근 등록 순 정렬
-  const recentSorted = [...requests].sort(
+  // 등록 폼 자동완성용 — 최근 등록 순 정렬 (진행 중 작업 + 처음 한 번 받아 둔 이력)
+  const recentSorted = [...requests, ...history].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   // 업체명: 중복 제거 목록
@@ -680,7 +681,10 @@ export default function Board({ only }: BoardProps) {
         checkMarks={currentCheckMarks}  // DB에서 가져온 데이터 사용
         onCheckMarksChange={(newMarks) => {
           if (modalImage) {
-            updateCheckMarks(modalImage.id, newMarks);  // Supabase에 저장
+            const id = modalImage.id;
+            updateCheckMarks(id, newMarks).then(ok => {  // Supabase에 저장
+              if (ok) completedList.patchLocal(id, { check_marks: newMarks });  // 완료 화면 카드에도 바로 반영
+            });
           }
         }}
         onClose={() => setModalImage(null)}
@@ -714,7 +718,7 @@ export default function Board({ only }: BoardProps) {
           error={fileDropError}
           onRemove={removeDrop}
           onRestore={restoreDrop}
-          requests={requests}
+          requests={linkableRequests}
           onImageClick={(it) => {
             if (it.image_url) setModalImage({ url: it.image_url, company: it.company, program: it.program, id: it.id });
           }}
@@ -729,6 +733,24 @@ export default function Board({ only }: BoardProps) {
       <>
       {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 출력대기 폭만큼 밀어줌) */}
       <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
+      {/* 불러오기 실패 안내 — 빈 화면만 보이면 작업이 다 사라진 것처럼 보이므로 꼭 알려준다 */}
+      {bannerError && (
+        <div className="bg-red-600 text-white">
+          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-2.5 flex items-center gap-3 text-sm">
+            <span className="font-bold shrink-0">불러오기 실패</span>
+            <span className="min-w-0 flex-1 text-white/90">
+              {bannerError}
+              {requests.length > 0 && ' 지금 보이는 내용은 마지막으로 받은 것입니다.'}
+            </span>
+            <button
+              onClick={retryLoad}
+              className="shrink-0 h-8 px-3.5 rounded bg-white/20 hover:bg-white/30 text-xs font-semibold transition"
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      )}
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
         {only === 'completed' ? (
           <div>
@@ -736,17 +758,26 @@ export default function Board({ only }: BoardProps) {
               <IconCheckCircle className="w-5 h-5 text-emerald-600" />
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">완료된 작업</h2>
               <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
-                {allFilteredCompleted.length}건
+                {completedList.total === null ? '…' : `${completedList.total.toLocaleString('ko-KR')}건`}
               </span>
+              {searchQuery.trim() && (
+                <span className="text-xs text-slate-400">전체 완료 기록에서 검색 (업체·프로그램·작업자·메모)</span>
+              )}
             </div>
 
+            {completedList.total === 0 && !completedList.loading && (
+              <p className="py-10 text-center text-sm text-slate-400">
+                {searchQuery.trim() ? '검색 결과가 없습니다.' : '완료된 작업이 없습니다.'}
+              </p>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {filteredCompleted.map(item => (
+              {completedList.items.map(item => (
                 <CompletedCard
                   key={item.id}
                   item={item}
-                  onRecover={handleRecover}
-                  onRefresh={fetchRequests}
+                  onRecover={async (id) => { if (await handleRecover(id)) completedList.refresh(); }}
+                  onRefresh={completedList.refresh}
                   onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
                   onCompanyClick={(company) => setSearchQuery(company)}
                 />
@@ -755,7 +786,7 @@ export default function Board({ only }: BoardProps) {
 
             {/* 무한 스크롤 트리거 */}
             <div ref={loadMoreRef} className="flex justify-center mt-8 py-4">
-              {isLoadingMore && (
+              {completedList.loading && (
                 <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
               )}
             </div>
@@ -768,12 +799,15 @@ export default function Board({ only }: BoardProps) {
               <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
                 {deleted.length}건
               </span>
+              <span className="text-xs text-slate-400">최근 삭제 10건까지만 보관됩니다. 되살리면 진행 현황으로 돌아갑니다.</span>
             </div>
+            {!loaded && <p className="py-10 text-center text-sm text-slate-400">불러오는 중…</p>}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {deleted.map(item => (
                 <DeletedCard
                   key={item.id}
                   item={item}
+                  onRestore={handleRestoreDeleted}
                   onRefresh={fetchRequests}
                 />
               ))}
@@ -788,7 +822,7 @@ export default function Board({ only }: BoardProps) {
               error={fileDropError}
               onRemove={removeDrop}
               onRestore={restoreDrop}
-              requests={requests}
+              requests={linkableRequests}
               onImageClick={(it) => {
                 if (it.image_url) setModalImage({ url: it.image_url, company: it.company, program: it.program, id: it.id });
               }}
@@ -860,6 +894,7 @@ export default function Board({ only }: BoardProps) {
               </div>
             )}
             <div>
+              {!loaded && <p className="py-10 text-center text-sm text-slate-400">작업 목록을 불러오는 중…</p>}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {filteredInProgress.map(item => (
                   <RequestCard

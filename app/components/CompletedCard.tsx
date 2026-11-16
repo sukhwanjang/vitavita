@@ -34,7 +34,11 @@ export default function CompletedCard({ item, onRecover, onRefresh, onImageClick
 
   const handlePermanentDelete = async () => {
     if (window.confirm('정말 완전 삭제하시겠습니까?')) {
-      await supabase.from('request').delete().eq('id', item.id);
+      const { error } = await supabase.from('request').delete().eq('id', item.id);
+      if (error) {
+        alert('삭제 실패: ' + error.message);
+        return;
+      }
       onRefresh();
     }
   };

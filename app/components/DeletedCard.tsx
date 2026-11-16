@@ -1,18 +1,23 @@
 'use client';
 import { RequestItem } from './types';
 import { supabase } from '../../lib/supabase';
-import { IconClock, IconTrash } from './ui/icons';
+import { IconClock, IconRestore, IconTrash } from './ui/icons';
 import ThumbImg from './ui/ThumbImg';
 
 interface DeletedCardProps {
   item: RequestItem;
+  onRestore: (id: number) => void; // 삭제 취소 → 진행 현황으로 되돌리기
   onRefresh: () => void;
 }
 
-export default function DeletedCard({ item, onRefresh }: DeletedCardProps) {
+export default function DeletedCard({ item, onRestore, onRefresh }: DeletedCardProps) {
   const handlePermanentDelete = async () => {
     if (window.confirm('진짜로 완전 삭제할까요?')) {
-      await supabase.from('request').delete().eq('id', item.id);
+      const { error } = await supabase.from('request').delete().eq('id', item.id);
+      if (error) {
+        alert('완전 삭제 실패: ' + error.message);
+        return;
+      }
       onRefresh();
     }
   };
@@ -39,7 +44,15 @@ export default function DeletedCard({ item, onRefresh }: DeletedCardProps) {
           <span>등록</span>
           <span className="text-slate-500">{new Date(item.created_at).toLocaleString('ko-KR')}</span>
         </div>
-        <div className="flex items-center justify-end pt-2.5 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-1.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+          <button
+            onClick={() => onRestore(item.id)}
+            title="삭제를 취소하고 진행 현황으로 되돌립니다"
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition"
+          >
+            <IconRestore className="w-3 h-3" />
+            되살리기
+          </button>
           <button
             onClick={handlePermanentDelete}
             className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 transition"

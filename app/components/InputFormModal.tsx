@@ -75,6 +75,7 @@ export default function InputFormModal({
   const [isUrgent, setIsUrgent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false); // 처리 중 표시 (화면 갱신을 기다리지 않고 바로 확인하기 위해 ref로도 둔다)
   const [creator, setCreator] = useState<string>(() =>
     typeof window !== 'undefined' ? (localStorage.getItem('vitavita_creator') ?? '') : ''
   );
@@ -142,11 +143,22 @@ export default function InputFormModal({
   };
 
   const handleSubmit = async () => {
+    // 처리 중에 Ctrl+Enter를 한 번 더 눌러도 같은 작업이 두 번 등록되지 않게 막는다
+    // (버튼은 처리 중에 잠기지만 단축키는 잠기지 않았다)
+    if (submittingRef.current) return;
     if (!company || !program || !pickupDate) {
       setError('업체명, 프로그램명, 픽업일은 필수입니다.');
       return;
     }
+    submittingRef.current = true;
+    try {
+      await submitForm();
+    } finally {
+      submittingRef.current = false;
+    }
+  };
 
+  const submitForm = async () => {
     setIsSubmitting(true);
     setError(null);
     let imageUrl = imagePreview;

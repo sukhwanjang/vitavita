@@ -91,7 +91,7 @@ export default function Header({
               type="text"
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
-              placeholder="업체명, 프로그램명, 작업자 검색"
+              placeholder="업체명, 프로그램명, 작업자, 메모 검색"
               className="bg-transparent outline-none focus:ring-0 focus:border-transparent border-0 px-2.5 text-sm w-full text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
             {searchQuery && (
