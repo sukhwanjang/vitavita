@@ -8,8 +8,8 @@ import {
   IconVolume, IconVolumeOff, IconPrinter,
 } from './ui/icons';
 
-// 헤더(앱바 64px + 탭 44px + 보더 1px) 아래에 고정
-const HEADER_OFFSET = 109;
+// 넓은 화면의 상단 막대(TopBar 64px + 보더 1px) 아래, 왼쪽 메뉴(SideNav 76px) 오른쪽에 고정
+const HEADER_OFFSET = 65;
 
 interface FileSidebarProps {
   drops: FileDrop[];
@@ -192,7 +192,7 @@ export default function FileSidebar({
     <>
       {/* 데스크톱: 화면 좌측에 고정된 패널 */}
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 bottom-0 z-30 bg-white dark:bg-slate-900 border-r transition-all duration-200 ${
+        className={`hidden lg:flex flex-col fixed left-[76px] bottom-0 z-20 bg-white dark:bg-slate-900 border-r transition-all duration-200 ${
           open ? 'w-72' : 'w-12'
         } ${newCount > 0 ? 'border-blue-300 dark:border-blue-700' : 'border-slate-200 dark:border-slate-700'}`}
         style={{ top: HEADER_OFFSET }}

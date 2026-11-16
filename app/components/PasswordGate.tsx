@@ -29,9 +29,9 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f6f9] dark:bg-slate-950 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-brand px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white dark:bg-slate-900 rounded-md shadow-sm border border-slate-200 dark:border-slate-700 px-8 py-10">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl px-8 py-10">
           <div className="flex flex-col items-center mb-8">
             <img src="/logo.png" alt="Vitamin Sign Logo" className="h-14 mb-5 dark:brightness-0 dark:invert" />
             <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">비타민사인 현황판</h1>
@@ -52,14 +52,14 @@ export default function PasswordGate({ onAuthenticated }: PasswordGateProps) {
             </div>
             <button
               type="submit"
-              className="w-full h-11 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 active:bg-blue-800 transition text-sm"
+              className="w-full h-11 bg-brand-orange text-brand font-bold rounded-lg hover:bg-brand-orange-dark transition text-sm"
             >
               로그인
             </button>
             {pwError && <div className="text-red-600 text-[13px] mt-3 text-center">{pwError}</div>}
           </form>
         </div>
-        <p className="text-[11px] text-slate-400 mt-4 text-center">비밀번호는 7일마다 다시 입력해야 합니다.</p>
+        <p className="text-[11px] text-slate-300/70 mt-4 text-center">비밀번호는 7일마다 다시 입력해야 합니다.</p>
       </div>
     </div>
   );

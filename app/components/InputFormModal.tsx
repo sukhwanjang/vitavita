@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { IconX, IconImage, IconZap, IconCalendar } from './ui/icons';
 import { resizeImageFile, THUMB_DIR } from './utils/imageResize';
+import { WORKER_NAMES } from '../settlement/types';
 
 // 한국 시간 기준 오늘 + offset일의 YYYY-MM-DD
 const kstDate = (offsetDays: number) => {
@@ -82,6 +83,12 @@ export default function InputFormModal({
   const [companyFocused, setCompanyFocused] = useState(false);
   const [programFocused, setProgramFocused] = useState(false);
   const companyInputRef = useRef<HTMLInputElement>(null);
+  const programInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [companyIdx, setCompanyIdx] = useState(-1);   // 자동완성에서 화살표로 고른 줄 (-1 = 없음)
+  const [programIdx, setProgramIdx] = useState(-1);
+  const [dragOver, setDragOver] = useState(false);     // 사진을 끌어다 올리는 중
+  const [showMissing, setShowMissing] = useState(false); // 필수 칸 빨간 표시 (등록을 눌렀는데 비어 있을 때)
 
   // 초기 데이터 설정
   useEffect(() => {
@@ -96,15 +103,32 @@ export default function InputFormModal({
     }
   }, [initialData]);
 
+  // 필수 칸을 다 채우면 빨간 표시와 안내 문구를 바로 거둔다
+  useEffect(() => {
+    if (showMissing && company && program && pickupDate) {
+      setShowMissing(false);
+      setError(null);
+    }
+  }, [showMissing, company, program, pickupDate]);
+
+  // 사진 한 장 받기 — 붙여넣기·끌어다 놓기·파일 선택이 모두 여기로 온다
+  const takeImageFile = useCallback((file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('이미지 파일만 올릴 수 있습니다.');
+      return;
+    }
+    setError(null);
+    setImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
   const handlePasteImage = useCallback((e: React.ClipboardEvent) => {
     const file = e.clipboardData.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  }, []);
+    if (file && file.type.startsWith('image/')) takeImageFile(file);
+  }, [takeImageFile]);
 
   useEffect(() => {
     if (showForm) {
@@ -148,6 +172,7 @@ export default function InputFormModal({
     if (submittingRef.current) return;
     if (!company || !program || !pickupDate) {
       setError('업체명, 프로그램명, 픽업일은 필수입니다.');
+      setShowMissing(true);
       return;
     }
     submittingRef.current = true;
@@ -231,6 +256,10 @@ export default function InputFormModal({
     setImage(null);
     setImagePreview(null);
     setIsUrgent(false);
+    setError(null);
+    setShowMissing(false);
+    setCompanyIdx(-1);
+    setProgramIdx(-1);
     // 작업자명은 localStorage에 저장된 값 유지
     setCreator(localStorage.getItem('vitavita_creator') ?? '');
     onClose();
@@ -272,20 +301,78 @@ export default function InputFormModal({
         .slice(0, 6)
     : companyPrograms.slice(0, 6); // 입력 전에는 해당 업체의 최근 프로그램을 바로 보여줌
 
-  const inputClass = "rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3.5 h-10 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition";
+  // 자동완성 키보드 조작: ↓↑로 고르고 Enter(또는 Tab)로 넣는다.
+  // 한글을 조합하는 중의 Enter는 글자 확정이므로 건드리지 않는다.
+  const onCompanyKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    const list = filteredSuggestions;
+    if (e.key === 'ArrowDown' && list.length) {
+      e.preventDefault();
+      setCompanyFocused(true);
+      setCompanyIdx(i => (i + 1) % list.length);
+    } else if (e.key === 'ArrowUp' && list.length) {
+      e.preventDefault();
+      setCompanyIdx(i => (i <= 0 ? list.length - 1 : i - 1));
+    } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (companyFocused && companyIdx >= 0 && list[companyIdx]) setCompany(list[companyIdx]);
+      setCompanyIdx(-1);
+      setCompanyFocused(false);
+      programInputRef.current?.focus(); // 다음 칸으로
+    } else if (e.key === 'Tab' && companyFocused && companyIdx >= 0 && list[companyIdx]) {
+      setCompany(list[companyIdx]);
+      setCompanyIdx(-1);
+    }
+  };
+  const onProgramKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    const list = programCandidates;
+    if (e.key === 'ArrowDown' && list.length) {
+      e.preventDefault();
+      setProgramFocused(true);
+      setProgramIdx(i => (i + 1) % list.length);
+    } else if (e.key === 'ArrowUp' && list.length) {
+      e.preventDefault();
+      setProgramIdx(i => (i <= 0 ? list.length - 1 : i - 1));
+    } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (programFocused && programIdx >= 0 && list[programIdx]) setProgram(list[programIdx]);
+      setProgramIdx(-1);
+      setProgramFocused(false);
+    } else if (e.key === 'Tab' && programFocused && programIdx >= 0 && list[programIdx]) {
+      setProgram(list[programIdx]);
+      setProgramIdx(-1);
+    }
+  };
+
+  const inputBase = "rounded-lg border dark:bg-slate-800 px-3.5 h-11 text-sm text-slate-900 dark:text-slate-100 focus:border-brand dark:focus:border-blue-500 focus:ring-4 focus:ring-brand/10 dark:focus:ring-blue-500/20 transition";
+  const inputClass = `${inputBase} border-slate-300 dark:border-slate-600`;
+  // 필수 칸이 비어 있으면 빨간 테두리
+  const requiredClass = (filled: boolean) =>
+    `${inputBase} ${showMissing && !filled ? 'border-red-400 bg-red-50/60 dark:bg-red-950/30' : 'border-slate-300 dark:border-slate-600'}`;
+  const labelClass = "text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1.5";
+  const fmtShort = (iso: string) => {
+    const d = new Date(iso + 'T00:00:00');
+    return `${d.getMonth() + 1}/${d.getDate()} ${DAY_NAMES[d.getDay()]}`;
+  };
   const summaryReady = company && pickupDate;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4" onPaste={handlePasteImage}>
-      <div className="bg-white dark:bg-slate-900 rounded-md shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-4xl relative animate-fadein max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/60 backdrop-blur-sm p-4" onPaste={handlePasteImage}>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-4xl relative animate-fadein max-h-[92vh] flex flex-col">
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{editMode ? '작업 내용을 수정합니다.' : '새 작업을 현황판에 등록합니다.'}</p>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-orange/15 text-brand-orange-dark dark:text-brand-orange text-xl font-black select-none">
+              {editMode ? '✎' : '+'}
+            </span>
+            <div>
+              <h3 className="text-lg font-extrabold tracking-tight text-brand dark:text-slate-100">{editMode ? '작업 수정' : '새 작업 등록'}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{editMode ? '작업 내용을 수정합니다.' : '업체명부터 차례로 적으면 됩니다. * 표시는 꼭 필요한 칸입니다.'}</p>
+            </div>
           </div>
           <button
-            className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
+            className="flex items-center justify-center w-9 h-9 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
             onClick={clearForm}
             aria-label="닫기"
           >
@@ -300,26 +387,34 @@ export default function InputFormModal({
             <div className="px-6 py-5 space-y-5">
               {/* 업체명 + 자동완성 */}
               <div className="flex flex-col relative">
-                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">업체명 <span className="text-red-500">*</span></label>
+                <label className={labelClass}>업체명 <span className="text-red-500">*</span></label>
                 <input
                   ref={companyInputRef}
                   type="text"
                   value={company}
-                  onChange={e => setCompany(e.target.value)}
+                  onChange={e => { setCompany(e.target.value); setCompanyIdx(-1); setCompanyFocused(true); }}
                   onFocus={() => setCompanyFocused(true)}
                   onBlur={() => setTimeout(() => setCompanyFocused(false), 150)}
-                  placeholder="업체명 입력 (기존 업체 자동완성)"
+                  onKeyDown={onCompanyKey}
+                  placeholder="업체명 입력 (↓↑로 고르고 Enter)"
                   autoFocus
-                  className={inputClass}
+                  autoComplete="off"
+                  className={requiredClass(!!company)}
                 />
                 {/* 자동완성 드롭다운 */}
                 {companyFocused && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-20 overflow-hidden">
-                    {filteredSuggestions.map(c => (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-20 overflow-hidden">
+                    {filteredSuggestions.map((c, i) => (
                       <button
                         key={c}
-                        onMouseDown={(e) => { e.preventDefault(); setCompany(c); setCompanyFocused(false); }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0"
+                        tabIndex={-1}
+                        onMouseDown={(e) => { e.preventDefault(); setCompany(c); setCompanyIdx(-1); setCompanyFocused(false); programInputRef.current?.focus(); }}
+                        onMouseEnter={() => setCompanyIdx(i)}
+                        className={`w-full text-left px-3.5 py-2 text-sm transition border-b border-slate-50 dark:border-slate-700 last:border-b-0 ${
+                          i === companyIdx
+                            ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold'
+                            : 'text-slate-700 dark:text-slate-200'
+                        }`}
                       >
                         {c}
                       </button>
@@ -334,7 +429,7 @@ export default function InputFormModal({
                       <button
                         key={c}
                         onClick={() => setCompany(c)}
-                        className="inline-flex items-center h-6 px-2 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition"
+                        className="inline-flex items-center h-7 px-2.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[12px] font-medium text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition"
                       >
                         {c}
                       </button>
@@ -345,29 +440,38 @@ export default function InputFormModal({
 
               {/* 프로그램명 + 자동완성 */}
               <div className="flex flex-col relative">
-                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">프로그램명 <span className="text-red-500">*</span></label>
+                <label className={labelClass}>프로그램명 <span className="text-red-500">*</span></label>
                 <input
+                  ref={programInputRef}
                   type="text"
                   value={program}
-                  onChange={e => setProgram(e.target.value)}
+                  onChange={e => { setProgram(e.target.value); setProgramIdx(-1); setProgramFocused(true); }}
                   onFocus={() => setProgramFocused(true)}
                   onBlur={() => setTimeout(() => setProgramFocused(false), 150)}
-                  placeholder={company && companyPrograms.length > 0 ? `${company}의 최근 프로그램 자동완성` : '프로그램명 입력'}
-                  className={inputClass}
+                  onKeyDown={onProgramKey}
+                  placeholder={company && companyPrograms.length > 0 ? `${company}의 최근 프로그램 (↓↑로 고르기)` : '프로그램명 입력'}
+                  autoComplete="off"
+                  className={requiredClass(!!program)}
                 />
                 {/* 자동완성 드롭다운 */}
                 {programFocused && programCandidates.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded shadow-lg z-20 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-20 overflow-hidden">
                     {!program && (
                       <p className="px-3.5 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 select-none">
                         {company}의 최근 프로그램
                       </p>
                     )}
-                    {programCandidates.map(p => (
+                    {programCandidates.map((p, i) => (
                       <button
                         key={p}
-                        onMouseDown={(e) => { e.preventDefault(); setProgram(p); setProgramFocused(false); }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 transition border-b border-slate-50 dark:border-slate-700 last:border-b-0"
+                        tabIndex={-1}
+                        onMouseDown={(e) => { e.preventDefault(); setProgram(p); setProgramIdx(-1); setProgramFocused(false); }}
+                        onMouseEnter={() => setProgramIdx(i)}
+                        className={`w-full text-left px-3.5 py-2 text-sm transition border-b border-slate-50 dark:border-slate-700 last:border-b-0 ${
+                          i === programIdx
+                            ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold'
+                            : 'text-slate-700 dark:text-slate-200'
+                        }`}
                       >
                         {p}
                       </button>
@@ -379,7 +483,7 @@ export default function InputFormModal({
               {/* 픽업일: 퀵 칩 + 달력 + D-day 미리보기 */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <label className="text-[13px] font-medium text-slate-600">픽업일 <span className="text-red-500">*</span></label>
+                  <label className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">픽업일 <span className="text-red-500">*</span></label>
                   {pickupDate && (
                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
                       daysLeftOf(pickupDate) === 0 ? 'text-blue-600'
@@ -401,13 +505,14 @@ export default function InputFormModal({
                         key={q.label}
                         type="button"
                         onClick={() => setPickupDate(dateStr)}
-                        className={`flex-1 h-8 rounded text-xs font-semibold border transition ${
+                        className={`flex-1 flex flex-col items-center justify-center h-12 rounded-lg border transition ${
                           active
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300'
+                            ? 'bg-brand dark:bg-blue-600 text-white border-brand dark:border-blue-600 shadow-sm'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-brand/40 hover:text-brand dark:hover:text-blue-300'
                         }`}
                       >
-                        {q.label}
+                        <span className="text-[13px] font-bold leading-tight">{q.label}</span>
+                        <span className={`text-[11px] leading-tight tabular-nums ${active ? 'text-white/70' : 'text-slate-400'}`}>{fmtShort(dateStr)}</span>
                       </button>
                     );
                   })}
@@ -416,25 +521,25 @@ export default function InputFormModal({
                   type="date"
                   value={pickupDate}
                   onChange={e => setPickupDate(e.target.value)}
-                  className={inputClass}
+                  className={requiredClass(!!pickupDate)}
                 />
               </div>
 
               {/* 작업자 선택 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">작업자 선택</label>
+                <label className={labelClass}>작업자 선택</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {['박혜경', '김한별', '장석환', '정수원', '이현동', '심민영'].map((name) => (
+                  {WORKER_NAMES.map((name) => (
                     <button
                       key={name}
                       onClick={() => {
                         setCreator(name);
                         localStorage.setItem('vitavita_creator', name);
                       }}
-                      className={`h-9 rounded text-sm font-medium border transition ${
+                      className={`h-10 rounded-lg text-sm font-semibold border transition ${
                         creator === name
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300'
+                          ? 'bg-brand dark:bg-blue-600 text-white border-brand dark:border-blue-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-brand/40 hover:text-brand dark:hover:text-blue-300'
                       }`}
                     >
                       {name}
@@ -445,23 +550,24 @@ export default function InputFormModal({
 
               {/* 메모 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">메모</label>
+                <label className={labelClass}>메모</label>
                 <textarea
                   value={note}
                   onChange={e => setNote(e.target.value)}
-                  className="rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
-                  rows={2}
+                  placeholder="코팅, 재단, 납품 방법처럼 작업할 때 알아야 할 것"
+                  className="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-brand dark:focus:border-blue-500 focus:ring-4 focus:ring-brand/10 dark:focus:ring-blue-500/20 transition"
+                  rows={3}
                 />
               </div>
 
               {/* 우선순위 세그먼트 */}
               <div className="flex flex-col">
-                <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">우선순위</label>
-                <div className="inline-flex w-full rounded border border-slate-200 dark:border-slate-600 overflow-hidden">
+                <label className={labelClass}>우선순위</label>
+                <div className="inline-flex w-full rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setIsUrgent(false)}
-                    className={`flex-1 h-9 text-sm font-semibold transition ${
+                    className={`flex-1 h-10 text-sm font-semibold transition ${
                       !isUrgent ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                     }`}
                   >
@@ -470,7 +576,7 @@ export default function InputFormModal({
                   <button
                     type="button"
                     onClick={() => setIsUrgent(true)}
-                    className={`flex-1 h-9 inline-flex items-center justify-center gap-1 text-sm font-semibold transition border-l border-slate-200 dark:border-slate-600 ${
+                    className={`flex-1 h-10 inline-flex items-center justify-center gap-1 text-sm font-semibold transition border-l border-slate-200 dark:border-slate-600 ${
                       isUrgent ? 'bg-red-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-red-600 dark:hover:text-red-400'
                     }`}
                   >
@@ -480,15 +586,31 @@ export default function InputFormModal({
                 </div>
               </div>
 
-              {error && <p className="text-red-600 text-[13px]">{error}</p>}
             </div>
 
             {/* 우측: 원고 이미지 */}
             <div className="px-6 py-5 flex flex-col">
-              <label className="text-[13px] font-medium text-slate-600 dark:text-slate-300 mb-1.5">원고 이미지</label>
-              <div className={`flex-1 min-h-[320px] flex flex-col items-center justify-center border-2 border-dashed rounded p-4 transition ${
-                imagePreview ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 hover:border-blue-400'
-              }`}>
+              <label className={labelClass}>원고 이미지</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => { takeImageFile(e.target.files?.[0]); e.target.value = ''; }}
+              />
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDragOver(false); takeImageFile(e.dataTransfer.files?.[0]); }}
+                onClick={imagePreview ? undefined : () => fileInputRef.current?.click()}
+                className={`flex-1 min-h-[320px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-4 transition ${
+                  dragOver
+                    ? 'border-brand-orange bg-orange-50 dark:bg-orange-950/30'
+                    : imagePreview
+                      ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+                      : 'border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 hover:border-brand-orange hover:bg-orange-50/50 dark:hover:bg-orange-950/20 cursor-pointer'
+                }`}
+              >
                 {imagePreview ? (
                   <div className="relative w-full h-full flex flex-col items-center justify-center">
                     <img src={imagePreview} className="max-h-[380px] max-w-full object-contain border border-slate-200 rounded bg-white" />
@@ -500,14 +622,20 @@ export default function InputFormModal({
                         <IconX className="w-3 h-3" />
                         이미지 제거
                       </button>
-                      <span className="text-[11px] text-slate-400 self-center">다시 붙여넣으면 교체됩니다</span>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-300 hover:border-brand/40 hover:text-brand dark:hover:text-white transition"
+                      >
+                        다른 파일 선택
+                      </button>
+                      <span className="text-[11px] text-slate-400 self-center">붙여넣거나 끌어다 놓아도 교체됩니다</span>
                     </div>
                   </div>
                 ) : (
                   <div className="text-slate-400 text-sm text-center flex flex-col items-center gap-2">
                     <IconImage className="w-10 h-10 text-slate-300" />
-                    <span>여기에 이미지를 <b className="text-slate-600 dark:text-slate-300">Ctrl+V</b>로 붙여넣으세요</span>
-                    <span className="text-xs text-slate-300 dark:text-slate-600">(파일 선택 없이 캡처만 지원)</span>
+                    <span>캡처한 뒤 <b className="text-slate-600 dark:text-slate-300">Ctrl+V</b>로 붙여넣기</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">사진 파일을 여기로 끌어다 놓거나, 눌러서 파일을 골라도 됩니다</span>
                   </div>
                 )}
               </div>
@@ -516,20 +644,24 @@ export default function InputFormModal({
         </div>
 
         {/* 모달 푸터 */}
-        <div className="flex items-center gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 rounded-b-md shrink-0">
-          <span className="hidden md:inline text-[11px] text-slate-400">
-            <b className="text-slate-500 dark:text-slate-300">Ctrl+Enter</b> 등록 · <b className="text-slate-500 dark:text-slate-300">ESC</b> 닫기
-          </span>
+        <div className="flex items-center gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 rounded-b-2xl shrink-0">
+          {error ? (
+            <span className="text-[13px] font-semibold text-red-600 dark:text-red-400">{error}</span>
+          ) : (
+            <span className="hidden md:inline text-[11px] text-slate-400">
+              <b className="text-slate-500 dark:text-slate-300">↓↑ Enter</b> 자동완성 고르기 · <b className="text-slate-500 dark:text-slate-300">Ctrl+Enter</b> 등록 · <b className="text-slate-500 dark:text-slate-300">ESC</b> 닫기
+            </span>
+          )}
           <div className="flex gap-2 ml-auto">
             <button
               onClick={clearForm}
-              className="h-10 px-5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              className="h-11 px-5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
             >
               취소
             </button>
             <button
               onClick={handleSubmit}
-              className="h-10 px-6 rounded bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800 transition disabled:bg-slate-300"
+              className="h-11 px-7 rounded-lg bg-brand-orange text-sm font-extrabold text-brand shadow-sm hover:bg-brand-orange-dark active:scale-[0.98] transition disabled:bg-slate-300 disabled:text-white"
               disabled={isSubmitting}
             >
               {isSubmitting

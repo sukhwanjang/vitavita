@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect, useRef, type MutableRefObject } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, type MutableRefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { useBroadcasts, getClientId, type Broadcast } from './hooks/useBroadcasts';
-import { IconX, IconVolume } from './ui/icons';
+import { IconX, IconVolume, IconMegaphone } from './ui/icons';
 
 // ─────────────────────────────────────────────────────────────
 // 층간 방송(확성기)
-//  - 아래쪽 가운데 📢 버튼 → 패널에서 말을 쳐서 보내면
+//  - 📢 버튼(넓은 화면: 왼쪽 메뉴 안 / 좁은 화면·출력 전용 화면: 오른쪽 아래) → 패널에서 말을 쳐서 보내면
 //  - 켜져 있는 다른 현황판 화면이 "띵동" + 음성으로 읽어주고 큰 배너로 띄움
 //  - 받은 쪽이 [확인했어요]를 누르면 보낸 쪽 목록에 확인한 사람이 표시됨
 // ─────────────────────────────────────────────────────────────
@@ -13,6 +14,14 @@ import { IconX, IconVolume } from './ui/icons';
 interface Props {
   audioCtxRef: MutableRefObject<AudioContext | null>;
   soundOn: boolean;
+  /**
+   * 버튼 자리.
+   * 'rail'  : 넓은 화면에서는 왼쪽 메뉴(SideNav) 안에 버튼을 넣고, 방송 창은 본문 왼쪽 아래에 띄운다
+   * 'corner': 항상 오른쪽 아래에 떠 있는 버튼 (출력 전용 화면처럼 왼쪽 메뉴가 없는 화면)
+   */
+  dock?: 'rail' | 'corner';
+  /** dock='rail'일 때 방송 창의 왼쪽 위치(px) — 왼쪽 메뉴와 출력대기 패널을 가리지 않게 본문 시작점으로 맞춘다 */
+  contentLeft?: number;
 }
 
 // 자주 쓰는 말 — 버튼 한 번으로 바로 방송
@@ -91,7 +100,7 @@ const speak = (text: string, repeat = SPEAK_REPEAT) => {
   }
 };
 
-export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
+export default function BroadcastPanel({ audioCtxRef, soundOn, dock = 'corner', contentLeft = 100 }: Props) {
   const { items, loaded, tableMissing, error, send, ack } = useBroadcasts();
   const clientId = getClientId();
 
@@ -116,6 +125,12 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
       window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
   }, []);
+
+  // 왼쪽 메뉴 안의 버튼 자리 (SideNav가 그려 둔 빈 칸) — 있으면 거기에 버튼을 끼워 넣는다
+  const [railSlot, setRailSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setRailSlot(dock === 'rail' ? document.getElementById('side-nav-broadcast-slot') : null);
+  }, [dock]);
 
   const toggleOpen = () => {
     setOpen(prev => {
@@ -285,10 +300,35 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
         </div>
       )}
 
-      {/* ── 방송 보내기 패널 (아래 가운데) ── */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[75] flex flex-col items-center gap-2 w-[min(92vw,30rem)]">
+      {/* ── 왼쪽 메뉴 안의 방송 버튼 (넓은 화면) ── */}
+      {railSlot && createPortal(
+        <button
+          onClick={toggleOpen}
+          title="층간 방송 — 다른 층 현황판에 소리로 전달"
+          className={`relative flex flex-col items-center justify-center gap-1 w-[60px] h-[54px] rounded-xl text-[11px] font-bold transition ${
+            open
+              ? 'bg-rose-600 text-white shadow-lg'
+              : 'text-rose-300 hover:bg-rose-500/20 hover:text-rose-200'
+          }`}
+        >
+          <IconMegaphone className="w-5 h-5" />
+          {open ? '닫기' : '방송'}
+        </button>,
+        railSlot
+      )}
+
+      {/* ── 방송 보내기 창 ──
+          넓은 화면(dock='rail'): 본문 왼쪽 아래 — 화면 가운데 카드와 출력대기 목록을 가리지 않는다
+          그 외: 오른쪽 아래 구석.
+          바깥 상자는 클릭을 통과시킨다 (예전엔 버튼 양옆 빈 곳이 아래 카드 클릭을 막았다) */}
+      <div
+        className={`fixed bottom-4 right-4 z-[75] flex flex-col items-end gap-2 w-[min(92vw,30rem)] pointer-events-none ${
+          dock === 'rail' ? 'lg:right-auto lg:left-[var(--bc-left)] lg:items-start' : ''
+        }`}
+        style={dock === 'rail' ? ({ '--bc-left': `${contentLeft}px` } as CSSProperties) : undefined}
+      >
         {open && (
-          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-fadein">
+          <div className="pointer-events-auto w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-fadein">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
               <span className="text-base" aria-hidden>📢</span>
               <span className="text-sm font-bold text-slate-800 dark:text-slate-100">층간 방송</span>
@@ -371,7 +411,9 @@ export default function BroadcastPanel({ audioCtxRef, soundOn }: Props) {
 
         <button
           onClick={toggleOpen}
-          className={`flex items-center gap-2 h-11 px-5 rounded-full shadow-xl text-sm font-bold transition ${
+          className={`pointer-events-auto flex items-center gap-2 h-11 px-5 rounded-full shadow-xl text-sm font-bold transition ${
+            dock === 'rail' ? 'lg:hidden' : ''
+          } ${
             open
               ? 'bg-slate-700 hover:bg-slate-600 text-white'
               : 'bg-rose-600 hover:bg-rose-500 text-white'

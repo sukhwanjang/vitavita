@@ -10,6 +10,8 @@ import { handlePrintImage } from './utils/printUtils';
 
 import PasswordGate from './PasswordGate';
 import Header from './Header';
+import SideNav from './SideNav';
+import TopBar from './TopBar';
 import InputFormModal from './InputFormModal';
 import ImageModal from './ImageModal';
 import CompleteConfirmModal from './CompleteConfirmModal';
@@ -594,7 +596,34 @@ export default function Board({ only }: BoardProps) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* 헤더 (출력 전용 화면에서는 숨김) */}
+      {/* 넓은 화면: 왼쪽 남색 메뉴 + 상단 막대 (출력 전용 화면에서는 숨김) */}
+      {only !== 'queue' && (
+        <>
+          <SideNav
+            onShowCalculator={() => setShowCalculator(true)}
+            onShowFrameCalc={() => setShowFrameCalc(true)}
+            onShowColorNotes={() => setShowColorNotes(true)}
+            onHome={() => setSearchQuery('')}
+          />
+          <div className="lg:pl-[76px]">
+            <TopBar
+              title={only === 'completed' ? '완료된 작업' : only === 'deleted' ? '삭제된 작업' : '진행 현황'}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onShowForm={handleShowForm}
+              onShowFileDrop={() => setShowFileDrop(true)}
+              showForm={showForm}
+              editMode={editMode}
+              showOverdueToggle={!only}
+              hideOverdue={hideOverdue}
+              onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
+              overdueHiddenCount={overdueHiddenCount}
+            />
+          </div>
+        </>
+      )}
+
+      {/* 좁은 화면(휴대폰 등): 기존 상단 헤더 (Header 안에서 lg 이상은 숨김) */}
       {only !== 'queue' && (
       <Header
         searchQuery={searchQuery}
@@ -616,7 +645,7 @@ export default function Board({ only }: BoardProps) {
       {soundOn && !audioReady && (
         <button
           onClick={() => audioCtxRef.current?.resume().catch(() => {})}
-          className="fixed bottom-4 right-4 z-[80] flex items-center gap-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 text-sm font-bold px-4 py-3 shadow-xl animate-pulse transition"
+          className="fixed bottom-[68px] right-4 z-[80] flex items-center gap-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-amber-950 text-sm font-bold px-4 py-3 shadow-xl animate-pulse transition"
           title="브라우저 보안 정책 때문에 첫 클릭 전까지 소리가 차단됩니다"
         >
           🔕 알림음이 잠겨 있어요 — 클릭해서 켜기
@@ -655,7 +684,12 @@ export default function Board({ only }: BoardProps) {
       )}
 
       {/* 층간 방송 (어느 페이지에 있어도 보내기/받기 가능 — 1층 /queue 화면 포함) */}
-      <BroadcastPanel audioCtxRef={audioCtxRef} soundOn={soundOn} />
+      <BroadcastPanel
+        audioCtxRef={audioCtxRef}
+        soundOn={soundOn}
+        dock={only === 'queue' ? 'corner' : 'rail'}
+        contentLeft={(!only ? (sidebarOpen ? 364 : 124) : 76) + 24}
+      />
 
       {/* 모달들 */}
       <CalculatorModal
@@ -751,7 +785,8 @@ export default function Board({ only }: BoardProps) {
       ) : (
       <>
       {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 출력대기 폭만큼 밀어줌) */}
-      <div className={!only ? (sidebarOpen ? 'lg:pl-72' : 'lg:pl-12') : ''}>
+      {/* 왼쪽 메뉴(76px) + 진행 현황에서는 출력대기 패널(열림 288px / 접힘 48px)만큼 밀어준다 */}
+      <div className={!only ? (sidebarOpen ? 'lg:pl-[364px]' : 'lg:pl-[124px]') : 'lg:pl-[76px]'}>
       {/* 불러오기 실패 안내 — 빈 화면만 보이면 작업이 다 사라진 것처럼 보이므로 꼭 알려준다 */}
       {bannerError && (
         <div className="bg-red-600 text-white">
@@ -853,39 +888,67 @@ export default function Board({ only }: BoardProps) {
               onToggleSound={toggleSound}
             />
           <section className="relative z-10 space-y-5 pb-32 flex-1 min-w-0">
-            {/* 현황 요약 패널 — 색은 숫자에만, 0건은 음소거 */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded shadow-sm grid grid-cols-1 md:grid-cols-5">
-              {[
-                { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-slate-900 dark:text-slate-100', progress: null as { done: number; total: number } | null },
-                { key: 'ready', label: '준비완료', count: readyCount, color: 'text-emerald-600 dark:text-emerald-400', progress: null },
-                { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600 dark:text-blue-400', progress: { done: todayDoneCount, total: todayCount } },
-                { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600 dark:text-amber-400', progress: null },
-                { key: 'notready', label: '미완료', count: notReadyCount, color: 'text-red-600 dark:text-red-400', progress: null },
-              ].map(seg => {
-                const active = seg.key !== null && statusFilter === seg.key;
-                return (
-                  <button
-                    key={seg.label}
-                    onClick={() => {
-                      if (seg.key === null) setStatusFilter(null);
-                      else setStatusFilter(prev => prev === seg.key ? null : seg.key);
-                    }}
-                    className={`relative flex items-center gap-2 text-left px-4 py-1.5 whitespace-nowrap overflow-hidden transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
-                      active ? 'bg-blue-50/60 dark:bg-blue-950/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">{seg.label}</span>
-                    <span className={`text-lg leading-6 font-bold tabular-nums ${seg.count === 0 ? 'text-slate-300 dark:text-slate-700' : seg.color}`}>
-                      {seg.count}
-                      <span className="ml-0.5 text-[11px] font-medium text-slate-300 dark:text-slate-600">건</span>
-                    </span>
-                    {seg.progress && seg.progress.total > 0 && (
-                      <span className="hidden xl:inline text-[10px] text-slate-400 tabular-nums shrink-0 ml-auto">✓ {seg.progress.done}/{seg.progress.total}</span>
-                    )}
-                    {active && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-blue-600" />}
-                  </button>
-                );
-              })}
+            {/* 오늘 요약 패널 — 큰 문장 + 진행 막대 + 눌러서 거르는 숫자 5개 */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 flex flex-col xl:flex-row xl:items-center gap-5">
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-brand-orange-dark dark:text-brand-orange mb-1">오늘의 작업</p>
+                {todayCount > 0 ? (
+                  <p className="text-[22px] leading-tight font-extrabold tracking-tight text-brand dark:text-slate-100">
+                    오늘 마감 <span className="text-blue-600 dark:text-blue-400 tabular-nums">{todayCount}건</span> 중{' '}
+                    <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">{todayDoneCount}건</span> 준비 완료
+                  </p>
+                ) : (
+                  <p className="text-[22px] leading-tight font-extrabold tracking-tight text-brand dark:text-slate-100">
+                    오늘 마감인 작업이 없습니다
+                  </p>
+                )}
+                <div className="flex items-center gap-3 mt-3">
+                  <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${todayCount > 0 ? Math.round((todayDoneCount / todayCount) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <span className="text-[13px] font-bold text-slate-500 dark:text-slate-400 tabular-nums w-10 text-right">
+                    {todayCount > 0 ? Math.round((todayDoneCount / todayCount) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 xl:w-[560px] shrink-0">
+                {[
+                  { key: null as string | null, label: '전체 진행', count: inProgress.length, color: 'text-brand dark:text-slate-100' },
+                  { key: 'ready', label: '준비완료', count: readyCount, color: 'text-emerald-600 dark:text-emerald-400' },
+                  { key: 'today', label: '오늘 마감', count: todayCount, color: 'text-blue-600 dark:text-blue-400' },
+                  { key: 'd-1', label: '내일 마감', count: tomorrowCount, color: 'text-amber-600 dark:text-amber-400' },
+                  { key: 'notready', label: '미완료', count: notReadyCount, color: 'text-red-600 dark:text-red-400' },
+                ].map(seg => {
+                  const active = seg.key !== null && statusFilter === seg.key;
+                  return (
+                    <button
+                      key={seg.label}
+                      onClick={() => {
+                        if (seg.key === null) setStatusFilter(null);
+                        else setStatusFilter(prev => prev === seg.key ? null : seg.key);
+                      }}
+                      title={seg.key === null ? '필터 해제' : active ? '클릭하여 필터 해제' : `클릭하여 ${seg.label}만 보기`}
+                      className={`flex flex-col items-start px-3.5 py-2.5 rounded-xl text-left whitespace-nowrap transition ${
+                        active
+                          ? 'bg-brand text-white shadow-sm dark:bg-blue-600'
+                          : 'bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className={`text-[11px] font-semibold ${active ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'}`}>{seg.label}</span>
+                      <span className={`text-[22px] leading-7 font-extrabold tabular-nums ${
+                        active ? 'text-white' : seg.count === 0 ? 'text-slate-300 dark:text-slate-700' : seg.color
+                      }`}>
+                        {seg.count}
+                        <span className={`ml-0.5 text-[11px] font-semibold ${active ? 'text-white/60' : 'text-slate-300 dark:text-slate-600'}`}>건</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 상태 필터 활성화 배너 */}
