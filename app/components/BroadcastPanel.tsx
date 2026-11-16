@@ -400,7 +400,12 @@ export default function BroadcastPanel({ audioCtxRef, soundOn, dock = 'corner', 
                 {recent.length > 0 && (
                   <ul className="border-t border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                     {recent.map(b => (
-                      <RecentRow key={b.id} b={b} mine={b.client_id === clientId} />
+                      <RecentRow
+                        key={b.id}
+                        b={b}
+                        mine={b.client_id === clientId}
+                        onAck={() => ack(b.id, myName.trim() || null)}
+                      />
                     ))}
                   </ul>
                 )}
@@ -428,7 +433,10 @@ export default function BroadcastPanel({ audioCtxRef, soundOn, dock = 'corner', 
   );
 }
 
-function RecentRow({ b, mine }: { b: Broadcast; mine: boolean }) {
+// 최근 방송 한 줄.
+// 위쪽 큰 배너를 놓쳤거나(30분 지나면 배너가 사라짐) 닫아 버린 사람도 여기서 [확인]을 누를 수 있다.
+// 내가 보낸 방송은 내가 확인할 일이 아니므로 '대기중'으로만 보인다.
+function RecentRow({ b, mine, onAck }: { b: Broadcast; mine: boolean; onAck: () => void }) {
   return (
     <li className="flex items-center gap-2 px-3 py-1.5 text-xs">
       <span className="text-slate-400 shrink-0 tabular-nums">{timeLabel(b.created_at)}</span>
@@ -440,8 +448,16 @@ function RecentRow({ b, mine }: { b: Broadcast; mine: boolean }) {
         <span className="shrink-0 text-emerald-600 dark:text-emerald-400 font-semibold" title={b.acked_at ? timeLabel(b.acked_at) : ''}>
           ✓ {b.acked_by}
         </span>
-      ) : (
+      ) : mine ? (
         <span className="shrink-0 text-slate-400">대기중</span>
+      ) : (
+        <button
+          onClick={onAck}
+          title="이 방송을 확인했다고 표시합니다 (보낸 사람 화면에 확인한 사람 이름이 뜹니다)"
+          className="shrink-0 h-6 px-2.5 rounded-full border border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition"
+        >
+          확인
+        </button>
       )}
     </li>
   );

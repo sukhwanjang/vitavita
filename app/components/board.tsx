@@ -24,7 +24,7 @@ import CalculatorModal from './CalculatorModal';
 import FrameCalcModal from './FrameCalcModal';
 import ColorNotesModal from './ColorNotesModal';
 import BroadcastPanel from './BroadcastPanel';
-import { IconBell, IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
+import { IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
   only?: FilterType;
@@ -147,9 +147,7 @@ export default function Board({ only }: BoardProps) {
       ctx.close().catch(() => {});
     };
   }, []);
-  const [dropToast, setDropToast] = useState<{ name: string; creator: string | null } | null>(null);
   const prevMaxDropIdRef = useRef<number | null>(null);
-  const dropToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 마지막 확인 id / 알림음 설정 복원
   useEffect(() => {
@@ -181,7 +179,7 @@ export default function Board({ only }: BoardProps) {
     });
   };
 
-  // 새 출력요청 도착 → 토스트 + 알림음 + 패널 자동 펼침 (누가 올렸든 무조건)
+  // 새 출력요청 도착 → 알림음 + 패널 자동 펼침 (누가 올렸든 무조건)
   useEffect(() => {
     const maxId = drops.length > 0 ? Math.max(...drops.map(d => d.id)) : 0;
     if (prevMaxDropIdRef.current === null) {
@@ -192,22 +190,13 @@ export default function Board({ only }: BoardProps) {
       prevMaxDropIdRef.current = maxId;
       const newest = drops.find(d => d.id === maxId);
       if (newest) {
-        setDropToast({ name: fileNameOf(newest.path), creator: newest.creator });
-        if (dropToastTimerRef.current) clearTimeout(dropToastTimerRef.current);
-        dropToastTimerRef.current = setTimeout(() => setDropToast(null), 7000);
+        // 화면 위 파란 알림 창은 없앴다 (사용자 요청) — 소리와 출력대기 자동 펼침, NEW 표시로 알린다
         if (soundOn && audioCtxRef.current) playNotifySound(audioCtxRef.current);
         openSidebar();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drops, soundOn]);
-
-  // 토스트 "보기": 메인으로 이동 + 패널 펼침
-  const goToDrops = () => {
-    setDropToast(null);
-    openSidebar();
-    if (only) router.push('/');
-  };
 
   // 완료 화면: 맨 아래에 닿으면 다음 묶음을 받아 온다
   // (loadMore는 한 묶음을 받을 때마다 새로 만들어지므로, 아래 표시가 계속 보이면 이어서 더 받는다)
@@ -605,7 +594,8 @@ export default function Board({ only }: BoardProps) {
             onShowColorNotes={() => setShowColorNotes(true)}
             onHome={() => setSearchQuery('')}
           />
-          <div className="lg:pl-[76px]">
+          {/* 주의: TopBar를 다른 상자로 감싸지 말 것 — 감싸면 스크롤할 때 위에 붙어 있지 못하고 같이 올라가 버린다
+              (왼쪽 메뉴만큼의 여백은 TopBar 안에서 준다) */}
             <TopBar
               title={only === 'completed' ? '완료된 작업' : only === 'deleted' ? '삭제된 작업' : '진행 현황'}
               searchQuery={searchQuery}
@@ -619,7 +609,6 @@ export default function Board({ only }: BoardProps) {
               onToggleHideOverdue={() => setHideOverdue(prev => !prev)}
               overdueHiddenCount={overdueHiddenCount}
             />
-          </div>
         </>
       )}
 
@@ -650,37 +639,6 @@ export default function Board({ only }: BoardProps) {
         >
           🔕 알림음이 잠겨 있어요 — 클릭해서 켜기
         </button>
-      )}
-
-      {/* 새 출력요청 토스트 (어느 페이지에 있어도 표시) */}
-      {dropToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[80] animate-fadein">
-          <div className="flex items-center gap-3 bg-blue-600 text-white rounded shadow-xl pl-4 pr-2.5 py-3 min-w-[340px] max-w-[90vw]">
-            <span className="flex items-center justify-center w-9 h-9 rounded-full bg-white/15 shrink-0">
-              <IconBell className="w-4 h-4 animate-pulse" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-bold">출력요청 도착</p>
-              <p className="text-xs text-white/80 truncate">
-                {dropToast.name}
-                {dropToast.creator ? ` — ${dropToast.creator}` : ''}
-              </p>
-            </div>
-            <button
-              onClick={goToDrops}
-              className="ml-auto shrink-0 h-8 px-3.5 rounded bg-white/20 hover:bg-white/30 text-xs font-semibold transition"
-            >
-              보기
-            </button>
-            <button
-              onClick={() => setDropToast(null)}
-              className="shrink-0 flex items-center justify-center w-7 h-7 rounded hover:bg-white/15 transition"
-              aria-label="알림 닫기"
-            >
-              <IconX className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
       )}
 
       {/* 층간 방송 (어느 페이지에 있어도 보내기/받기 가능 — 1층 /queue 화면 포함) */}

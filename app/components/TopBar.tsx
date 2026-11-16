@@ -44,7 +44,7 @@ export default function TopBar({
   }, []);
 
   return (
-    <header className="hidden lg:block sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-300 dark:border-slate-800 shadow-sm">
+    <header className="hidden lg:block lg:ml-[76px] sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-300 dark:border-slate-800 shadow-sm">
       <div className="flex items-center h-16 gap-4 px-6">
         {/* 화면 이름 + 오늘 날짜 */}
         <div className="shrink-0 leading-tight">
