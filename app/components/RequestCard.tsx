@@ -51,6 +51,16 @@ export default function RequestCard({
     return () => observer.disconnect();
   }, []);
 
+  // 메모: 접힌 상태(2줄)에서 내용이 잘렸는지 확인 — 잘렸을 때만 '더보기'를 보여준다
+  const noteRef = useRef<HTMLSpanElement>(null);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteOverflow, setNoteOverflow] = useState(false);
+  useEffect(() => {
+    const el = noteRef.current;
+    if (!el || noteOpen) return; // 펼친 상태에서는 잴 수 없으므로 마지막 판정을 유지
+    setNoteOverflow(el.scrollHeight > el.clientHeight + 1);
+  }, [item.note, noteOpen, containerDims?.w]);
+
   // 날짜 계산
   const daysLeft = item.pickup_date
     ? Math.ceil(
@@ -256,11 +266,27 @@ export default function RequestCard({
         </span>
       </div>
 
-      {/* 메모 (1줄, 전체 내용은 툴팁) */}
+      {/* 메모 (2줄까지 보이고, 더 길면 누르면 전체가 펼쳐진다) */}
       {item.note && (
-        <div className="flex items-center gap-1.5 mx-3.5 mt-2 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900 rounded text-xs text-slate-700 dark:text-slate-300" title={item.note}>
-          <IconFileText className="w-3 h-3 text-amber-500 shrink-0" />
-          <span className="truncate">{item.note}</span>
+        <div
+          className={`flex items-start gap-1.5 mx-3.5 mt-2 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900 rounded text-xs text-slate-700 dark:text-slate-300 ${
+            noteOpen || noteOverflow ? 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700 transition' : ''
+          }`}
+          onClick={noteOpen || noteOverflow ? () => setNoteOpen(o => !o) : undefined}
+          title={noteOpen ? '누르면 접힙니다' : noteOverflow ? '누르면 메모 전체가 펼쳐집니다' : undefined}
+        >
+          <IconFileText className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+          <span
+            ref={noteRef}
+            className={`min-w-0 flex-1 whitespace-pre-line break-words ${noteOpen ? '' : 'line-clamp-2'}`}
+          >
+            {item.note}
+          </span>
+          {(noteOpen || noteOverflow) && (
+            <span className="shrink-0 self-end text-[10px] font-semibold text-amber-600 dark:text-amber-400 select-none">
+              {noteOpen ? '접기' : '더보기'}
+            </span>
+          )}
         </div>
       )}
 
