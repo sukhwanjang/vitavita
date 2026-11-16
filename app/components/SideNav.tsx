@@ -7,6 +7,7 @@ import {
   IconTrash,
   IconReceipt,
   IconPalette,
+  IconBell,
   IconCalculator,
   IconFrame,
   IconMoon,
@@ -20,6 +21,7 @@ interface SideNavProps {
   onShowCalculator: () => void;
   onShowFrameCalc: () => void;
   onShowColorNotes: () => void;
+  onShowNotice: () => void; // 공지 수정 창 열기 (비밀번호 확인부터)
   onHome?: () => void; // 로고를 눌렀을 때 (검색어 지우기 등)
 }
 
@@ -62,7 +64,7 @@ function RailButton({
  * 왼쪽 고정 메뉴 (넓은 화면 전용 — 좁은 화면은 기존 상단 Header를 그대로 쓴다)
  * 로고 남색 바탕에 화면 이동(진행·완료·삭제·정산)과 도구(색상 기록·계산기·액자재단)를 모았다.
  */
-export default function SideNav({ onShowCalculator, onShowFrameCalc, onShowColorNotes, onHome }: SideNavProps) {
+export default function SideNav({ onShowCalculator, onShowFrameCalc, onShowColorNotes, onShowNotice, onHome }: SideNavProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -102,6 +104,10 @@ export default function SideNav({ onShowCalculator, onShowFrameCalc, onShowColor
 
       <span className="w-9 h-px bg-brand-line my-2" />
 
+      <RailButton title="공지 — 화면 위에 계속 흘러가는 빨간 글씨 (수정은 비밀번호 필요)" onClick={onShowNotice}>
+        <IconBell className="w-5 h-5" />
+        공지
+      </RailButton>
       <RailButton title="출력 색상 기록 — 거래처별로 어떤 모드로 찍었는지 메모" onClick={onShowColorNotes}>
         <IconPalette className="w-5 h-5" />
         색상

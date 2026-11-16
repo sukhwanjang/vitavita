@@ -24,6 +24,7 @@ import CalculatorModal from './CalculatorModal';
 import FrameCalcModal from './FrameCalcModal';
 import ColorNotesModal from './ColorNotesModal';
 import BroadcastPanel from './BroadcastPanel';
+import NoticeTicker from './NoticeTicker';
 import { IconFilter, IconX, IconCheckCircle, IconTrash } from './ui/icons';
 
 interface BoardProps {
@@ -90,6 +91,7 @@ export default function Board({ only }: BoardProps) {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showFrameCalc, setShowFrameCalc] = useState(false);
   const [showColorNotes, setShowColorNotes] = useState(false);
+  const [noticeSignal, setNoticeSignal] = useState(0); // 왼쪽 메뉴의 공지 버튼을 누를 때마다 1씩 올려 공지 수정 창을 연다
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalImage, setModalImage] = useState<{ url: string; company: string; program: string, id: number } | null>(null);
@@ -592,6 +594,7 @@ export default function Board({ only }: BoardProps) {
             onShowCalculator={() => setShowCalculator(true)}
             onShowFrameCalc={() => setShowFrameCalc(true)}
             onShowColorNotes={() => setShowColorNotes(true)}
+            onShowNotice={() => setNoticeSignal(n => n + 1)}
             onHome={() => setSearchQuery('')}
           />
           {/* 주의: TopBar를 다른 상자로 감싸지 말 것 — 감싸면 스크롤할 때 위에 붙어 있지 못하고 같이 올라가 버린다
@@ -724,6 +727,7 @@ export default function Board({ only }: BoardProps) {
       {only === 'queue' ? (
         <FileSidebar
           fullPage
+          topSlot={<NoticeTicker />}
           drops={drops}
           doneDrops={doneDrops}
           error={fileDropError}
@@ -745,6 +749,8 @@ export default function Board({ only }: BoardProps) {
       {/* 메인 컨텐츠 (메인 보드에서는 좌측 고정 출력대기 폭만큼 밀어줌) */}
       {/* 왼쪽 메뉴(76px) + 진행 현황에서는 출력대기 패널(열림 288px / 접힘 48px)만큼 밀어준다 */}
       <div className={!only ? (sidebarOpen ? 'lg:pl-[364px]' : 'lg:pl-[124px]') : 'lg:pl-[76px]'}>
+      {/* 공지 띠 — 넓은 화면에서는 상단 막대 바로 아래에 붙어 스크롤해도 계속 보인다 (공지가 없으면 안 보임) */}
+      <NoticeTicker openSignal={noticeSignal} className="lg:sticky lg:top-[65px] z-20" />
       {/* 불러오기 실패 안내 — 빈 화면만 보이면 작업이 다 사라진 것처럼 보이므로 꼭 알려준다 */}
       {bannerError && (
         <div className="bg-red-600 text-white">

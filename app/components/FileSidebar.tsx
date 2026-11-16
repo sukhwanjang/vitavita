@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDrop, RequestItem } from './types';
 import DropList, { fileNameOf } from './DropList';
@@ -20,6 +20,7 @@ interface FileSidebarProps {
   requests?: RequestItem[]; // 연결된 작업 카드 표시용
   onImageClick?: (item: RequestItem) => void; // 연결 카드 썸네일 클릭 → 검수 뷰어
   fullPage?: boolean; // 출력 전용 화면 (/queue) — 출력대기만 꽉 차게
+  topSlot?: ReactNode; // 출력 전용 화면 맨 위에 끼워 넣을 것 (공지 띠)
   open: boolean;
   onToggle: () => void;
   newIds: Set<number>;
@@ -37,6 +38,7 @@ export default function FileSidebar({
   requests = [],
   onImageClick,
   fullPage = false,
+  topSlot,
   open,
   onToggle,
   newIds,
@@ -161,6 +163,7 @@ export default function FileSidebar({
   if (fullPage) {
     return (
       <div className="flex flex-col h-[100dvh] bg-white dark:bg-slate-900">
+        {topSlot}
         <div className="flex items-center gap-2 px-4 h-12 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shrink-0">
           <IconInbox className="w-4 h-4 text-slate-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">출력대기</h2>
