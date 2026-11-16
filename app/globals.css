@@ -68,3 +68,10 @@ tbody td {
 .animate-fadein {
   animation: fadein 0.18s ease-out;
 }
+
+/* 카드 목록 — 넓은 화면은 지금처럼 최대 4칸, 창이 좁아지면 카드가 찌그러지지 않게 칸 수를 줄인다 */
+.board-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(max(264px, calc((100% - 3rem) / 4)), 1fr));
+}

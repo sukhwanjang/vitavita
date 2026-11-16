@@ -535,6 +535,25 @@ export default function Board({ only }: BoardProps) {
   const tomorrowCount = inProgress.filter(i => !i.is_urgent && daysLeftOf(i) === 1).length;
   const notReadyCount = inProgress.filter(i => !i.is_work_done).length; // 아직 작업 안 된 카드 수
 
+  // 진행 목록을 마감별 구역으로 나눠 보여준다 (카드 위 상태 칩과 같은 기준·같은 색)
+  const groupKeyOf = (item: any) => {
+    if (item.is_urgent) return 'urgent';
+    const d = daysLeftOf(item);
+    if (d === null || d < 0) return 'overdue';
+    if (d === 0) return 'today';
+    if (d === 1) return 'tomorrow';
+    return 'later';
+  };
+  const boardGroups = [
+    { key: 'urgent', label: '급함', dot: 'bg-red-600' },
+    { key: 'overdue', label: '기한 지남', dot: 'bg-slate-900 dark:bg-slate-300' },
+    { key: 'today', label: '오늘 마감', dot: 'bg-blue-600' },
+    { key: 'tomorrow', label: '내일 마감', dot: 'bg-amber-500' },
+    { key: 'later', label: '모레 이후', dot: 'bg-slate-400' },
+  ]
+    .map(g => ({ ...g, items: filteredInProgress.filter(i => groupKeyOf(i) === g.key) }))
+    .filter(g => g.items.length > 0);
+
   // 출력대기 연결 표시용: 진행 목록 + 따로 받아 둔 완료 카드
   const linkableRequests = linkedExtra.length ? [...requests, ...linkedExtra] : requests;
 
@@ -771,7 +790,7 @@ export default function Board({ only }: BoardProps) {
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="board-grid">
               {completedList.items.map(item => (
                 <CompletedCard
                   key={item.id}
@@ -802,7 +821,7 @@ export default function Board({ only }: BoardProps) {
               <span className="text-xs text-slate-400">최근 삭제 10건까지만 보관됩니다. 되살리면 진행 현황으로 돌아갑니다.</span>
             </div>
             {!loaded && <p className="py-10 text-center text-sm text-slate-400">불러오는 중…</p>}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="board-grid">
               {deleted.map(item => (
                 <DeletedCard
                   key={item.id}
@@ -851,7 +870,7 @@ export default function Board({ only }: BoardProps) {
                       if (seg.key === null) setStatusFilter(null);
                       else setStatusFilter(prev => prev === seg.key ? null : seg.key);
                     }}
-                    className={`relative flex items-center gap-2 text-left px-4 py-1.5 transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
+                    className={`relative flex items-center gap-2 text-left px-4 py-1.5 whitespace-nowrap overflow-hidden transition border-slate-100 dark:border-slate-800 border-t first:border-t-0 md:border-t-0 md:border-l md:first:border-l-0 ${
                       active ? 'bg-blue-50/60 dark:bg-blue-950/40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
@@ -861,7 +880,7 @@ export default function Board({ only }: BoardProps) {
                       <span className="ml-0.5 text-[11px] font-medium text-slate-300 dark:text-slate-600">건</span>
                     </span>
                     {seg.progress && seg.progress.total > 0 && (
-                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0 ml-auto">✓ {seg.progress.done}/{seg.progress.total}</span>
+                      <span className="hidden xl:inline text-[10px] text-slate-400 tabular-nums shrink-0 ml-auto">✓ {seg.progress.done}/{seg.progress.total}</span>
                     )}
                     {active && <span className="absolute left-0 right-0 bottom-0 h-0.5 bg-blue-600" />}
                   </button>
@@ -895,23 +914,49 @@ export default function Board({ only }: BoardProps) {
             )}
             <div>
               {!loaded && <p className="py-10 text-center text-sm text-slate-400">작업 목록을 불러오는 중…</p>}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {filteredInProgress.map(item => (
-                  <RequestCard
-                    key={item.id}
-                    item={item}
-                    onEdit={handleEdit}
-                    onComplete={handleComplete}
-                    onDelete={handleDelete}
-                    onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
-                    onPrintImage={handlePrintImage}
-                    onWorkDone={handleWorkDone}
-                    onCompanyClick={(company) => setSearchQuery(company)}
-                    onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
-                    activeStatusFilter={statusFilter}
-                    isNew={newIds.has(item.id)}
-                  />
-                ))}
+              {loaded && filteredInProgress.length === 0 && (
+                <p className="py-10 text-center text-sm text-slate-400">
+                  {searchQuery || statusFilter !== null || hideOverdue ? '조건에 맞는 작업이 없습니다.' : '진행 중인 작업이 없습니다.'}
+                </p>
+              )}
+              <div className="space-y-7">
+                {boardGroups.map(group => {
+                  const doneInGroup = group.items.filter(i => i.is_work_done).length;
+                  return (
+                    <div key={group.key}>
+                      {/* 구역 제목: 색 점 + 이름 + 건수 (+ 작업완료 수) */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${group.dot}`} />
+                        <h3 className="text-[15px] font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">{group.label}</h3>
+                        <span className="text-[13px] font-semibold text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap">{group.items.length}건</span>
+                        {doneInGroup > 0 && (
+                          <span className="inline-flex items-center h-5 px-1.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold tabular-nums whitespace-nowrap">
+                            작업완료 {doneInGroup}
+                          </span>
+                        )}
+                        <span className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+                      </div>
+                      <div className="board-grid">
+                        {group.items.map(item => (
+                          <RequestCard
+                            key={item.id}
+                            item={item}
+                            onEdit={handleEdit}
+                            onComplete={handleComplete}
+                            onDelete={handleDelete}
+                            onImageClick={(url) => setModalImage({ url, company: item.company, program: item.program, id: item.id })}
+                            onPrintImage={handlePrintImage}
+                            onWorkDone={handleWorkDone}
+                            onCompanyClick={(company) => setSearchQuery(company)}
+                            onStatusClick={(key) => setStatusFilter(prev => prev === key ? null : key)}
+                            activeStatusFilter={statusFilter}
+                            isNew={newIds.has(item.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
