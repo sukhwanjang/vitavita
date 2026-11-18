@@ -398,7 +398,7 @@ export default function BroadcastPanel({ audioCtxRef, soundOn, dock = 'corner', 
 
                 {/* 최근 방송 기록 */}
                 {recent.length > 0 && (
-                  <ul className="border-t border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                  <ul className="border-t border-slate-200 dark:border-slate-700 max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                     {recent.map(b => (
                       <RecentRow
                         key={b.id}
@@ -434,30 +434,45 @@ export default function BroadcastPanel({ audioCtxRef, soundOn, dock = 'corner', 
 }
 
 // 최근 방송 한 줄.
-// 위쪽 큰 배너를 놓쳤거나(30분 지나면 배너가 사라짐) 닫아 버린 사람도 여기서 [확인]을 누를 수 있다.
-// 내가 보낸 방송은 내가 확인할 일이 아니므로 '대기중'으로만 보인다.
+// 아직 확인 안 된 방송에는 누가 보낸 것이든 [확인] 버튼이 붙는다.
+//  - 받은 사람: 위쪽 큰 배너를 놓쳤거나(30분 지나면 사라짐) 닫아 버려도 여기서 확인
+//  - 보낸 사람: 말로 전달이 끝났을 때 직접 확인 처리 ('대기중' 표시 옆에 버튼)
+//
+// 글이 길면 한 줄로 잘려 보이므로, 글을 누르면 그 줄이 펼쳐져 전체가 보인다 (다시 누르면 접힘).
 function RecentRow({ b, mine, onAck }: { b: Broadcast; mine: boolean; onAck: () => void }) {
+  const [open, setOpen] = useState(false);
   return (
-    <li className="flex items-center gap-2 px-3 py-1.5 text-xs">
+    <li className={`flex gap-2 px-3 py-1.5 text-xs ${open ? 'items-start bg-slate-50 dark:bg-slate-800/50' : 'items-center'}`}>
       <span className="text-slate-400 shrink-0 tabular-nums">{timeLabel(b.created_at)}</span>
       <span className={`shrink-0 font-semibold ${mine ? 'text-rose-600' : 'text-slate-600 dark:text-slate-300'}`}>
         {mine ? '나' : (b.sender || '이름 없음')}
       </span>
-      <span className="truncate text-slate-800 dark:text-slate-100 flex-1">{b.message}</span>
+      <span
+        onClick={() => setOpen(o => !o)}
+        title={open ? '누르면 접힙니다' : `${b.message}\n\n(누르면 전체가 펼쳐집니다)`}
+        className={`flex-1 min-w-0 cursor-pointer text-slate-800 dark:text-slate-100 ${
+          open ? 'whitespace-pre-wrap break-words leading-relaxed' : 'truncate'
+        }`}
+      >
+        {b.message}
+      </span>
       {b.acked_by ? (
         <span className="shrink-0 text-emerald-600 dark:text-emerald-400 font-semibold" title={b.acked_at ? timeLabel(b.acked_at) : ''}>
           ✓ {b.acked_by}
         </span>
-      ) : mine ? (
-        <span className="shrink-0 text-slate-400">대기중</span>
       ) : (
-        <button
-          onClick={onAck}
-          title="이 방송을 확인했다고 표시합니다 (보낸 사람 화면에 확인한 사람 이름이 뜹니다)"
-          className="shrink-0 h-6 px-2.5 rounded-full border border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition"
-        >
-          확인
-        </button>
+        <>
+          {mine && <span className="shrink-0 text-slate-400">대기중</span>}
+          <button
+            onClick={onAck}
+            title={mine
+              ? '상대가 확인을 못 눌렀을 때 직접 확인 처리합니다'
+              : '이 방송을 확인했다고 표시합니다 (보낸 사람 화면에 확인한 사람 이름이 뜹니다)'}
+            className="shrink-0 h-6 px-2.5 rounded-full border border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition"
+          >
+            확인
+          </button>
+        </>
       )}
     </li>
   );
