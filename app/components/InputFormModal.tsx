@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { IconX, IconImage, IconZap, IconCalendar } from './ui/icons';
-import { resizeImageFile, THUMB_DIR } from './utils/imageResize';
+import { resizeImageFile, storagePathsOf, THUMB_DIR } from './utils/imageResize';
 import { WORKER_NAMES } from '../settlement/types';
 
 // 한국 시간 기준 오늘 + offset일의 YYYY-MM-DD
@@ -37,6 +37,16 @@ const QUICK_DATES = [
   { label: '모레', offset: 2 },
   { label: '+3일', offset: 3 },
 ];
+
+// 여러 장을 한꺼번에 올릴 때의 사진 한 장 (한 장이 작업 한 건이 된다)
+type BatchItem = {
+  id: number;
+  file: File;
+  preview: string;   // 화면 표시용 임시 주소 (다 쓰면 revokeObjectURL로 풀어준다)
+  label?: string;    // 등록을 누른 순간 정해진 프로그램명 — 일부만 실패해 다시 올릴 때 번호가 바뀌지 않게 고정
+};
+type SuffixMode = 'number' | 'filename' | 'none';
+const MAX_BATCH = 50; // 한 번에 올릴 수 있는 사진 수
 
 interface InputFormModalProps {
   showForm: boolean;
@@ -89,6 +99,11 @@ export default function InputFormModal({
   const [programIdx, setProgramIdx] = useState(-1);
   const [dragOver, setDragOver] = useState(false);     // 사진을 끌어다 올리는 중
   const [showMissing, setShowMissing] = useState(false); // 필수 칸 빨간 표시 (등록을 눌렀는데 비어 있을 때)
+  // 여러 장 한꺼번에 등록: 사진이 2장 이상 들어오면 여기에 쌓이고, 등록하면 사진마다 작업이 한 건씩 만들어진다
+  const [batch, setBatch] = useState<BatchItem[]>([]);
+  const [suffixMode, setSuffixMode] = useState<SuffixMode>('number'); // 프로그램명 뒤에 붙일 구분
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const batchIdRef = useRef(0);
 
   // 초기 데이터 설정
   useEffect(() => {
@@ -125,10 +140,73 @@ export default function InputFormModal({
     reader.readAsDataURL(file);
   }, []);
 
+  // 사진 여러 장 받기 — 한 장이면 기존처럼, 두 장 이상이면 "한 장씩 따로 등록" 목록에 쌓는다
+  const takeImageFiles = useCallback((list?: FileList | File[] | null) => {
+    const all = Array.from(list ?? []);
+    if (all.length === 0) return;
+    const files = all.filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) {
+      setError('이미지 파일만 올릴 수 있습니다.');
+      return;
+    }
+    // 수정할 때는 작업 한 건만 다루므로 첫 장만 쓴다
+    if (editMode || (files.length === 1 && batch.length === 0)) {
+      takeImageFile(files[0]);
+      return;
+    }
+    // 이미 한 장 올려둔 상태에서 여러 장을 더 넣으면 그 한 장도 목록에 포함한다
+    const incoming = batch.length === 0 && image ? [image, ...files] : files;
+    const room = MAX_BATCH - batch.length;
+    if (incoming.length > room) {
+      setError(`한 번에 ${MAX_BATCH}장까지만 올릴 수 있습니다. 넘는 사진은 빠졌습니다.`);
+    } else {
+      setError(null);
+    }
+    const added = incoming.slice(0, Math.max(0, room)).map(file => ({
+      id: ++batchIdRef.current,
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setBatch([...batch, ...added]);
+    setImage(null);
+    setImagePreview(null);
+  }, [editMode, batch, image, takeImageFile]);
+
+  // 목록에서 한 장 빼기. 한 장만 남으면 보통의 한 장 등록으로 되돌린다.
+  const removeBatchItem = (id: number) => {
+    const target = batch.find(b => b.id === id);
+    if (target) URL.revokeObjectURL(target.preview);
+    const rest = batch.filter(b => b.id !== id);
+    if (rest.length === 1) {
+      URL.revokeObjectURL(rest[0].preview);
+      setBatch([]);
+      takeImageFile(rest[0].file);
+    } else {
+      setBatch(rest);
+    }
+  };
+
+  const clearBatch = () => {
+    batch.forEach(b => URL.revokeObjectURL(b.preview));
+    setBatch([]);
+  };
+
+  // 사진별 프로그램명: 입력한 프로그램명 뒤에 번호나 파일명을 붙여 카드끼리 구분되게 한다
+  const batchProgramName = (item: BatchItem, index: number, total: number) => {
+    if (item.label) return item.label;
+    const base = program.trim();
+    if (suffixMode === 'number') return `${base} (${index + 1}/${total})`.trim();
+    if (suffixMode === 'filename') {
+      const name = item.file.name.replace(/\.[^.]+$/, '');
+      return base ? `${base} - ${name}` : name;
+    }
+    return base;
+  };
+
   const handlePasteImage = useCallback((e: React.ClipboardEvent) => {
-    const file = e.clipboardData.files?.[0];
-    if (file && file.type.startsWith('image/')) takeImageFile(file);
-  }, [takeImageFile]);
+    const files = Array.from(e.clipboardData.files ?? []).filter(f => f.type.startsWith('image/'));
+    if (files.length) takeImageFiles(files);
+  }, [takeImageFiles]);
 
   useEffect(() => {
     if (showForm) {
@@ -137,8 +215,11 @@ export default function InputFormModal({
     }
   }, [showForm, handlePasteImage]);
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+  const uploadImage = async (file: File, tag = ''): Promise<string | null> => {
+    // 저장 이름에는 영문·숫자만 남긴다 (한글이나 특수문자가 든 파일명 때문에 올리기가 막히지 않게).
+    // tag는 여러 장을 같은 순간에 올릴 때 이름이 겹치지 않게 하는 순번이다.
+    const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
+    const fileName = `${Date.now()}_${tag}${safeName}`;
     // 파일명이 매번 다르므로 오래 캐시해도 안전하다. 캐시가 짧으면 같은 사진을 반복해서 내려받게 된다.
     const cacheControl = '31536000';
 
@@ -177,7 +258,8 @@ export default function InputFormModal({
     }
     submittingRef.current = true;
     try {
-      await submitForm();
+      if (batch.length > 0 && !editMode) await submitBatch();
+      else await submitForm();
     } finally {
       submittingRef.current = false;
     }
@@ -248,7 +330,79 @@ export default function InputFormModal({
     onSuccess();
   };
 
+  // 여러 장 등록: 사진을 3장씩 동시에 올린 뒤, 올라간 사진마다 작업을 한 건씩 만든다
+  const submitBatch = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    const total = batch.length;
+    const items = batch.map((b, i) => ({ ...b, label: batchProgramName(b, i, total) }));
+    setBatch(items);
+    setProgress({ done: 0, total });
+
+    const urls: (string | null)[] = new Array(total).fill(null);
+    let next = 0;
+    let done = 0;
+    const worker = async () => {
+      for (;;) {
+        const i = next++;
+        if (i >= total) return;
+        try {
+          urls[i] = await uploadImage(items[i].file, `${i}_`);
+        } catch {
+          urls[i] = null;
+        }
+        done++;
+        setProgress({ done, total });
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+
+    // 목록 순서대로 한 번에 넣어 현황판에서도 같은 순서로 보이게 한다
+    const rows = items.flatMap((b, i) => urls[i] ? [{
+      company,
+      program: b.label,
+      pickup_date: pickupDate,
+      note,
+      image_url: urls[i],
+      is_urgent: isUrgent,
+      completed: false,
+      is_deleted: false,
+      creator,
+    }] : []);
+
+    if (rows.length > 0) {
+      const { error } = await supabase.from('request').insert(rows);
+      if (error) {
+        // 작업이 만들어지지 않았으니 방금 올린 사진 파일도 치운다 (안 그러면 저장소에 주인 없는 파일이 남는다)
+        const orphans = urls.flatMap(u => storagePathsOf(u));
+        if (orphans.length) supabase.storage.from('request-images').remove(orphans).then(() => {});
+        setError(`등록 실패: ${error.message}`);
+        setProgress(null);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const failed = items.filter((_, i) => !urls[i]);
+    items.forEach((b, i) => { if (urls[i]) URL.revokeObjectURL(b.preview); });
+    setProgress(null);
+    setIsSubmitting(false);
+
+    if (failed.length > 0) {
+      // 올라간 것은 목록에서 빼고, 못 올린 사진만 남겨 다시 누르면 그것만 올라가게 한다
+      setBatch(failed);
+      setError(`${total}장 중 ${rows.length}장 등록, ${failed.length}장은 올리지 못했습니다. 등록을 다시 누르면 남은 사진만 올립니다.`);
+      return;
+    }
+    setBatch([]);
+    clearForm();
+    onSuccess();
+  };
+
   const clearForm = () => {
+    batch.forEach(b => URL.revokeObjectURL(b.preview));
+    setBatch([]);
+    setProgress(null);
     setCompany('');
     setProgram('');
     setPickupDate('');
@@ -595,23 +749,88 @@ export default function InputFormModal({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple={!editMode}
                 className="hidden"
-                onChange={e => { takeImageFile(e.target.files?.[0]); e.target.value = ''; }}
+                onChange={e => { takeImageFiles(e.target.files); e.target.value = ''; }}
               />
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
-                onDrop={e => { e.preventDefault(); setDragOver(false); takeImageFile(e.dataTransfer.files?.[0]); }}
-                onClick={imagePreview ? undefined : () => fileInputRef.current?.click()}
+                onDrop={e => { e.preventDefault(); setDragOver(false); takeImageFiles(e.dataTransfer.files); }}
+                onClick={imagePreview || batch.length > 0 ? undefined : () => fileInputRef.current?.click()}
                 className={`flex-1 min-h-[320px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-4 transition ${
                   dragOver
                     ? 'border-brand-orange bg-orange-50 dark:bg-orange-950/30'
-                    : imagePreview
+                    : imagePreview || batch.length > 0
                       ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'
                       : 'border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 hover:border-brand-orange hover:bg-orange-50/50 dark:hover:bg-orange-950/20 cursor-pointer'
                 }`}
               >
-                {imagePreview ? (
+                {batch.length > 0 ? (
+                  <div className="w-full h-full flex flex-col self-stretch">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[13px] font-extrabold text-brand dark:text-slate-100">사진 {batch.length}장</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">→ 작업 {batch.length}건으로 따로 등록됩니다</span>
+                      <button
+                        onClick={clearBatch}
+                        disabled={isSubmitting}
+                        className="ml-auto inline-flex items-center h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 transition disabled:opacity-50"
+                      >
+                        모두 빼기
+                      </button>
+                    </div>
+                    {/* 프로그램명 뒤에 붙일 구분 */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">프로그램명 뒤에</span>
+                      <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+                        {([['number', '번호'], ['filename', '파일명'], ['none', '안 붙임']] as [SuffixMode, string][]).map(([mode, text], i) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setSuffixMode(mode)}
+                            disabled={isSubmitting}
+                            className={`h-7 px-2.5 text-[11px] font-semibold transition ${i > 0 ? 'border-l border-slate-200 dark:border-slate-600' : ''} ${
+                              suffixMode === mode
+                                ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                                : 'bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-[330px] pr-1">
+                      {batch.map((b, i) => (
+                        <div key={b.id} className="relative rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+                          <img src={b.preview} className="w-full h-20 object-contain bg-white" />
+                          <p className="px-1.5 py-1 text-[10px] leading-tight text-slate-600 dark:text-slate-300 truncate border-t border-slate-100 dark:border-slate-700" title={batchProgramName(b, i, batch.length)}>
+                            {batchProgramName(b, i, batch.length) || '(프로그램명 없음)'}
+                          </p>
+                          {!isSubmitting && (
+                            <button
+                              onClick={() => removeBatchItem(b.id)}
+                              aria-label="이 사진 빼기"
+                              className="absolute top-1 right-1 flex items-center justify-center w-5 h-5 rounded-full bg-slate-900/60 text-white hover:bg-red-600 transition"
+                            >
+                              <IconX className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isSubmitting}
+                        className="shrink-0 inline-flex items-center h-7 px-2.5 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-300 hover:border-brand/40 hover:text-brand dark:hover:text-white transition disabled:opacity-50"
+                      >
+                        사진 더 넣기
+                      </button>
+                      <span className="text-[11px] text-slate-400">끌어다 놓으면 뒤에 이어 붙습니다 · 업체명·픽업일·메모는 모두 같게 들어갑니다</span>
+                    </div>
+                  </div>
+                ) : imagePreview ? (
                   <div className="relative w-full h-full flex flex-col items-center justify-center">
                     <img src={imagePreview} className="max-h-[380px] max-w-full object-contain border border-slate-200 rounded bg-white" />
                     <div className="flex gap-2 mt-3">
@@ -636,6 +855,9 @@ export default function InputFormModal({
                     <IconImage className="w-10 h-10 text-slate-300" />
                     <span>캡처한 뒤 <b className="text-slate-600 dark:text-slate-300">Ctrl+V</b>로 붙여넣기</span>
                     <span className="text-xs text-slate-400 dark:text-slate-500">사진 파일을 여기로 끌어다 놓거나, 눌러서 파일을 골라도 됩니다</span>
+                    {!editMode && (
+                      <span className="text-xs text-slate-400 dark:text-slate-500">여러 장을 한꺼번에 넣으면 <b className="text-slate-600 dark:text-slate-300">한 장씩 따로 등록</b>됩니다</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -665,7 +887,9 @@ export default function InputFormModal({
               disabled={isSubmitting}
             >
               {isSubmitting
-                ? '처리 중...'
+                ? progress ? `올리는 중 ${progress.done}/${progress.total}` : '처리 중...'
+                : batch.length > 0 && !editMode
+                  ? summaryReady ? `${batch.length}건 등록 — ${company} · ${ddayLabel(pickupDate)} 픽업` : `${batch.length}건 등록`
                 : editMode
                   ? summaryReady ? `수정 — ${company} · ${ddayLabel(pickupDate)} 픽업` : '수정'
                   : summaryReady ? `등록 — ${company} · ${ddayLabel(pickupDate)} 픽업` : '등록'}
